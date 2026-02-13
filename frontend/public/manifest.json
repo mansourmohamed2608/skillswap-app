@@ -1,0 +1,24 @@
+{
+  "name": "SkillSwap - Exchange Services",
+  "short_name": "SkillSwap",
+  "description": "A platform to offer and request services in exchange for other services.",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#4a6e4f",
+  "background_color": "#f2efdd",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
+}

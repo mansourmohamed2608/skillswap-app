@@ -1,0 +1,341 @@
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as admin from 'firebase-admin';
+import { canCreateBooking, getUserDocument, incrementBookingCount, decrementListingCount } from '../../core/membership';
+import { sendInAppNotification, sendPushNotification, sendEmailNotification } from '../../core/notifications';
+import { findBannedKeywordInFields } from '../../core/moderation-utils';
+
+@Injectable()
+export class RequestsService {
+  async createRequest(userId: string, params: { listingId: string; proposedTime?: string; message?: string }) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    const { listingId, proposedTime, message } = params;
+    if (!listingId) throw new BadRequestException('Missing listingId');
+    const banned = await findBannedKeywordInFields([
+      { label: 'message', value: message },
+    ]);
+    if (banned) {
+      throw new BadRequestException({ code: 'content/banned', field: banned.field });
+    }
+
+    const listingSnap = await admin.firestore().collection('listings').doc(listingId).get();
+    if (!listingSnap.exists) throw new NotFoundException('Listing not found');
+    const listingData = listingSnap.data() || {};
+    const ownerId: string = (listingData as any).userId || (listingData as any).offeredByUserId;
+    if (!ownerId) throw new ForbiddenException('Listing missing ownerId');
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+    const membership = userSnap.get('membership');
+    const check = canCreateBooking(membership);
+    if (!check.allowed) throw new ForbiddenException(check.reason);
+
+    const createdAtVal =
+      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+        ? (admin.firestore.FieldValue as any).serverTimestamp()
+        : new Date();
+    const requestDoc = {
+      listingId,
+      ownerId,
+      requesterId: userId,
+      proposedTime: proposedTime ? new Date(proposedTime) : null,
+      message: message || '',
+      status: 'pending',
+      createdAt: createdAtVal,
+    };
+    const docRef = await admin.firestore().collection('requests').add(requestDoc);
+    await incrementBookingCount(userId);
+
+    try {
+      await sendInAppNotification({
+        userId: ownerId,
+        type: 'request',
+        content: `New exchange request for your listing`,
+        link: `/requests/${docRef.id}`,
+        listingId,
+        requesterId: userId,
+      });
+      await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', `/requests/${docRef.id}`);
+      await sendEmailNotification(ownerId, 'New exchange request', 'You have a new exchange request on your listing.');
+    } catch (e) {
+      console.warn('Failed to send notifications for owner', e);
+    }
+
+    return { id: docRef.id };
+  }
+
+  async reschedule(userId: string, requestId: string, proposedTime: string) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    if (!requestId) throw new BadRequestException('Missing request id');
+    if (!proposedTime) throw new BadRequestException('Missing proposedTime');
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+    const membership = userSnap.get('membership');
+    const check = canCreateBooking(membership);
+    if (!check.allowed) throw new ForbiddenException(check.reason);
+
+    const reqRef = admin.firestore().collection('requests').doc(requestId);
+    const snap = await reqRef.get();
+    if (!snap.exists) throw new NotFoundException('Request not found');
+    const data = snap.data() || {};
+    const ownerId: string | undefined = (data as any).ownerId;
+    const existingRequesterId: string | undefined = (data as any).requesterId;
+    if (existingRequesterId !== userId && ownerId !== userId) {
+      throw new ForbiddenException('Not authorized to modify this request');
+    }
+
+    await reqRef.update({ proposedTime: new Date(proposedTime) });
+    return { success: true };
+  }
+
+  async accept(userId: string, requestId: string) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    if (!requestId) throw new BadRequestException('Missing request id');
+
+    const reqRef = admin.firestore().collection('requests').doc(requestId);
+    const snap = await reqRef.get();
+    if (!snap.exists) throw new NotFoundException('Request not found');
+    const data = snap.data() || {};
+    const ownerId: string | undefined = (data as any).ownerId;
+    const requesterId: string | undefined = (data as any).requesterId;
+    const listingId: string | undefined = (data as any).listingId;
+    if (!ownerId || !requesterId || !listingId) throw new BadRequestException('Invalid request payload');
+    if (ownerId !== userId) throw new ForbiddenException('Not authorized to accept this request');
+
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (status !== 'pending') throw new BadRequestException(`Request already ${status}`);
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+    const membership = userSnap.get('membership');
+    const check = canCreateBooking(membership);
+    if (!check.allowed) throw new ForbiddenException(check.reason);
+
+    const listingSnap = await admin.firestore().collection('listings').doc(listingId).get();
+    if (!listingSnap.exists) throw new NotFoundException('Listing not found');
+    const listingData = listingSnap.data() || {};
+    const listingStatus = String((listingData as any).status || 'open').toLowerCase();
+    if (['removed', 'fulfilled', 'closed'].includes(listingStatus)) {
+      throw new BadRequestException('Listing is no longer active');
+    }
+
+    const acceptedSnap = await admin.firestore()
+      .collection('requests')
+      .where('listingId', '==', listingId)
+      .where('status', '==', 'accepted')
+      .limit(1)
+      .get();
+    if (!acceptedSnap.empty && acceptedSnap.docs[0].id !== requestId) {
+      throw new BadRequestException('Another request is already accepted for this listing');
+    }
+
+    const nowVal =
+      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+        ? (admin.firestore.FieldValue as any).serverTimestamp()
+        : new Date();
+    await reqRef.update({
+      status: 'accepted',
+      acceptedAt: nowVal,
+      acceptedBy: userId,
+      updatedAt: nowVal,
+    });
+    await incrementBookingCount(ownerId);
+
+    try {
+      await sendInAppNotification({
+        userId: requesterId,
+        type: 'request',
+        content: `Your exchange request was accepted`,
+        link: `/requests/${requestId}`,
+        listingId,
+        requesterId,
+      });
+      await sendPushNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.', `/requests/${requestId}`);
+      await sendEmailNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.');
+    } catch (e) {
+      console.warn('Failed to send accept notifications', e);
+    }
+
+    return { success: true };
+  }
+
+  async decline(userId: string, requestId: string) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    if (!requestId) throw new BadRequestException('Missing request id');
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+
+    const reqRef = admin.firestore().collection('requests').doc(requestId);
+    const snap = await reqRef.get();
+    if (!snap.exists) throw new NotFoundException('Request not found');
+    const data = snap.data() || {};
+    const ownerId: string | undefined = (data as any).ownerId;
+    const requesterId: string | undefined = (data as any).requesterId;
+    const listingId: string | undefined = (data as any).listingId;
+    if (!ownerId || !requesterId || !listingId) throw new BadRequestException('Invalid request payload');
+    if (ownerId !== userId) throw new ForbiddenException('Not authorized to decline this request');
+
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (status !== 'pending') throw new BadRequestException(`Request already ${status}`);
+
+    const nowVal =
+      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+        ? (admin.firestore.FieldValue as any).serverTimestamp()
+        : new Date();
+    await reqRef.update({
+      status: 'declined',
+      declinedAt: nowVal,
+      declinedBy: userId,
+      updatedAt: nowVal,
+    });
+
+    try {
+      await sendInAppNotification({
+        userId: requesterId,
+        type: 'request',
+        content: `Your exchange request was declined`,
+        link: `/requests/${requestId}`,
+        listingId,
+        requesterId,
+      });
+      await sendPushNotification(requesterId, 'Request declined', 'Your exchange request was declined.', `/requests/${requestId}`);
+      await sendEmailNotification(requesterId, 'Request declined', 'Your exchange request was declined.');
+    } catch (e) {
+      console.warn('Failed to send decline notifications', e);
+    }
+
+    return { success: true };
+  }
+
+  async cancel(userId: string, requestId: string) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    if (!requestId) throw new BadRequestException('Missing request id');
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+
+    const reqRef = admin.firestore().collection('requests').doc(requestId);
+    const snap = await reqRef.get();
+    if (!snap.exists) throw new NotFoundException('Request not found');
+    const data = snap.data() || {};
+    const ownerId: string | undefined = (data as any).ownerId;
+    const requesterId: string | undefined = (data as any).requesterId;
+    const listingId: string | undefined = (data as any).listingId;
+    if (!ownerId || !requesterId || !listingId) throw new BadRequestException('Invalid request payload');
+    if (ownerId !== userId && requesterId !== userId) {
+      throw new ForbiddenException('Not authorized to cancel this request');
+    }
+
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (['declined', 'cancelled', 'completed'].includes(status)) {
+      throw new BadRequestException(`Request already ${status}`);
+    }
+
+    const nowVal =
+      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+        ? (admin.firestore.FieldValue as any).serverTimestamp()
+        : new Date();
+    await reqRef.update({
+      status: 'cancelled',
+      cancelledAt: nowVal,
+      cancelledBy: userId,
+      updatedAt: nowVal,
+    });
+
+    const otherId = ownerId === userId ? requesterId : ownerId;
+    try {
+      await sendInAppNotification({
+        userId: otherId,
+        type: 'request',
+        content: `An exchange request was cancelled`,
+        link: `/requests/${requestId}`,
+        listingId,
+        requesterId,
+      });
+      await sendPushNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.', `/requests/${requestId}`);
+      await sendEmailNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.');
+    } catch (e) {
+      console.warn('Failed to send cancel notifications', e);
+    }
+
+    return { success: true };
+  }
+
+  async complete(userId: string, requestId: string) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    if (!requestId) throw new BadRequestException('Missing request id');
+
+    const userSnap = await getUserDocument(userId);
+    this.ensureKycVerified(userSnap);
+
+    const reqRef = admin.firestore().collection('requests').doc(requestId);
+    const snap = await reqRef.get();
+    if (!snap.exists) throw new NotFoundException('Request not found');
+    const data = snap.data() || {};
+    const ownerId: string | undefined = (data as any).ownerId;
+    const requesterId: string | undefined = (data as any).requesterId;
+    const listingId: string | undefined = (data as any).listingId;
+    if (!ownerId || !requesterId || !listingId) throw new BadRequestException('Invalid request payload');
+    if (ownerId !== userId && requesterId !== userId) {
+      throw new ForbiddenException('Not authorized to complete this request');
+    }
+
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (status !== 'accepted') throw new BadRequestException(`Request must be accepted before completion (current: ${status})`);
+
+    const nowVal =
+      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+        ? (admin.firestore.FieldValue as any).serverTimestamp()
+        : new Date();
+    await reqRef.update({
+      status: 'completed',
+      completedAt: nowVal,
+      completedBy: userId,
+      updatedAt: nowVal,
+    });
+
+    const listingRef = admin.firestore().collection('listings').doc(listingId);
+    const listingSnap = await listingRef.get();
+    if (listingSnap.exists) {
+      const listingData = listingSnap.data() || {};
+      const listingStatus = String((listingData as any).status || 'open').toLowerCase();
+      if (!['removed', 'fulfilled'].includes(listingStatus)) {
+        await listingRef.set({ status: 'fulfilled', fulfilledAt: nowVal, updatedAt: nowVal }, { merge: true });
+        if (this.isListingActive(listingStatus)) {
+          await decrementListingCount(ownerId);
+        }
+      }
+    }
+
+    const otherId = ownerId === userId ? requesterId : ownerId;
+    try {
+      await sendInAppNotification({
+        userId: otherId,
+        type: 'request',
+        content: `An exchange request was marked completed`,
+        link: `/requests/${requestId}`,
+        listingId,
+        requesterId,
+      });
+      await sendPushNotification(otherId, 'Request completed', 'An exchange request was completed.', `/requests/${requestId}`);
+      await sendEmailNotification(otherId, 'Request completed', 'An exchange request was completed.');
+    } catch (e) {
+      console.warn('Failed to send completion notifications', e);
+    }
+
+    return { success: true };
+  }
+
+  private isListingActive(status: string | undefined): boolean {
+    const normalized = String(status || 'open').toLowerCase();
+    return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+  }
+
+  private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {
+    const status = String(userSnap.get('kyc.status') || userSnap.get('kyc')?.status || '').toUpperCase();
+    if (status !== 'VERIFIED') {
+      throw new ForbiddenException('KYC verification required');
+    }
+  }
+}

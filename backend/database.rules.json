@@ -1,0 +1,31 @@
+{
+  "rules": {
+    
+    "presence": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+
+    "userConversations": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+
+    "conversations": {
+      "$convId": {
+        ".read": "auth != null && root.child('conversations/'+$convId+'/participants/'+auth.uid).exists()",
+        ".write": false,
+        "messages": {
+          "$msgId": {
+            ".read": "auth != null && root.child('conversations/'+$convId+'/participants/'+auth.uid).exists()",
+            ".write": false
+          }
+        }
+      }
+    }
+  }
+}

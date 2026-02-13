@@ -1,0 +1,253 @@
+"use client";
+
+import Link from "next/link";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { ServiceCard } from "@/features/listings/components/ServiceCard";
+import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
+import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
+import type { ServiceListing, User } from "@/types";
+
+const HeroLogo = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-16 w-16 text-primary-foreground mx-auto mb-6"
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    focusable="false"
+  >
+    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
+    <path d="m18 2 4 4-4 4" />
+    <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2l4.4 8.2c.7 1.3 2.1 2.2 3.6 2.2H22" />
+    <path d="m18 22 4-4-4-4" />
+  </svg>
+);
+
+type FeaturedListing = {
+  listing: ServiceListing;
+  user: User | null;
+};
+
+type FeaturedWish = {
+  id: string;
+  title?: string;
+  description?: string;
+  totalDonated?: number;
+  goalAmount?: number;
+  currency?: string;
+  category?: string;
+  imageUrl?: string | null;
+};
+
+export function HomePageContent({
+  featuredListingsData,
+  featuredWishes = [],
+}: {
+  featuredListingsData: FeaturedListing[];
+  featuredWishes?: FeaturedWish[];
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="space-y-12">
+      {/* Hero Section */}
+      <section className="relative text-center py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
+        <div className="relative z-10 container mx-auto px-4">
+          <HeroLogo />
+          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-primary-foreground">
+            {t("home.hero.title")}
+          </h1>
+          <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto text-primary-foreground/90">
+            {t("home.hero.body")}
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Button
+              size="lg"
+              asChild
+              className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:-translate-y-0.5"
+            >
+              <Link href="/listings">{t("home.hero.ctaBrowse")}</Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="text-accent border-accent hover:bg-accent hover:text-accent-foreground transition-transform hover:-translate-y-0.5"
+            >
+              <Link href="/listings/new">{t("home.hero.ctaPost")}</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works Section */}
+      <section>
+        <h2 className="text-3xl font-semibold text-center mb-8">{t("home.howItWorks.title")}</h2>
+        <div className="grid md:grid-cols-3 gap-8">
+          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
+            <CardHeader className="items-center text-center">
+              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+                <SearchIcon className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>{t("home.howItWorks.step1.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                {t("home.howItWorks.step1.body")}
+              </CardDescription>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
+            <CardHeader className="items-center text-center">
+              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+                <SparklesIcon className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>{t("home.howItWorks.step2.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                {t("home.howItWorks.step2.body")}
+              </CardDescription>
+            </CardContent>
+          </Card>
+          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
+            <CardHeader className="items-center text-center">
+              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+                <UsersIcon className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>{t("home.howItWorks.step3.title")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <CardDescription className="text-center">
+                {t("home.howItWorks.step3.body")}
+              </CardDescription>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* Featured Listings Section */}
+      <section>
+        <h2 className="text-3xl font-semibold text-center mb-8">{t("home.featured.title")}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {featuredListingsData.map(({ listing, user }) => (
+            <ServiceCard key={listing.id} listing={listing} user={user} />
+          ))}
+        </div>
+        {featuredListingsData.length === 0 && (
+          <div className="text-center py-12 bg-card rounded-lg mt-6 border border-dashed border-destructive/50">
+            <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+            <h3 className="mt-4 text-xl font-semibold">{t("home.featured.emptyTitle")}</h3>
+            <p className="mt-2 text-muted-foreground">{t("home.featured.emptyBody")}</p>
+          </div>
+        )}
+        <div className="text-center mt-8">
+          <Button
+            size="lg"
+            asChild
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10 hover:text-primary"
+          >
+            <Link href="/listings">{t("home.featured.viewAll")}</Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* Community Wishes Section */}
+      <section>
+        <div className="relative text-center mb-10">
+          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border"></div>
+          <h2 className="relative inline-block bg-background px-6 text-4xl font-bold text-primary tracking-wide">
+            {t("home.wishes.title")}
+          </h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Donate Card */}
+          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors flex flex-col">
+            <CardHeader className="items-center text-center">
+              <div className="p-3 bg-accent/10 rounded-full mb-2 inline-block">
+                <Heart className="h-8 w-8 text-accent" />
+              </div>
+              <CardTitle>{t("home.wishes.donateTitle")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <CardDescription className="text-center">
+                {t("home.wishes.donateBody")}
+              </CardDescription>
+            </CardContent>
+            <CardFooter className="justify-center">
+              <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Link href="/wishes/donate">{t("home.wishes.donateCta")}</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+          {/* Request Card */}
+          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors flex flex-col">
+            <CardHeader className="items-center text-center">
+              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+                <Star className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle>{t("home.wishes.requestTitle")}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex-grow">
+              <CardDescription className="text-center">
+                {t("home.wishes.requestBody")}
+              </CardDescription>
+            </CardContent>
+            <CardFooter className="justify-center">
+              <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
+                <Link href="/wishes/request">{t("home.wishes.requestCta")}</Link>
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+        {featuredWishes.length > 0 && (
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            {featuredWishes.map((wish) => {
+              const raised = Number(wish.totalDonated || 0);
+              const goal = Number(wish.goalAmount || 1);
+              const pct = Math.min(100, Math.round((raised / goal) * 100));
+              const currency = wish.currency || "EGP";
+              return (
+                <Card key={wish.id} className="shadow-none border-border/70">
+                  <CardHeader>
+                    <CardTitle className="text-xl">{wish.title || t("wishes.list.empty")}</CardTitle>
+                    {wish.category && (
+                      <CardDescription className="text-sm">{wish.category}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {wish.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-3">{wish.description}</p>
+                    )}
+                    <Progress value={pct} />
+                    <div className="text-sm text-muted-foreground">
+                      {t("wishes.list.raised", { raised, goal, currency })}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="justify-between gap-3">
+                    <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
+                      <Link href={`/wishes/${wish.id}`}>{t("home.wishes.viewDetails")}</Link>
+                    </Button>
+                    <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                      <Link href={`/wishes/donate?id=${encodeURIComponent(wish.id)}`}>{t("home.wishes.donateCta")}</Link>
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
+      <HomePageCTAs />
+    </div>
+  );
+}

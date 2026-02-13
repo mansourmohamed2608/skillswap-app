@@ -1,0 +1,95 @@
+
+'use client';
+
+import type { Notification } from '@/types';
+import { Card, CardContent } from '@/components/ui/card';
+import { BellIcon, Star, MessageSquare, Briefcase, Info } from 'lucide-react';
+import Link from 'next/link';
+import { cn } from '@/lib/utils';
+import { formatDistanceToNow } from 'date-fns';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+
+interface NotificationListProps {
+  notifications: Notification[];
+}
+
+const iconMap = {
+  review: <Star className="h-5 w-5 text-accent" />,
+  message: <MessageSquare className="h-5 w-5 text-blue-500" />,
+  request: <Briefcase className="h-5 w-5 text-primary" />,
+  system: <Info className="h-5 w-5 text-muted-foreground" />,
+};
+
+export function NotificationList({ notifications }: NotificationListProps) {
+  const { t } = useTranslation();
+  const [notificationTimes, setNotificationTimes] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const newTimes: Record<string, string> = {};
+    notifications.forEach(n => {
+      newTimes[n.id] = formatDistanceToNow(new Date(n.date), { addSuffix: true });
+    });
+    setNotificationTimes(newTimes);
+  }, [notifications]);
+
+  if (notifications.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <BellIcon className="mx-auto h-12 w-12 text-muted-foreground" />
+        <h3 className="mt-2 text-xl font-semibold">{t('profile.notifications.emptyTitle')}</h3>
+        <p className="mt-1 text-muted-foreground">{t('profile.notifications.emptyBody')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <Card>
+      <CardContent className="p-0">
+        <ul className="divide-y divide-border">
+          {notifications.map((notification) => {
+            const content = (
+              <div className="flex items-center space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 flex items-center justify-center bg-muted rounded-full">
+                    {iconMap[notification.type]}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground">{notification.content}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {notificationTimes[notification.id] || t('profile.notifications.recent')}
+                  </p>
+                </div>
+                {!notification.isRead && (
+                  <div className="flex-shrink-0">
+                    <span className="h-2.5 w-2.5 rounded-full bg-accent flex" />
+                  </div>
+                )}
+              </div>
+            );
+
+            return (
+              <li
+                key={notification.id}
+                className={cn(
+                  'p-4 transition-colors',
+                  notification.isRead ? 'bg-card/60' : 'bg-muted/40',
+                  notification.link && 'hover:bg-muted/50'
+                )}
+              >
+                {notification.link ? (
+                  <Link href={notification.link} className="block">
+                    {content}
+                  </Link>
+                ) : (
+                  content
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  );
+}

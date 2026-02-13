@@ -1,0 +1,55 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": false,
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "moduleResolution": "Bundler",
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "types": [
+      "react",
+      "react-native",
+      "expo-router"
+    ],
+  "forceConsistentCasingInFileNames": false,
+    "paths": {
+      "@/lib/*": [
+        "src/lib/*"
+      ],
+      "@/services/*": [
+        "src/services/*"
+      ],
+      "@/context/*": [
+        "src/context/*"
+      ],
+      "@/components/*": [
+        "src/components/*"
+      ],
+      "@/hooks/*": [
+        "src/hooks/*"
+      ],
+      "@/types": [
+        "src/types"
+      ],
+      "@/types/*": [
+        "src/types/*"
+      ],
+      "@/i18n/*": [
+        "src/i18n/*"
+      ]
+    }
+  },
+  "include": [
+    "app",
+    "src",
+    "**/*.ts",
+    "**/*.tsx",
+    "nativewind-env.d.ts"
+  ],
+  "exclude": [
+    "app/**/page.tsx",
+    "app/**/actions.ts",
+    "src/components/ui/button.ts"
+  ]
+}

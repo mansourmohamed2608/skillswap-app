@@ -1,0 +1,26 @@
+import type { ServiceCategory } from '@/types';
+
+export const serviceCategories: ServiceCategory[] = [
+  'Graphic Design',
+  'Gardening',
+  'Web Development',
+  'Home Repair',
+  'Tech Support',
+  'Tutoring',
+  'Pet Care',
+  'Photography',
+  'Videography',
+  'Repair Services',
+  'Cooking',
+  'Writing',
+  'Music Lessons',
+  'Fitness Training',
+  'Event Planning',
+  'Consulting',
+  'Language Lessons',
+  'Arts & Crafts',
+  'Moving Help',
+  'Beauty Services',
+  'Personal Care',
+  'Transportation',
+];
