@@ -1,0 +1,7 @@
+runtime: nodejs20        # pins Cloud Build to Node 20 LTS
+
+# (Optional) build-time and run-time env vars
+# env:
+#   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+#     value: "xxxxxxxxxxxxxxxxxxxx"
+#     availability: [BUILD, RUNTIME]

@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "backdup-333cf",
+    "BackDup": "backdup-333cf"
+  },
+  "targets": {},
+  "etags": {}
+}

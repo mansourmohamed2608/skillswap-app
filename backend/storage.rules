@@ -1,0 +1,34 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Restrict KYC uploads to the owning user
+    match /users/{uid}/kyc/{fileName} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Public assets; only owners can write
+    match /avatars/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /covers/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /listings/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    match /listing-images/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == uid;
+    }
+    // Dev-only storage checks
+    match /dev-check/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+    // Default: deny all access to unmatched paths (secure by default)
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
