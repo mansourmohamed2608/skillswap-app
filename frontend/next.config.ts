@@ -15,8 +15,10 @@ const nextConfig: NextConfig = {
     ],
   },
 
-  // SECURITY: Enforce type checking in production builds
-  // Note: eslint config moved to eslint.config.mjs per Next.js 16+ requirements
+  env: {
+    NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG: process.env.FIREBASE_WEBAPP_CONFIG ?? '',
+  },
+
   typescript: { ignoreBuildErrors: process.env.NODE_ENV === 'development' },
 };
 

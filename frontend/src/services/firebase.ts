@@ -12,15 +12,17 @@ import { getStorage, connectStorageEmulator, type FirebaseStorage } from "fireba
 import { getDatabase, connectDatabaseEmulator, type Database } from "firebase/database";
 
 // ---------- Public config ----------
-export const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  // databaseURL optional; only needed if you use RTDB
-};
+export const firebaseConfig: FirebaseOptions = (() => {
+  const raw = process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as FirebaseOptions;
+  } catch (e) {
+    console.error("Failed to parse NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG", e);
+    return {};
+  }
+})();
+
 
 export function isFirebaseConfigured(): boolean {
   try {
