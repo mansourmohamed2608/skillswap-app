@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon } from 'lucide-react';
+import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon, MapPinIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError, createListing, updateListing } from '@/services/api';
@@ -68,7 +68,14 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const [requestedServiceTitle, setRequestedServiceTitle] = useState('');
   const [requestedServiceCategory, setRequestedServiceCategory] = useState<string | undefined>();
   const [requestedServiceDescription, setRequestedServiceDescription] = useState('');
+  const [requestedKind, setRequestedKind] = useState<'service' | 'product' | 'money'>('service');
+  const [requestedProductName, setRequestedProductName] = useState('');
+  const [requestedProductDescription, setRequestedProductDescription] = useState('');
+  const [requestedMoneyAmount, setRequestedMoneyAmount] = useState('');
+  const [requestedMoneyCurrency, setRequestedMoneyCurrency] = useState('USD');
   const [location, setLocation] = useState('');
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [locating, setLocating] = useState(false);
   const [offeredFile, setOfferedFile] = useState<File | null>(null);
   const isBusiness = membership?.plan === 'Business' && active;
 
@@ -112,7 +119,25 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     setRequestedServiceTitle(initialListing.requestedService?.title || '');
     setRequestedServiceCategory(initialListing.requestedService?.category || undefined);
     setRequestedServiceDescription(initialListing.requestedService?.description || '');
+    const inferredKind =
+      initialListing.requestedKind ||
+      (String(initialListing.requestedService?.category || '').toLowerCase() === 'money'
+        ? 'money'
+        : String(initialListing.requestedService?.category || '').toLowerCase() === 'product'
+          ? 'product'
+          : 'service');
+    const kind = inferredKind as 'service' | 'product' | 'money';
+    setRequestedKind(kind);
+    setRequestedProductName(initialListing.requestedProduct?.name || '');
+    setRequestedProductDescription(initialListing.requestedProduct?.description || '');
+    setRequestedMoneyAmount(
+      initialListing.requestedMoney?.amount !== undefined && initialListing.requestedMoney?.amount !== null
+        ? String(initialListing.requestedMoney.amount)
+        : ''
+    );
+    setRequestedMoneyCurrency(initialListing.requestedMoney?.currency || 'USD');
     setLocation(initialListing.location || '');
+    setGeo(initialListing.geo);
     setExistingImageUrl(initialListing.offeredService?.imageUrl || undefined);
     setImagePreview(initialListing.offeredService?.imageUrl || null);
   }, [initialListing]);
@@ -131,6 +156,44 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       setOfferedFile(null);
     }
   };
+
+  async function useCurrentLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setMessage('Geolocation is not supported by this browser.');
+      return;
+    }
+    setLocating(true);
+    setMessage(null);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = Number(position.coords.latitude);
+        const lng = Number(position.coords.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          setMessage('Unable to read your current location.');
+          setLocating(false);
+          return;
+        }
+        setGeo({ lat, lng });
+        if (!location.trim()) {
+          setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        }
+        setLocating(false);
+      },
+      (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          setMessage('Location permission denied. Please enable location access in your browser settings.');
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setMessage('Location unavailable. Please check your device location settings.');
+        } else if (error.code === error.TIMEOUT) {
+          setMessage('Location request timed out. Please try again.');
+        } else {
+          setMessage('Unable to get your current location.');
+        }
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
   
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -143,6 +206,31 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     if (membershipLoading) return; // wait for membership state
     // Redirect only when the user attempts the action and is not subscribed
     if (active === false) { router.push('/pricing?alert=sub-required'); return; }
+    if (!location.trim() && !geo) {
+      setMessage('Please add location text or use your current GPS location.');
+      return;
+    }
+    if (requestedKind === 'service') {
+      if (!requestedServiceTitle.trim() || !requestedServiceCategory || !requestedServiceDescription.trim()) {
+        setMessage('Please complete the requested service details.');
+        return;
+      }
+    } else if (requestedKind === 'product') {
+      if (!requestedProductName.trim()) {
+        setMessage('Please enter the requested product name.');
+        return;
+      }
+    } else {
+      const amount = Number(requestedMoneyAmount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        setMessage('Please enter a valid requested amount.');
+        return;
+      }
+      if (!requestedMoneyCurrency.trim()) {
+        setMessage('Please enter the requested currency.');
+        return;
+      }
+    }
     const banned = findBannedKeywordInFields([
       { label: 'offeredService.title', value: offeredServiceTitle },
       { label: 'offeredService.description', value: offeredServiceDescription },
@@ -150,6 +238,9 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       { label: 'requestedService.title', value: requestedServiceTitle },
       { label: 'requestedService.description', value: requestedServiceDescription },
       { label: 'requestedService.category', value: requestedServiceCategory },
+      { label: 'requestedProduct.name', value: requestedProductName },
+      { label: 'requestedProduct.description', value: requestedProductDescription },
+      { label: 'requestedMoney.currency', value: requestedMoneyCurrency },
       { label: 'location', value: location },
     ]);
     if (banned) {
@@ -166,6 +257,37 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         imageUrl = await getDownloadURL(fileRef);
       }
 
+      let requestedServicePayload: { title: string; category: string; description: string };
+      let requestedProductPayload: { name: string; description?: string } | undefined;
+      let requestedMoneyPayload: { amount: number; currency: string } | undefined;
+      if (requestedKind === 'service') {
+        requestedServicePayload = {
+          title: requestedServiceTitle,
+          category: requestedServiceCategory!,
+          description: requestedServiceDescription,
+        };
+      } else if (requestedKind === 'product') {
+        requestedProductPayload = {
+          name: requestedProductName.trim(),
+          description: requestedProductDescription.trim() || undefined,
+        };
+        requestedServicePayload = {
+          title: requestedProductPayload.name,
+          category: 'Product',
+          description: requestedProductPayload.description || 'Product exchange',
+        };
+      } else {
+        requestedMoneyPayload = {
+          amount: Number(requestedMoneyAmount),
+          currency: requestedMoneyCurrency.trim().toUpperCase(),
+        };
+        requestedServicePayload = {
+          title: `${requestedMoneyPayload.amount} ${requestedMoneyPayload.currency}`,
+          category: 'Money',
+          description: 'Cash payment exchange',
+        };
+      }
+
       // Build the nested listing structure expected by the UI and data layer
       const listing = {
         offeredService: {
@@ -174,12 +296,12 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
           description: offeredServiceDescription,
           imageUrl,
         },
-        requestedService: {
-          title: requestedServiceTitle,
-          category: requestedServiceCategory!,
-          description: requestedServiceDescription,
-        },
-        location,
+        requestedService: requestedServicePayload,
+        requestedKind,
+        requestedProduct: requestedProductPayload,
+        requestedMoney: requestedMoneyPayload,
+        location: location.trim(),
+        geo,
         status: 'open' as const,
         postedDate: new Date().toISOString(),
       };
@@ -198,7 +320,13 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         setRequestedServiceTitle('');
         setRequestedServiceCategory(undefined);
         setRequestedServiceDescription('');
+        setRequestedKind('service');
+        setRequestedProductName('');
+        setRequestedProductDescription('');
+        setRequestedMoneyAmount('');
+        setRequestedMoneyCurrency('USD');
         setLocation('');
+        setGeo(undefined);
         setOfferedFile(null);
         setImagePreview(null);
         setExistingImageUrl(undefined);
@@ -267,30 +395,105 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
               {t('listings.form.requestSection')}
             </h3>
             <div className="space-y-1">
-              <Label htmlFor="requestedServiceTitle">{t('listings.form.titleLabel')}</Label>
-              <Input id="requestedServiceTitle" placeholder={t('listings.form.requestTitlePlaceholder')} required value={requestedServiceTitle} onChange={(e)=>setRequestedServiceTitle(e.target.value)} />
-              {errors?.requestedServiceTitle && <p className="text-sm text-destructive">{errors.requestedServiceTitle.join(', ')}</p>}
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="requestedServiceCategory">{t('listings.form.categoryLabel')}</Label>
-               <Select value={requestedServiceCategory} onValueChange={setRequestedServiceCategory} required>
-                  <SelectTrigger><SelectValue placeholder={t('listings.form.categoryPlaceholder')} /></SelectTrigger>
+              <Label htmlFor="requestedKind">Exchange Type</Label>
+               <Select value={requestedKind} onValueChange={(value) => setRequestedKind(value as 'service' | 'product' | 'money')}>
+                  <SelectTrigger id="requestedKind"><SelectValue placeholder="Select exchange type" /></SelectTrigger>
                   <SelectContent>
-                    {categoryOptions.map(category => (
-                      <SelectItem key={`requested-${category}`} value={category}>{category}</SelectItem>
-                    ))}
+                    <SelectItem value="service">Service</SelectItem>
+                    <SelectItem value="product">Product</SelectItem>
+                    <SelectItem value="money">Money</SelectItem>
                   </SelectContent>
                 </Select>
-               {errors?.requestedServiceCategory && <p className="text-sm text-destructive">{errors.requestedServiceCategory.join(', ')}</p>}
             </div>
-            <div className="space-y-1">
-              <Label htmlFor="requestedServiceDescription">{t('listings.form.descriptionLabel')}</Label>
-              <Textarea id="requestedServiceDescription" placeholder={t('listings.form.requestDescriptionPlaceholder')} rows={4} required value={requestedServiceDescription} onChange={(e)=>setRequestedServiceDescription(e.target.value)} />
-              {errors?.requestedServiceDescription && <p className="text-sm text-destructive">{errors.requestedServiceDescription.join(', ')}</p>}
-            </div>
+            {requestedKind === 'service' ? (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedServiceTitle">{t('listings.form.titleLabel')}</Label>
+                  <Input id="requestedServiceTitle" placeholder={t('listings.form.requestTitlePlaceholder')} value={requestedServiceTitle} onChange={(e)=>setRequestedServiceTitle(e.target.value)} />
+                  {errors?.requestedServiceTitle && <p className="text-sm text-destructive">{errors.requestedServiceTitle.join(', ')}</p>}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedServiceCategory">{t('listings.form.categoryLabel')}</Label>
+                  <Select value={requestedServiceCategory} onValueChange={setRequestedServiceCategory}>
+                    <SelectTrigger><SelectValue placeholder={t('listings.form.categoryPlaceholder')} /></SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map(category => (
+                        <SelectItem key={`requested-${category}`} value={category}>{category}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors?.requestedServiceCategory && <p className="text-sm text-destructive">{errors.requestedServiceCategory.join(', ')}</p>}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedServiceDescription">{t('listings.form.descriptionLabel')}</Label>
+                  <Textarea id="requestedServiceDescription" placeholder={t('listings.form.requestDescriptionPlaceholder')} rows={4} value={requestedServiceDescription} onChange={(e)=>setRequestedServiceDescription(e.target.value)} />
+                  {errors?.requestedServiceDescription && <p className="text-sm text-destructive">{errors.requestedServiceDescription.join(', ')}</p>}
+                </div>
+              </>
+            ) : null}
+            {requestedKind === 'product' ? (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedProductName">Requested Product</Label>
+                  <Input
+                    id="requestedProductName"
+                    placeholder="e.g. Laptop, Camera, Art Supplies"
+                    value={requestedProductName}
+                    onChange={(e) => setRequestedProductName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedProductDescription">Product Details</Label>
+                  <Textarea
+                    id="requestedProductDescription"
+                    placeholder="Brand, condition, model, or other product details"
+                    rows={4}
+                    value={requestedProductDescription}
+                    onChange={(e) => setRequestedProductDescription(e.target.value)}
+                  />
+                </div>
+              </>
+            ) : null}
+            {requestedKind === 'money' ? (
+              <>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedMoneyAmount">Requested Amount</Label>
+                  <Input
+                    id="requestedMoneyAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 50"
+                    value={requestedMoneyAmount}
+                    onChange={(e) => setRequestedMoneyAmount(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="requestedMoneyCurrency">Currency</Label>
+                  <Input
+                    id="requestedMoneyCurrency"
+                    placeholder="e.g. USD, EUR, EGP"
+                    value={requestedMoneyCurrency}
+                    onChange={(e) => setRequestedMoneyCurrency(e.target.value.toUpperCase())}
+                  />
+                </div>
+              </>
+            ) : null}
              <div className="space-y-1 !mt-12">
                 <Label htmlFor="location">{t('listings.form.locationLabel')}</Label>
-                <Input id="location" placeholder={t('listings.form.locationPlaceholder')} required value={location} onChange={(e)=>setLocation(e.target.value)} />
+                <Input id="location" placeholder={t('listings.form.locationPlaceholder')} value={location} onChange={(e)=>setLocation(e.target.value)} />
+                <div className="flex items-center gap-2 mt-2">
+                  <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+                    {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
+                    Use Current Location
+                  </Button>
+                  {geo ? (
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                      <MapPinIcon className="h-3 w-3" />
+                      {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
+                    </span>
+                  ) : null}
+                </div>
                 {errors?.location && <p className="text-sm text-destructive">{errors.location.join(', ')}</p>}
             </div>
           </div>

@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { EmailAuthProvider, reauthenticateWithCredential, updateEmail, updatePassword } from 'firebase/auth';
 import * as ImageManipulator from 'expo-image-manipulator';
+import * as Location from 'expo-location';
 import { updateUserProfile } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
@@ -28,6 +29,8 @@ export default function EditProfilePage() {
   const [username, setUsername] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('');
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [locating, setLocating] = useState(false);
   const [email, setEmail] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [coverUri, setCoverUri] = useState<string | null>(null);
@@ -50,6 +53,7 @@ export default function EditProfilePage() {
           setDisplayName(data.name ?? '');
           setLocation(data.location ?? '');
           setCountry(data.country ?? '');
+          setGeo(data.geo ? { lat: Number(data.geo.lat), lng: Number(data.geo.lng) } : undefined);
           setUsername(data.profile?.username ?? '');
           setEmail(user.email ?? '');
         }
@@ -129,6 +133,7 @@ export default function EditProfilePage() {
         coverUrl = await getDownloadURL(r);
       }
       const update: any = { name: displayName, location, country };
+      if (geo) update.geo = geo;
       if (username) update.profile = { ...(update.profile || {}), username };
       if (avatarUrl) update.avatarUrl = avatarUrl;
       if (coverUrl) update.profile = { ...(update.profile || {}), coverUrl };
@@ -148,6 +153,32 @@ export default function EditProfilePage() {
       Alert.alert(t('profile.edit.failedTitle'), getErrorMessage(e, t('profile.edit.failedBody')));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function useCurrentLocation() {
+    try {
+      setLocating(true);
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const lat = Number(position.coords.latitude);
+      const lng = Number(position.coords.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        return;
+      }
+      setGeo({ lat, lng });
+      if (!location.trim()) {
+        setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+    } catch {
+      Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+    } finally {
+      setLocating(false);
     }
   }
 
@@ -175,6 +206,12 @@ export default function EditProfilePage() {
             <Input value={location} onChangeText={setLocation} className="mb-3" />
             <Text style={cn('text-sm text-foreground mb-1')}>Country</Text>
             <Input value={country} onChangeText={setCountry} className="mb-3" />
+            <TouchableOpacity onPress={useCurrentLocation} disabled={locating} style={cn('mt-1 mb-3 rounded-md border border-border px-3 py-2 bg-card', locating ? 'opacity-70' : '')}>
+              <Text style={cn('text-foreground text-center')}>{locating ? 'Locating...' : 'Use Current Location'}</Text>
+            </TouchableOpacity>
+            {geo ? (
+              <Text style={cn('text-xs text-muted-foreground mb-3')}>GPS: {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}</Text>
+            ) : null}
             <TouchableOpacity onPress={pickAvatar} style={cn('mt-2 rounded-md border border-dashed border-border px-3 py-2')}>
               <Text style={cn('text-foreground text-center')}>{avatarUri ? 'Change Avatar' : 'Upload Avatar'}</Text>
             </TouchableOpacity>

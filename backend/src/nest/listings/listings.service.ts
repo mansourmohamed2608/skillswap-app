@@ -2,12 +2,26 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import * as admin from 'firebase-admin';
 import { getUserDocument, canCreateListing, incrementListingCount, decrementListingCount, isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
+import { geocodeAddress, readGeoPoint } from '../../core/geo';
 
 @Injectable()
 export class ListingsService {
+  private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
+    const geo = readGeoPoint(value);
+    if (!geo) return undefined;
+    if (geo.lat < -90 || geo.lat > 90) return undefined;
+    if (geo.lng < -180 || geo.lng > 180) return undefined;
+    return geo;
+  }
+
   private isListingActive(status: any): boolean {
     const normalized = String(status || 'open').toLowerCase();
     return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+  }
+
+  private deleteField() {
+    const fv: any = (admin.firestore as any)?.FieldValue;
+    return fv && typeof fv.delete === 'function' ? fv.delete() : null;
   }
 
   async createListing(userId: string, body: any) {
@@ -27,6 +41,9 @@ export class ListingsService {
       { label: 'requestedService.title', value: (listing as any).requestedService?.title },
       { label: 'requestedService.description', value: (listing as any).requestedService?.description },
       { label: 'requestedService.category', value: (listing as any).requestedService?.category },
+      { label: 'requestedProduct.name', value: (listing as any).requestedProduct?.name },
+      { label: 'requestedProduct.description', value: (listing as any).requestedProduct?.description },
+      { label: 'requestedMoney.currency', value: (listing as any).requestedMoney?.currency },
     ]);
     if (banned) {
       throw new BadRequestException({ code: 'content/banned', field: banned.field });
@@ -51,11 +68,44 @@ export class ListingsService {
         ? (admin.firestore.FieldValue as any).serverTimestamp()
         : new Date();
 
+    const listingToSave: any = { ...(listing as any) };
+    const clientGeo = this.normalizeGeo((listing as any)?.geo || (listing as any)?.locationGeo);
+    const locationText = String((listing as any)?.location || '').trim();
+    if ((Object.prototype.hasOwnProperty.call(listing as any, 'geo') || Object.prototype.hasOwnProperty.call(listing as any, 'locationGeo')) && !clientGeo) {
+      throw new BadRequestException('Invalid geo coordinates');
+    }
+    delete listingToSave.locationGeo;
+    if (clientGeo) {
+      listingToSave.geo = {
+        lat: clientGeo.lat,
+        lng: clientGeo.lng,
+        provider: 'device',
+        updatedAt: createdAtVal,
+      };
+    } else {
+      const geo = locationText ? await geocodeAddress(locationText) : null;
+      if (geo) {
+        listingToSave.geo = {
+          lat: geo.point.lat,
+          lng: geo.point.lng,
+          provider: geo.provider,
+          updatedAt: createdAtVal,
+        };
+        listingToSave.locationMeta = {
+          city: geo.city || undefined,
+          country: geo.country || undefined,
+          formattedAddress: geo.formattedAddress || undefined,
+          placeId: geo.placeId || undefined,
+          updatedAt: createdAtVal,
+        };
+      }
+    }
+
     const docRef = await admin
       .firestore()
       .collection('listings')
       .add({
-        ...listing,
+        ...listingToSave,
         userId: ownerId,
         offeredByUserId: ownerId,
         createdByUserId: userId,
@@ -111,6 +161,9 @@ export class ListingsService {
       { label: 'requestedService.title', value: (safeUpdates as any).requestedService?.title },
       { label: 'requestedService.description', value: (safeUpdates as any).requestedService?.description },
       { label: 'requestedService.category', value: (safeUpdates as any).requestedService?.category },
+      { label: 'requestedProduct.name', value: (safeUpdates as any).requestedProduct?.name },
+      { label: 'requestedProduct.description', value: (safeUpdates as any).requestedProduct?.description },
+      { label: 'requestedMoney.currency', value: (safeUpdates as any).requestedMoney?.currency },
     ]);
     if (banned) {
       throw new BadRequestException({ code: 'content/banned', field: banned.field });
@@ -119,6 +172,48 @@ export class ListingsService {
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
         ? (admin.firestore.FieldValue as any).serverTimestamp()
         : new Date();
+
+    const locationTouched = Object.prototype.hasOwnProperty.call(safeUpdates as any, 'location');
+    const geoTouched = Object.prototype.hasOwnProperty.call(safeUpdates as any, 'geo')
+      || Object.prototype.hasOwnProperty.call(safeUpdates as any, 'locationGeo');
+    const clientGeo = this.normalizeGeo((safeUpdates as any).geo || (safeUpdates as any).locationGeo);
+    if (geoTouched && !clientGeo) {
+      throw new BadRequestException('Invalid geo coordinates');
+    }
+    delete (safeUpdates as any).locationGeo;
+
+    if (clientGeo) {
+      (safeUpdates as any).geo = {
+        lat: clientGeo.lat,
+        lng: clientGeo.lng,
+        provider: 'device',
+        updatedAt: updatedAtVal,
+      };
+    } else if (locationTouched) {
+      const locationText = String((safeUpdates as any).location || '').trim();
+      const geo = locationText ? await geocodeAddress(locationText) : null;
+      if (geo) {
+        (safeUpdates as any).geo = {
+          lat: geo.point.lat,
+          lng: geo.point.lng,
+          provider: geo.provider,
+          updatedAt: updatedAtVal,
+        };
+        (safeUpdates as any).locationMeta = {
+          city: geo.city || undefined,
+          country: geo.country || undefined,
+          formattedAddress: geo.formattedAddress || undefined,
+          placeId: geo.placeId || undefined,
+          updatedAt: updatedAtVal,
+        };
+      } else {
+        const del = this.deleteField();
+        if (del) {
+          (safeUpdates as any).geo = del;
+          (safeUpdates as any).locationMeta = del;
+        }
+      }
+    }
 
     await listingRef.set({ ...safeUpdates, updatedAt: updatedAtVal }, { merge: true });
     return { success: true };

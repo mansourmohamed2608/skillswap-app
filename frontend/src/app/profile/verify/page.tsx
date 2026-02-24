@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchKycStatus } from '@/services/kyc';
+import { fetchKycStatus, verifyKycIdWithFiles } from '@/services/kyc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,6 @@ import { ShieldCheck, Loader2, Upload, CheckCircle, XCircle } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
-import { auth } from '@/services/firebase';
 
 export default function VerifyProfilePage() {
   const { user, loading } = useAuth();
@@ -109,25 +108,7 @@ export default function VerifyProfilePage() {
 
     setBusy(true);
     try {
-      const base = process.env.NEXT_PUBLIC_API_BASE || '/api';
-      const token = await auth?.currentUser?.getIdToken();
-
-      const formData = new FormData();
-      formData.append('front', frontFile);
-      formData.append('back', backFile);
-
-      const resp = await fetch(`${base}/kyc/id/verify`, {
-        method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body: formData,
-      });
-
-      if (!resp.ok) {
-        const error = await resp.json();
-        throw new Error(error.message || 'Verification failed');
-      }
-
-      const data = await resp.json();
+      const data = await verifyKycIdWithFiles(frontFile, backFile);
       setStatus(data.result);
 
       if (data.result?.status === 'VERIFIED') {

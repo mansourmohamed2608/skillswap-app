@@ -6,7 +6,7 @@ The backend will persist subscription payments to Postgres so you can run analyt
 - `savePaymentRecord(record)`: Inserts a row when a checkout session is created.
 - `updatePaymentStatus(sessionId, status)`: Updates the row when Geidea webhook reports a new status.
 
-Both are implemented in `backend/src/postgres.ts`. They are no-ops if a Postgres pool isn't configured.
+Both are implemented in `backend/src/core/postgres.ts`. They are no-ops if a Postgres pool isn't configured.
 
 ## Table schema
 See `payments.sql` for a ready-to-run schema:
@@ -17,12 +17,12 @@ See `payments.sql` for a ready-to-run schema:
 
 ## Configure Postgres
 
-Set the connection string either via environment variable or Firebase Functions config:
+Set the connection string with environment variables. For production, keep secrets in Secret Manager:
 
-- Env var:
+- Local env var:
   - `POSTGRES_CONNECTION_STRING="postgres://user:pass@host:5432/dbname?sslmode=require"`
-- Firebase Functions Config:
-  - `firebase functions:config:set postgres.connection_string="postgres://..."`
+- Firebase Secret Manager:
+  - `firebase functions:secrets:set POSTGRES_CONNECTION_STRING`
 
 If your provider requires SSL, include `sslmode=require` in the connection string.
 
@@ -36,7 +36,6 @@ If your provider requires SSL, include `sslmode=require` in the connection strin
 With mock payments, you don't need a running Postgres. The functions will log a warning and skip inserts/updates. To enable mock payments:
 
 - Environment variable: `USE_MOCK_PAYMENTS=1`
-- Or Functions config: `firebase functions:config:set payments.use_mock=1`
 
 ## Testing end-to-end (optional)
 
@@ -49,6 +48,10 @@ With mock payments, you don't need a running Postgres. The functions will log a 
 
 ## Production notes
 
-- When you switch to Geidea, set:
-  - `geidea.merchant_id`, `geidea.api_password`, `geidea.callback_url`, and optional `geidea.base_url` via `firebase functions:config:set`.
+- When you switch to Geidea, set these variables:
+  - `GEIDEA_MERCHANT_ID`
+  - `GEIDEA_API_PASSWORD`
+  - `GEIDEA_CALLBACK_URL`
+  - Optional: `GEIDEA_BASE_URL`, `GEIDEA_WEBHOOK_SECRET`
+  - For secrets, use: `firebase functions:secrets:set <NAME>`
 - Keep returning HTTP 403 from business-logic endpoints for membership/limit violations to keep frontend UX consistent.

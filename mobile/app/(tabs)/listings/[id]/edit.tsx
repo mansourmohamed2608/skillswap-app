@@ -13,6 +13,7 @@ import { storage } from '@/services/firebase';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
+import * as Location from 'expo-location';
 
 export default function EditListingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,7 +29,14 @@ export default function EditListingScreen() {
   const [requestedTitle, setRequestedTitle] = useState('');
   const [requestedCategory, setRequestedCategory] = useState('');
   const [requestedDescription, setRequestedDescription] = useState('');
+  const [requestedKind, setRequestedKind] = useState<'service' | 'product' | 'money'>('service');
+  const [requestedProductName, setRequestedProductName] = useState('');
+  const [requestedProductDescription, setRequestedProductDescription] = useState('');
+  const [requestedMoneyAmount, setRequestedMoneyAmount] = useState('');
+  const [requestedMoneyCurrency, setRequestedMoneyCurrency] = useState('USD');
   const [location, setLocation] = useState('');
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [locating, setLocating] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [pickedImage, setPickedImage] = useState(false);
 
@@ -48,7 +56,24 @@ export default function EditListingScreen() {
         setRequestedTitle(data.requestedService?.title || '');
         setRequestedCategory(data.requestedService?.category || '');
         setRequestedDescription(data.requestedService?.description || '');
+        const inferredKind =
+          data.requestedKind ||
+          (String(data.requestedService?.category || '').toLowerCase() === 'money'
+            ? 'money'
+            : String(data.requestedService?.category || '').toLowerCase() === 'product'
+              ? 'product'
+              : 'service');
+        setRequestedKind(inferredKind as 'service' | 'product' | 'money');
+        setRequestedProductName(data.requestedProduct?.name || '');
+        setRequestedProductDescription(data.requestedProduct?.description || '');
+        setRequestedMoneyAmount(
+          data.requestedMoney?.amount !== undefined && data.requestedMoney?.amount !== null
+            ? String(data.requestedMoney.amount)
+            : ''
+        );
+        setRequestedMoneyCurrency(data.requestedMoney?.currency || 'USD');
         setLocation(data.location || '');
+        setGeo(data.geo || undefined);
         setImageUri(data.offeredService?.imageUrl || null);
       } finally {
         setLoading(false);
@@ -79,6 +104,9 @@ export default function EditListingScreen() {
       { label: 'requestedTitle', value: requestedTitle },
       { label: 'requestedCategory', value: requestedCategory },
       { label: 'requestedDescription', value: requestedDescription },
+      { label: 'requestedProductName', value: requestedProductName },
+      { label: 'requestedProductDescription', value: requestedProductDescription },
+      { label: 'requestedMoneyCurrency', value: requestedMoneyCurrency },
       { label: 'location', value: location },
     ]);
     if (banned) {
@@ -86,7 +114,24 @@ export default function EditListingScreen() {
       return;
     }
     if (!title.trim()) return Alert.alert(t('common.error') || 'Error', t('listings.missing_title') || 'Offer title is required.');
-    if (!requestedTitle.trim()) return Alert.alert(t('common.error') || 'Error', t('listings.missing_request') || 'Request title is required.');
+    if (!location.trim() && !geo) {
+      return Alert.alert(t('common.error') || 'Error', 'Please add location text or use current GPS location.');
+    }
+    if (requestedKind === 'service' && !requestedTitle.trim()) {
+      return Alert.alert(t('common.error') || 'Error', t('listings.missing_request') || 'Request title is required.');
+    }
+    if (requestedKind === 'product' && !requestedProductName.trim()) {
+      return Alert.alert(t('common.error') || 'Error', 'Requested product is required.');
+    }
+    if (requestedKind === 'money') {
+      const amount = Number(requestedMoneyAmount);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return Alert.alert(t('common.error') || 'Error', 'Requested amount must be greater than zero.');
+      }
+      if (!requestedMoneyCurrency.trim()) {
+        return Alert.alert(t('common.error') || 'Error', 'Requested currency is required.');
+      }
+    }
     setSaving(true);
     try {
       let imageUrl = imageUri || undefined;
@@ -98,6 +143,36 @@ export default function EditListingScreen() {
         await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
         imageUrl = await getDownloadURL(r);
       }
+      let requestedServicePayload: { title: string; category: string; description: string };
+      let requestedProductPayload: { name: string; description?: string } | undefined;
+      let requestedMoneyPayload: { amount: number; currency: string } | undefined;
+      if (requestedKind === 'service') {
+        requestedServicePayload = {
+          title: requestedTitle.trim(),
+          category: requestedCategory.trim() || 'General',
+          description: requestedDescription.trim(),
+        };
+      } else if (requestedKind === 'product') {
+        requestedProductPayload = {
+          name: requestedProductName.trim(),
+          description: requestedProductDescription.trim() || undefined,
+        };
+        requestedServicePayload = {
+          title: requestedProductPayload.name,
+          category: 'Product',
+          description: requestedProductPayload.description || 'Product exchange',
+        };
+      } else {
+        requestedMoneyPayload = {
+          amount: Number(requestedMoneyAmount),
+          currency: requestedMoneyCurrency.trim().toUpperCase(),
+        };
+        requestedServicePayload = {
+          title: `${requestedMoneyPayload.amount} ${requestedMoneyPayload.currency}`,
+          category: 'Money',
+          description: 'Cash payment exchange',
+        };
+      }
       const payload = {
         offeredService: {
           title: title.trim(),
@@ -105,12 +180,12 @@ export default function EditListingScreen() {
           description: description.trim(),
           imageUrl,
         },
-        requestedService: {
-          title: requestedTitle.trim(),
-          category: requestedCategory.trim() || 'General',
-          description: requestedDescription.trim(),
-        },
+        requestedService: requestedServicePayload,
+        requestedKind,
+        requestedProduct: requestedProductPayload,
+        requestedMoney: requestedMoneyPayload,
         location: location.trim(),
+        geo,
         status: listing?.status || 'open',
         postedDate: listing?.postedDate || new Date().toISOString(),
       };
@@ -124,6 +199,32 @@ export default function EditListingScreen() {
       Alert.alert(t('common.error') || 'Error', msg);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function useCurrentLocation() {
+    try {
+      setLocating(true);
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        return;
+      }
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const lat = Number(position.coords.latitude);
+      const lng = Number(position.coords.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        return;
+      }
+      setGeo({ lat, lng });
+      if (!location.trim()) {
+        setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+      }
+    } catch {
+      Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+    } finally {
+      setLocating(false);
     }
   }
 
@@ -154,13 +255,74 @@ export default function EditListingScreen() {
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.description')}</Text>
         <Textarea value={description} onChangeText={setDescription} />
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_title')}</Text>
-        <Input value={requestedTitle} onChangeText={setRequestedTitle} />
-        <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
-        <Input value={requestedCategory} onChangeText={setRequestedCategory} placeholder={t('listings.categoryPlaceholder')} />
-        <Text style={cn('text-sm text-muted-foreground')}>{t('listings.request_description') || 'Request description'}</Text>
-        <Textarea value={requestedDescription} onChangeText={setRequestedDescription} />
+        <View style={cn('flex-row gap-2')}>
+          {(['service', 'product', 'money'] as const).map((kind) => (
+            <TouchableOpacity
+              key={kind}
+              onPress={() => setRequestedKind(kind)}
+              style={cn(
+                'rounded-full border px-3 py-1.5',
+                requestedKind === kind ? 'border-primary bg-primary/10' : 'border-border'
+              )}
+            >
+              <Text style={cn('text-xs text-foreground')}>{kind.toUpperCase()}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        {requestedKind === 'service' ? (
+          <>
+            <Input value={requestedTitle} onChangeText={setRequestedTitle} />
+            <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
+            <Input value={requestedCategory} onChangeText={setRequestedCategory} placeholder={t('listings.categoryPlaceholder')} />
+            <Text style={cn('text-sm text-muted-foreground')}>{t('listings.request_description') || 'Request description'}</Text>
+            <Textarea value={requestedDescription} onChangeText={setRequestedDescription} />
+          </>
+        ) : null}
+        {requestedKind === 'product' ? (
+          <>
+            <Input
+              value={requestedProductName}
+              onChangeText={setRequestedProductName}
+              placeholder="Requested product"
+            />
+            <Textarea
+              value={requestedProductDescription}
+              onChangeText={setRequestedProductDescription}
+              placeholder="Product details"
+            />
+          </>
+        ) : null}
+        {requestedKind === 'money' ? (
+          <>
+            <Input
+              value={requestedMoneyAmount}
+              onChangeText={setRequestedMoneyAmount}
+              placeholder="Requested amount"
+              keyboardType="decimal-pad"
+            />
+            <Input
+              value={requestedMoneyCurrency}
+              onChangeText={(v) => setRequestedMoneyCurrency(v.toUpperCase())}
+              placeholder="Currency (USD, EGP...)"
+            />
+          </>
+        ) : null}
         <Text style={cn('text-sm text-muted-foreground')}>{t('listings.location') || 'Location'}</Text>
         <Input value={location} onChangeText={setLocation} />
+        <TouchableOpacity
+          onPress={useCurrentLocation}
+          disabled={locating}
+          style={cn('rounded-lg border border-border px-4 py-2', locating ? 'opacity-70' : '')}
+        >
+          <Text style={cn('text-center text-foreground')}>
+            {locating ? 'Locating...' : 'Use Current Location'}
+          </Text>
+        </TouchableOpacity>
+        {geo ? (
+          <Text style={cn('text-xs text-muted-foreground')}>
+            GPS: {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
+          </Text>
+        ) : null}
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={{ width: '100%', height: 160, borderRadius: 12 }} resizeMode="cover" />
         ) : null}

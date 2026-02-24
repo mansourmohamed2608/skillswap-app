@@ -53,10 +53,22 @@ export async function toApiError(res: Response, fallback?: string) {
   return new ApiError(res.status, message);
 }
 
-const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!;
-const FUNCTIONS_BASE =
-  process.env.NEXT_PUBLIC_FUNCTIONS_BASE ||
-  `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`; // Firebase Functions emulator
+const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
+
+function inferFunctionsBase() {
+  if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
+  if (!PROJECT_ID) return '';
+  if (typeof window === 'undefined') return `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`;
+  const host = window.location.hostname || '';
+  const isLocal = host === 'localhost' || host === '127.0.0.1';
+  return isLocal
+    ? `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`
+    : `https://europe-west3-${PROJECT_ID}.cloudfunctions.net`;
+}
+
+function getFunctionsBase() {
+  return inferFunctionsBase();
+}
 
 async function authedFetch(path: string, init?: RequestInit) {
   const u = auth?.currentUser;
@@ -76,7 +88,8 @@ async function authedFetch(path: string, init?: RequestInit) {
       ...initHeaders,
     };
     try {
-      return await fetch(`${FUNCTIONS_BASE}${path}`, {
+      const base = getFunctionsBase();
+      return await fetch(`${base}${path}`, {
         ...init,
         method,
         headers: mergedHeaders,
@@ -118,7 +131,7 @@ export async function mockCompletePayment(sessionId: string) {
 }
 
 export async function mockCompletePaymentPublic(sessionId: string, baseUrl?: string) {
-  const root = baseUrl || FUNCTIONS_BASE;
+  const root = baseUrl || getFunctionsBase();
   const res = await fetch(`${root}/api/payments/mock-complete`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -509,7 +522,8 @@ export async function fetchAdminAnalytics(limit = 200) {
 export async function fetchReviewsForListing(listingId: string, limit?: number) {
   if (!listingId) throw new Error('Missing listing id');
   const query = typeof limit === 'number' ? `?limit=${encodeURIComponent(String(limit))}` : '';
-  const res = await fetch(`${FUNCTIONS_BASE}/api/reviews/listing/${encodeURIComponent(listingId)}${query}`, {
+  const base = getFunctionsBase();
+  const res = await fetch(`${base}/api/reviews/listing/${encodeURIComponent(listingId)}${query}`, {
     method: 'GET',
   });
   if (!res.ok) throw await toApiError(res);
@@ -519,7 +533,8 @@ export async function fetchReviewsForListing(listingId: string, limit?: number) 
 export async function fetchReviewsForUser(userId: string, limit?: number) {
   if (!userId) throw new Error('Missing user id');
   const query = typeof limit === 'number' ? `?limit=${encodeURIComponent(String(limit))}` : '';
-  const res = await fetch(`${FUNCTIONS_BASE}/api/reviews/user/${encodeURIComponent(userId)}${query}`, {
+  const base = getFunctionsBase();
+  const res = await fetch(`${base}/api/reviews/user/${encodeURIComponent(userId)}${query}`, {
     method: 'GET',
   });
   if (!res.ok) throw await toApiError(res);
@@ -528,7 +543,8 @@ export async function fetchReviewsForUser(userId: string, limit?: number) {
 
 export async function createReview(args: { listingId: string; rating: number; comment: string; reviewerName?: string }) {
   const token = await auth?.currentUser?.getIdToken();
-  const res = await fetch(`${FUNCTIONS_BASE}/api/reviews`, {
+  const base = getFunctionsBase();
+  const res = await fetch(`${base}/api/reviews`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

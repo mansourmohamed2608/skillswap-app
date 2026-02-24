@@ -2,14 +2,22 @@ import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/com
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { sendInAppNotification } from '../../core/notifications';
+import { geocodeAddress, haversineDistanceKm, readGeoPoint, type GeoPoint } from '../../core/geo';
 
 @Injectable()
 export class MatchmakingService {
   async recommendations(uid: string) {
     const userDoc = await this.getVerifiedUser(uid);
     const udata: any = userDoc.data() || {};
-    const userCountry = udata.country || udata.location?.country || '';
-    const userCity = udata.city || udata.location?.city || '';
+    const userLoc = this.readLocationMeta(udata);
+    const userCountry = userLoc.country;
+    const userCity = userLoc.city;
+    let userGeo = this.readUserGeo(udata);
+    if (!userGeo) {
+      const query = [udata.location, userLoc.city, userLoc.country].filter(Boolean).join(', ');
+      const geocoded = query ? await geocodeAddress(query) : null;
+      userGeo = geocoded?.point;
+    }
 
     const myListSnap = await admin.firestore().collection('listings')
       .where('userId', '==', uid)
@@ -30,15 +38,33 @@ export class MatchmakingService {
     const scored = items.map(l => {
       let score = 0;
       const cat = l.category || l.offeredService?.category || '';
-      const loc = l.location || '';
+      const listingLoc = this.readLocationMeta(l);
+      const listingGeo = this.readListingGeo(l);
       if (prefCategory && cat && cat.toLowerCase() === prefCategory.toLowerCase()) score += 3;
-      if (userCountry && typeof loc === 'string' && loc.toLowerCase().includes(userCountry.toLowerCase())) score += 2;
-      if (userCity && typeof loc === 'string' && loc.toLowerCase().includes(userCity.toLowerCase())) score += 1;
+      const sameCountry = Boolean(userCountry && listingLoc.country && listingLoc.country.toLowerCase() === userCountry.toLowerCase());
+      const sameCity = Boolean(userCity && listingLoc.city && listingLoc.city.toLowerCase() === userCity.toLowerCase());
+      if (sameCountry) score += 2;
+      if (sameCity) score += 3;
+      const distanceKm = userGeo && listingGeo ? haversineDistanceKm(userGeo, listingGeo) : undefined;
+      if (distanceKm !== undefined) {
+        if (distanceKm <= 5) score += 5;
+        else if (distanceKm <= 20) score += 4;
+        else if (distanceKm <= 50) score += 3;
+        else if (distanceKm <= 100) score += 2;
+        else if (distanceKm <= 250) score += 1;
+      }
       const ts = l.createdAt && typeof (l.createdAt as any).toDate === 'function' ? (l.createdAt as any).toDate() : (l.createdAt ? new Date(l.createdAt) : new Date());
       const ageDays = Math.max(0, (Date.now() - ts.getTime()) / (1000 * 60 * 60 * 24));
       score += Math.max(0, 3 - Math.floor(ageDays));
-      return { l, score };
-    }).sort((a, b) => b.score - a.score).slice(0, 12).map(x => x.l);
+      return { l, score, sameCity, sameCountry, distanceKm };
+    }).sort((a, b) => {
+      if (a.distanceKm !== undefined && b.distanceKm !== undefined) return a.distanceKm - b.distanceKm;
+      if (a.distanceKm !== undefined && b.distanceKm === undefined) return -1;
+      if (a.distanceKm === undefined && b.distanceKm !== undefined) return 1;
+      if (a.sameCity !== b.sameCity) return a.sameCity ? -1 : 1;
+      if (a.sameCountry !== b.sameCountry) return a.sameCountry ? -1 : 1;
+      return b.score - a.score;
+    }).slice(0, 12).map(x => x.l);
 
     return { recommendations: scored };
   }
@@ -46,8 +72,15 @@ export class MatchmakingService {
   async cycles3(uid: string) {
     const userDoc = await this.getVerifiedUser(uid);
     const udata: any = userDoc.data() || {};
-    const userCountry = (udata.country || udata.location?.country || '').toString();
-    const userCity = (udata.city || udata.location?.city || '').toString();
+    const userLoc = this.readLocationMeta(udata);
+    const userCountry = userLoc.country;
+    const userCity = userLoc.city;
+    let userGeo = this.readUserGeo(udata);
+    if (!userGeo) {
+      const query = [udata.location, userLoc.city, userLoc.country].filter(Boolean).join(', ');
+      const geocoded = query ? await geocodeAddress(query) : null;
+      userGeo = geocoded?.point;
+    }
 
     const snap = await admin.firestore().collection('requests')
       .where('status', '==', 'pending')
@@ -119,22 +152,20 @@ export class MatchmakingService {
       usersMap.set(doc.id, ud);
     }
 
-    function getCityCountry(u: string): { city: string; country: string } {
-      const d = usersMap.get(u) || {};
-      return {
-        city: (d.city || d.location?.city || '').toString(),
-        country: (d.country || d.location?.country || '').toString(),
-      };
-    }
+    const getCityCountry = (u: string): { city: string; country: string } => this.readLocationMeta(usersMap.get(u) || {});
+    const getGeo = (u: string): GeoPoint | undefined => this.readUserGeo(usersMap.get(u) || {});
 
     const latestListingTs = new Map<string, number>();
     const listingSummary = new Map<string, { id: string; title?: string; category?: string }>();
+    const listingGeo = new Map<string, GeoPoint>();
     for (const doc of listingDocs) {
       const ld: any = (doc.data() as any) || {};
       const ts = ld.createdAt && typeof (ld.createdAt as any).toDate === 'function'
         ? (ld.createdAt as any).toDate().getTime()
         : (ld.createdAt ? new Date(ld.createdAt).getTime() : 0);
       latestListingTs.set(doc.id, ts);
+      const geo = this.readListingGeo(ld);
+      if (geo) listingGeo.set(doc.id, geo);
       const title = ld.title || ld.name || ld.offeredService?.title || ld.offeredService?.name || ld.category;
       const category = ld.category || ld.offeredService?.category;
       listingSummary.set(doc.id, { id: doc.id, title, category });
@@ -145,6 +176,24 @@ export class MatchmakingService {
       const locs = [getCityCountry(a), getCityCountry(b), getCityCountry(cc)];
       const cityMatch = userCity ? locs.some(l => l.city && l.city.toLowerCase() === userCity.toLowerCase()) : false;
       const countryMatch = userCountry ? locs.some(l => l.country && l.country.toLowerCase() === userCountry.toLowerCase()) : false;
+      const otherUsers = c.users.filter((u) => u !== uid);
+      const distances = userGeo
+        ? otherUsers.map((u) => {
+            const g = getGeo(u);
+            return g ? haversineDistanceKm(userGeo, g) : undefined;
+          }).filter((d): d is number => d !== undefined)
+        : [];
+      const listingDistances = userGeo
+        ? c.edges.map((e) => {
+            const g = listingGeo.get(e.listingId);
+            return g ? haversineDistanceKm(userGeo, g) : undefined;
+          }).filter((d): d is number => d !== undefined)
+        : [];
+      const distanceKm = distances.length
+        ? Math.min(...distances)
+        : listingDistances.length
+          ? Math.min(...listingDistances)
+          : undefined;
       const latestReqTs = Math.max(c.edges[0].createdAt, c.edges[1].createdAt, c.edges[2].createdAt);
       const latestListTs = Math.max(
         latestListingTs.get(c.edges[0].listingId) || 0,
@@ -163,8 +212,11 @@ export class MatchmakingService {
         willGive: willGiveId ? listingSummary.get(willGiveId) : undefined,
       };
       const participants = c.users.map(u => ({ uid: u, name: (usersMap.get(u) || {}).name || (usersMap.get(u) || {}).displayName }));
-      return { c, cityMatch, countryMatch, latestTs, perspective, participants };
+      return { c, cityMatch, countryMatch, distanceKm, latestTs, perspective, participants };
     }).sort((x, y) => {
+      if (x.distanceKm !== undefined && y.distanceKm !== undefined) return x.distanceKm - y.distanceKm;
+      if (x.distanceKm !== undefined && y.distanceKm === undefined) return -1;
+      if (x.distanceKm === undefined && y.distanceKm !== undefined) return 1;
       if (x.cityMatch !== y.cityMatch) return x.cityMatch ? -1 : 1;
       if (x.countryMatch !== y.countryMatch) return x.countryMatch ? -1 : 1;
       return y.latestTs - x.latestTs;
@@ -182,8 +234,15 @@ export class MatchmakingService {
   async mutual2(uid: string) {
     const userDoc = await this.getVerifiedUser(uid);
     const udata: any = userDoc.data() || {};
-    const userCountry = (udata.country || udata.location?.country || '').toString();
-    const userCity = (udata.city || udata.location?.city || '').toString();
+    const userLoc = this.readLocationMeta(udata);
+    const userCountry = userLoc.country;
+    const userCity = userLoc.city;
+    let userGeo = this.readUserGeo(udata);
+    if (!userGeo) {
+      const query = [udata.location, userLoc.city, userLoc.country].filter(Boolean).join(', ');
+      const geocoded = query ? await geocodeAddress(query) : null;
+      userGeo = geocoded?.point;
+    }
 
     const snap = await admin.firestore().collection('requests')
       .where('status', '==', 'pending')
@@ -217,6 +276,7 @@ export class MatchmakingService {
     const isListingFulfilled = new Map<string, boolean>();
     const listingTs = new Map<string, number>();
     const listingSummary = new Map<string, { id: string; title?: string; category?: string }>();
+    const listingGeo = new Map<string, GeoPoint>();
     for (const doc of listingDocs) {
       const ld = (doc.data() as any) || {};
       const status = String(ld.status || '').toLowerCase();
@@ -225,6 +285,8 @@ export class MatchmakingService {
         ? (ld.createdAt as any).toDate().getTime()
         : (ld.createdAt ? new Date(ld.createdAt).getTime() : 0);
       listingTs.set(doc.id, ts);
+      const geo = this.readListingGeo(ld);
+      if (geo) listingGeo.set(doc.id, geo);
       const title = ld.title || ld.name || ld.offeredService?.title || ld.offeredService?.name || ld.category;
       const category = ld.category || ld.offeredService?.category;
       listingSummary.set(doc.id, { id: doc.id, title, category });
@@ -246,16 +308,21 @@ export class MatchmakingService {
     const userDocs = await Promise.all(Array.from(userIds).map(id => admin.firestore().collection('users').doc(id).get()));
     const usersMap = new Map<string, any>();
     for (const doc of userDocs) usersMap.set(doc.id, (doc.data() as any) || {});
-    const getCityCountry = (u: string) => ({
-      city: ((usersMap.get(u) || {}).city || (usersMap.get(u) || {}).location?.city || '').toString(),
-      country: ((usersMap.get(u) || {}).country || (usersMap.get(u) || {}).location?.country || '').toString(),
-    });
+    const getCityCountry = (u: string) => this.readLocationMeta(usersMap.get(u) || {});
+    const getGeo = (u: string): GeoPoint | undefined => this.readUserGeo(usersMap.get(u) || {});
 
     const sorted = pairs.map(p => {
       const [a, b] = p.users;
       const locs = [getCityCountry(a), getCityCountry(b)];
       const cityMatch = userCity ? locs.some(l => l.city && l.city.toLowerCase() === userCity.toLowerCase()) : false;
       const countryMatch = userCountry ? locs.some(l => l.country && l.country.toLowerCase() === userCountry.toLowerCase()) : false;
+      const otherId = a === uid ? b : a;
+      const otherGeo = getGeo(otherId);
+      const pairListingGeos = [listingGeo.get(p.edges[0].listingId), listingGeo.get(p.edges[1].listingId)].filter((g): g is GeoPoint => Boolean(g));
+      const listingDistanceKm = userGeo && pairListingGeos.length
+        ? Math.min(...pairListingGeos.map((g) => haversineDistanceKm(userGeo!, g)))
+        : undefined;
+      const distanceKm = userGeo && otherGeo ? haversineDistanceKm(userGeo, otherGeo) : listingDistanceKm;
       const latestReqTs = Math.max(p.edges[0].createdAt, p.edges[1].createdAt);
       const latestListTs = Math.max(listingTs.get(p.edges[0].listingId) || 0, listingTs.get(p.edges[1].listingId) || 0);
       const latestTs = Math.max(latestReqTs, latestListTs);
@@ -269,8 +336,11 @@ export class MatchmakingService {
         willGive: willGiveId ? listingSummary.get(willGiveId) : undefined,
       };
       const participants = p.users.map(u => ({ uid: u, name: (usersMap.get(u) || {}).name || (usersMap.get(u) || {}).displayName }));
-      return { p, cityMatch, countryMatch, latestTs, perspective, participants };
+      return { p, cityMatch, countryMatch, distanceKm, latestTs, perspective, participants };
     }).sort((x, y) => {
+      if (x.distanceKm !== undefined && y.distanceKm !== undefined) return x.distanceKm - y.distanceKm;
+      if (x.distanceKm !== undefined && y.distanceKm === undefined) return -1;
+      if (x.distanceKm === undefined && y.distanceKm !== undefined) return 1;
       if (x.cityMatch !== y.cityMatch) return x.cityMatch ? -1 : 1;
       if (x.countryMatch !== y.countryMatch) return x.countryMatch ? -1 : 1;
       return y.latestTs - x.latestTs;
@@ -412,6 +482,29 @@ export class MatchmakingService {
     }
 
     return { ok: true, key, acceptedCount: (acceptedBy || []).length };
+  }
+
+  private readLocationMeta(data: any): { city: string; country: string } {
+    const raw = data || {};
+    const rawLocationText = typeof raw.location === 'string' ? raw.location : '';
+    const parts = rawLocationText.split(',').map((v: string) => String(v || '').trim()).filter(Boolean);
+    const guessedCity = parts.length ? parts[0] : '';
+    const guessedCountry = rawLocationText.includes(',')
+      ? parts.slice(-1)[0] || ''
+      : '';
+    const city = String(raw.city || raw.locationMeta?.city || raw.location?.city || guessedCity || rawLocationText || '').trim();
+    const country = String(raw.country || raw.locationMeta?.country || raw.location?.country || guessedCountry || '').trim();
+    return { city, country };
+  }
+
+  private readUserGeo(data: any): GeoPoint | undefined {
+    const raw = data || {};
+    return readGeoPoint(raw.geo || raw.locationGeo || undefined);
+  }
+
+  private readListingGeo(data: any): GeoPoint | undefined {
+    const raw = data || {};
+    return readGeoPoint(raw.geo || raw.locationGeo || undefined);
   }
 
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {

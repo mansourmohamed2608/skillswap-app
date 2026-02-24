@@ -46,12 +46,21 @@ const DEV_ORIGINS = new Set([
 ]);
 
 const ALLOWED_ORIGINS = IS_PRODUCTION ? PROD_ORIGINS : new Set([...PROD_ORIGINS, ...DEV_ORIGINS]);
+const EXTRA_ORIGINS = String(process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((v) => v.trim())
+  .filter(Boolean);
+for (const origin of EXTRA_ORIGINS) ALLOWED_ORIGINS.add(origin);
+
+function isHostedAppOrigin(origin: string) {
+  return /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.hosted\.app$/i.test(origin);
+}
 
 const corsOptions: cors.CorsOptions = {
   origin: (origin, cb) => {
     // Allow requests with no origin (mobile apps, curl, Postman) in development
     if (!origin && !IS_PRODUCTION) return cb(null, true);
-    if (!origin || ALLOWED_ORIGINS.has(origin)) return cb(null, true);
+    if (!origin || ALLOWED_ORIGINS.has(origin) || isHostedAppOrigin(origin)) return cb(null, true);
     logger.warn({ origin, event: 'cors_blocked' }, 'CORS blocked origin');
     return cb(new Error('Not allowed by CORS'));
   },
@@ -130,7 +139,8 @@ const webhookLimiter = rateLimit({
   limit: (req) => (hasWebhookSignature(req) ? 600 : 5),
   standardHeaders: true,
   legacyHeaders: false,
-  validate: false,  keyGenerator: (req) => {
+  validate: { ip: false, trustProxy: false, xForwardedForHeader: false },
+  keyGenerator: (req) => {
     const xf = (req.headers['x-forwarded-for'] as string) || '';
     const ip = (req as any)._clientIp || req.ip || xf.split(',')[0]?.trim() || '127.0.0.1';
     const signature = getWebhookSignature(req);
@@ -192,7 +202,7 @@ const apiLimiter = rateLimit({
   limit: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  validate: false,
+  validate: { ip: false, trustProxy: false, xForwardedForHeader: false },
   keyGenerator: (req) => {
     const auth = (req.headers.authorization || '').toString();
     const m = /^Bearer (.+)$/.exec(auth);

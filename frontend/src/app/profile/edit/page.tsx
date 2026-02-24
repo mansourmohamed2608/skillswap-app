@@ -19,6 +19,7 @@ import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
+import { LocateFixedIcon, Loader2, MapPinIcon } from 'lucide-react';
 
 // Lazy-load the cropper dialog on client only to keep initial bundle smaller
 const CoverCropperDialog = dynamic(() => import('@/features/profile/components/CoverCropperDialog'), { ssr: false });
@@ -39,6 +40,8 @@ export default function EditProfilePage() {
   const [username, setUsername] = useState('');
   const [location, setLocation] = useState('');
   const [country, setCountry] = useState('');
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [locating, setLocating] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -73,6 +76,7 @@ export default function EditProfilePage() {
           setDisplayName(data.name ?? '');
           setLocation(data.location ?? '');
           setCountry(data.country ?? '');
+          setGeo(data.geo ? { lat: Number(data.geo.lat), lng: Number(data.geo.lng) } : undefined);
           // Username is stored under profile.username
           setUsername(data.profile?.username ?? '');
           setMembershipPlan(data.membership?.plan ?? null);
@@ -112,6 +116,41 @@ export default function EditProfilePage() {
     };
     reader.readAsDataURL(file);
   };
+
+  async function useCurrentLocation() {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      setError('Geolocation is not supported by this browser.');
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = Number(position.coords.latitude);
+        const lng = Number(position.coords.longitude);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          setError('Unable to read your current location.');
+          setLocating(false);
+          return;
+        }
+        setGeo({ lat, lng });
+        if (!location.trim()) setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        setLocating(false);
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setError('Location permission denied. Please enable it in browser settings.');
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setError('Location unavailable. Please check your device settings.');
+        } else if (err.code === err.TIMEOUT) {
+          setError('Location request timed out. Please try again.');
+        } else {
+          setError('Unable to get your current location.');
+        }
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -178,6 +217,7 @@ export default function EditProfilePage() {
         name: displayName,
         location,
         country,
+        ...(geo ? { geo } : {}),
       };
       // Nested profile fields
       const nested: any = {};
@@ -276,6 +316,18 @@ export default function EditProfilePage() {
                   placeholder={t('profile.edit.countryLabel')}
                 />
               </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+                {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
+                Use Current Location
+              </Button>
+              {geo ? (
+                <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                  <MapPinIcon className="h-3 w-3" />
+                  {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
+                </span>
+              ) : null}
             </div>
             <div>
               <Label htmlFor="avatar">{t('profile.edit.avatarLabel')}</Label>

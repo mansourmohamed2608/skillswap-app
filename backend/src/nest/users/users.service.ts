@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
+import { geocodeAddress, readGeoPoint } from '../../core/geo';
 
 export class StatusError extends Error {
   status: number;
@@ -13,9 +14,22 @@ export class StatusError extends Error {
 
 @Injectable()
 export class UsersService {
+  private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
+    const geo = readGeoPoint(value);
+    if (!geo) return undefined;
+    if (geo.lat < -90 || geo.lat > 90) return undefined;
+    if (geo.lng < -180 || geo.lng > 180) return undefined;
+    return geo;
+  }
+
   private serverTimestamp() {
     const fv: any = (admin.firestore as any)?.FieldValue;
     return fv && typeof fv.serverTimestamp === 'function' ? fv.serverTimestamp() : new Date();
+  }
+
+  private deleteField() {
+    const fv: any = (admin.firestore as any)?.FieldValue;
+    return fv && typeof fv.delete === 'function' ? fv.delete() : null;
   }
 
   private buildPublicProfile(uid: string, data: Record<string, any>) {
@@ -71,6 +85,7 @@ export class UsersService {
       throw new StatusError(404, 'User not found');
     }
     const membership = userSnap.get('membership');
+    const current = userSnap.data() || {};
     const isBusinessPlan = membership?.plan === 'Business' && isMembershipActive(membership);
 
     const blocked = new Set(['membership', 'kyc', 'role', 'rating', 'ratingSum', 'reviewsCount']);
@@ -126,6 +141,62 @@ export class UsersService {
     ]);
     if (banned) {
       throw new StatusError(400, 'content/banned');
+    }
+
+    const geoTouched = Object.prototype.hasOwnProperty.call(sanitized, 'geo')
+      || Object.prototype.hasOwnProperty.call(sanitized, 'locationGeo');
+    const clientGeo = this.normalizeGeo((sanitized as any).geo || (sanitized as any).locationGeo);
+    if (geoTouched && !clientGeo) {
+      throw new StatusError(400, 'Invalid geo coordinates');
+    }
+    if (geoTouched) {
+      delete (sanitized as any).locationGeo;
+    }
+
+    const locationTouched = ['location', 'city', 'country'].some((k) => Object.prototype.hasOwnProperty.call(sanitized, k));
+    if (clientGeo) {
+      sanitized.geo = {
+        lat: clientGeo.lat,
+        lng: clientGeo.lng,
+        provider: 'device',
+        updatedAt: this.serverTimestamp(),
+      };
+      if (locationTouched) {
+        const city = String((sanitized as any).city ?? (current as any).city ?? '').trim();
+        const country = String((sanitized as any).country ?? (current as any).country ?? '').trim();
+        sanitized.locationMeta = {
+          city: city || undefined,
+          country: country || undefined,
+          updatedAt: this.serverTimestamp(),
+        };
+      }
+    } else if (locationTouched) {
+      const city = String((sanitized as any).city ?? (current as any).city ?? '').trim();
+      const country = String((sanitized as any).country ?? (current as any).country ?? '').trim();
+      const location = String((sanitized as any).location ?? (current as any).location ?? '').trim();
+      const query = [location, city, country].filter(Boolean).join(', ');
+      const geo = query ? await geocodeAddress(query) : null;
+      if (geo) {
+        sanitized.geo = {
+          lat: geo.point.lat,
+          lng: geo.point.lng,
+          provider: geo.provider,
+          updatedAt: this.serverTimestamp(),
+        };
+        sanitized.locationMeta = {
+          city: geo.city || city || undefined,
+          country: geo.country || country || undefined,
+          formattedAddress: geo.formattedAddress || undefined,
+          placeId: geo.placeId || undefined,
+          updatedAt: this.serverTimestamp(),
+        };
+      } else {
+        const del = this.deleteField();
+        if (del) {
+          sanitized.geo = del;
+          sanitized.locationMeta = del;
+        }
+      }
     }
 
     await userRef.set(sanitized, { merge: true });
