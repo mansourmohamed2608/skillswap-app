@@ -57,9 +57,22 @@ export interface ServiceListing {
     category: string;
     description: string;
   };
+  requestedKind?: 'service' | 'product' | 'money';
+  requestedProduct?: {
+    name: string;
+    description?: string;
+  };
+  requestedMoney?: {
+    amount: number;
+    currency: string;
+  };
   postedDate: string; // ISO date string
   status: 'open' | 'pending_exchange' | 'completed' | 'cancelled';
   location?: string; // Optional: general location for the service
+  geo?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export type ServiceCategory = string;
