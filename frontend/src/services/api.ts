@@ -54,16 +54,25 @@ export async function toApiError(res: Response, fallback?: string) {
 }
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
+const FUNCTIONS_REGION = process.env.NEXT_PUBLIC_FUNCTIONS_REGION || 'europe-west3';
+
+function inferProjectIdFromHostedApp() {
+  if (typeof window === 'undefined') return '';
+  const host = window.location.hostname || '';
+  const m = host.match(/--([a-z0-9-]+)\.[a-z0-9-]+\.hosted\.app$/i);
+  return m?.[1] || '';
+}
 
 function inferFunctionsBase() {
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
-  if (!PROJECT_ID) return '';
-  if (typeof window === 'undefined') return `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`;
+  const inferredProjectId = PROJECT_ID || inferProjectIdFromHostedApp();
+  if (!inferredProjectId) return '';
+  if (typeof window === 'undefined') return `http://127.0.0.1:5001/${inferredProjectId}/us-central1`;
   const host = window.location.hostname || '';
   const isLocal = host === 'localhost' || host === '127.0.0.1';
   return isLocal
-    ? `http://127.0.0.1:5001/${PROJECT_ID}/us-central1`
-    : `https://europe-west3-${PROJECT_ID}.cloudfunctions.net`;
+    ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
+    : `https://${FUNCTIONS_REGION}-${inferredProjectId}.cloudfunctions.net`;
 }
 
 function getFunctionsBase() {
