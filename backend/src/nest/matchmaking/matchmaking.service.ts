@@ -82,11 +82,7 @@ export class MatchmakingService {
       userGeo = geocoded?.point;
     }
 
-    const snap = await admin.firestore().collection('requests')
-      .where('status', '==', 'pending')
-      .orderBy('createdAt', 'desc')
-      .limit(500)
-      .get();
+    const snap = await this.fetchPendingRequests(500);
 
     type Edge = { from: string; to: string; requestId: string; listingId: string; createdAt: number };
     const edgesByFrom = new Map<string, Edge[]>();
@@ -244,11 +240,7 @@ export class MatchmakingService {
       userGeo = geocoded?.point;
     }
 
-    const snap = await admin.firestore().collection('requests')
-      .where('status', '==', 'pending')
-      .orderBy('createdAt', 'desc')
-      .limit(500)
-      .get();
+    const snap = await this.fetchPendingRequests(500);
 
     type Edge = { from: string; to: string; requestId: string; listingId: string; createdAt: number };
     const edgesKeyed = new Map<string, Edge>();
@@ -521,5 +513,36 @@ export class MatchmakingService {
     }
     this.ensureKycVerified(userDoc);
     return userDoc;
+  }
+
+  private async fetchPendingRequests(limit: number) {
+    const requestsRef = admin.firestore().collection('requests');
+    try {
+      return await requestsRef
+        .where('status', '==', 'pending')
+        .orderBy('createdAt', 'desc')
+        .limit(limit)
+        .get();
+    } catch (err: any) {
+      if (this.isFirestoreIndexError(err)) {
+        console.warn('[matchmaking] Falling back to non-indexed pending requests query.');
+        return requestsRef
+          .where('status', '==', 'pending')
+          .limit(limit)
+          .get();
+      }
+      throw err;
+    }
+  }
+
+  private isFirestoreIndexError(err: any): boolean {
+    const message = String(err?.message || '').toLowerCase();
+    const code = String(err?.code || '').toLowerCase();
+    return (
+      code === 'failed-precondition'
+      || code === '9'
+      || message.includes('requires an index')
+      || message.includes('failed precondition')
+    );
   }
 }

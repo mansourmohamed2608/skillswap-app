@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getListingById } from '@/services/data';
@@ -39,6 +39,7 @@ export default function EditListingScreen() {
   const [locating, setLocating] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [pickedImage, setPickedImage] = useState(false);
+  const autoLocationRequestedRef = useRef(false);
 
   useEffect(() => {
     (async () => {
@@ -202,31 +203,45 @@ export default function EditListingScreen() {
     }
   }
 
-  async function useCurrentLocation() {
+  async function useCurrentLocation(options?: { auto?: boolean }) {
+    const auto = Boolean(options?.auto);
     try {
       setLocating(true);
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        if (!auto) {
+          Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        }
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const lat = Number(position.coords.latitude);
       const lng = Number(position.coords.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        if (!auto) {
+          Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        }
         return;
       }
       setGeo({ lat, lng });
-      if (!location.trim()) {
-        setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-      }
     } catch {
-      Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+      if (!auto) {
+        Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+      }
     } finally {
       setLocating(false);
     }
   }
+
+  useEffect(() => {
+    if (loading) return;
+    if (autoLocationRequestedRef.current) return;
+    if (location.trim() || geo) return;
+    autoLocationRequestedRef.current = true;
+    void useCurrentLocation({ auto: true });
+    // Request once when listing data is ready and location is missing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, location, geo]);
 
   if (loading) {
     return (
@@ -320,7 +335,7 @@ export default function EditListingScreen() {
         </TouchableOpacity>
         {geo ? (
           <Text style={cn('text-xs text-muted-foreground')}>
-            GPS: {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
+            GPS location selected
           </Text>
         ) : null}
         {imageUri ? (

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
@@ -31,6 +31,7 @@ export default function EditProfilePage() {
   const [country, setCountry] = useState('');
   const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [locating, setLocating] = useState(false);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [email, setEmail] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [coverUri, setCoverUri] = useState<string | null>(null);
@@ -40,6 +41,7 @@ export default function EditProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const autoLocationRequestedRef = useRef(false);
 
   useEffect(() => { setFade(0); }, [setFade]);
 
@@ -59,6 +61,8 @@ export default function EditProfilePage() {
         }
       } catch (e: any) {
         setError(getErrorMessage(e, t('errors.generic')));
+      } finally {
+        setProfileLoaded(true);
       }
     })();
   }, [user?.uid]);
@@ -156,31 +160,46 @@ export default function EditProfilePage() {
     }
   }
 
-  async function useCurrentLocation() {
+  async function useCurrentLocation(options?: { auto?: boolean }) {
+    const auto = Boolean(options?.auto);
     try {
       setLocating(true);
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        if (!auto) {
+          Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+        }
         return;
       }
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       const lat = Number(position.coords.latitude);
       const lng = Number(position.coords.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        if (!auto) {
+          Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+        }
         return;
       }
       setGeo({ lat, lng });
-      if (!location.trim()) {
-        setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-      }
     } catch {
-      Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+      if (!auto) {
+        Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+      }
     } finally {
       setLocating(false);
     }
   }
+
+  useEffect(() => {
+    if (!user) return;
+    if (!profileLoaded) return;
+    if (autoLocationRequestedRef.current) return;
+    if (location.trim() || geo) return;
+    autoLocationRequestedRef.current = true;
+    void useCurrentLocation({ auto: true });
+    // Request once when profile data is loaded and location is missing.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, profileLoaded, location, geo]);
 
   return (
     <ScrollView
@@ -210,7 +229,7 @@ export default function EditProfilePage() {
               <Text style={cn('text-foreground text-center')}>{locating ? 'Locating...' : 'Use Current Location'}</Text>
             </TouchableOpacity>
             {geo ? (
-              <Text style={cn('text-xs text-muted-foreground mb-3')}>GPS: {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}</Text>
+              <Text style={cn('text-xs text-muted-foreground mb-3')}>GPS location selected</Text>
             ) : null}
             <TouchableOpacity onPress={pickAvatar} style={cn('mt-2 rounded-md border border-dashed border-border px-3 py-2')}>
               <Text style={cn('text-foreground text-center')}>{avatarUri ? 'Change Avatar' : 'Upload Avatar'}</Text>

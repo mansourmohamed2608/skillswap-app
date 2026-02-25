@@ -15,6 +15,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { getUserById } from '@/services/data';
+import { getPublicLocationLabel } from '@/lib/location';
 
 
 interface ServiceCardProps {
@@ -83,6 +84,13 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
   const postedLabel = postedAt
     ? t('listings.card.posted', { time: postedAt })
     : t('listings.card.postedRecently');
+  const exchangeLabel = listing.requestedKind === 'money'
+    ? t('listings.card.paymentRequested')
+    : listing.requestedKind === 'product'
+      ? t('listings.card.productRequested')
+      : t('listings.card.exchangeFor');
+  const publicOwnerLocation = getPublicLocationLabel(resolvedUser?.location, t('listings.card.locationApprox'));
+  const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
 
   const isOwner = Boolean(authUser?.uid && listing.offeredByUserId === authUser.uid);
   const ownerName = resolvedUser?.name || t('listings.actions.ownerFallback');
@@ -96,10 +104,10 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
       </Avatar>
       <div>
         <span className="text-sm font-medium group-hover:text-primary transition-colors">{displayName}</span>
-        {resolvedUser?.location && (
+        {publicOwnerLocation && (
           <div className="flex items-center text-xs text-muted-foreground mt-0.5">
             <MapPinIcon className="h-3 w-3 mr-1" />
-            {resolvedUser.location}
+            {publicOwnerLocation}
           </div>
         )}
       </div>
@@ -134,7 +142,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
           <RepeatIcon className="h-6 w-6 text-primary inline-block" />
         </div>
 
-        <h4 className="font-semibold text-md mb-1">{t('listings.card.exchangeFor')}</h4>
+        <h4 className="font-semibold text-md mb-1">{exchangeLabel}</h4>
         <p className="text-sm font-medium text-primary mb-1">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
         <CategoryPill category={listing.requestedService?.category || t('listings.card.generalCategory')} className="mb-1"/>
         <CardDescription className="text-xs text-muted-foreground line-clamp-2">
@@ -174,7 +182,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                   After client-side hydration, useEffect runs and sets the actual relative time. */}
               <span>{postedLabel}</span>
             </div>
-            {listing.location && <span>{listing.location}</span>}
+            {publicListingLocation && <span>{publicListingLocation}</span>}
           </div>
           <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href={`/listings/${listing.id}`}>

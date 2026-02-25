@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useState, FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, FormEvent } from 'react';
 import Image from 'next/image';
 import { serviceCategories } from '@/services/serviceCategories';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon, MapPinIcon } from 'lucide-react';
+import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon, CheckCircle2Icon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError, createListing, updateListing } from '@/services/api';
@@ -76,8 +76,11 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const [location, setLocation] = useState('');
   const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [locating, setLocating] = useState(false);
+  const [locationHint, setLocationHint] = useState<string | null>(null);
+  const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
   const [offeredFile, setOfferedFile] = useState<File | null>(null);
   const isBusiness = membership?.plan === 'Business' && active;
+  const autoLocationRequestedRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -159,41 +162,56 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
 
   async function useCurrentLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setMessage('Geolocation is not supported by this browser.');
+      setLocationHintTone('warning');
+      setLocationHint(t('listings.form.locationUnsupported'));
       return;
     }
     setLocating(true);
-    setMessage(null);
+    setLocationHint(null);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const lat = Number(position.coords.latitude);
         const lng = Number(position.coords.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          setMessage('Unable to read your current location.');
+          setLocationHintTone('warning');
+          setLocationHint(t('listings.form.locationReadFailed'));
           setLocating(false);
           return;
         }
         setGeo({ lat, lng });
-        if (!location.trim()) {
-          setLocation(`${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        }
+        setLocationHintTone('success');
+        setLocationHint(t('listings.form.locationCaptured'));
         setLocating(false);
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
-          setMessage('Location permission denied. Please enable location access in your browser settings.');
+          setLocationHintTone('warning');
+          setLocationHint(t('listings.form.locationPermissionDenied'));
         } else if (error.code === error.POSITION_UNAVAILABLE) {
-          setMessage('Location unavailable. Please check your device location settings.');
+          setLocationHintTone('warning');
+          setLocationHint(t('listings.form.locationUnavailable'));
         } else if (error.code === error.TIMEOUT) {
-          setMessage('Location request timed out. Please try again.');
+          setLocationHintTone('warning');
+          setLocationHint(t('listings.form.locationTimeout'));
         } else {
-          setMessage('Unable to get your current location.');
+          setLocationHintTone('warning');
+          setLocationHint(t('listings.form.locationUnknownError'));
         }
         setLocating(false);
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   }
+
+  useEffect(() => {
+    if (autoLocationRequestedRef.current) return;
+    if (!user) return;
+    if (location.trim() || geo) return;
+    autoLocationRequestedRef.current = true;
+    void useCurrentLocation();
+    // Intentionally run only when auth/location readiness changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, location, geo]);
   
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -206,28 +224,32 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     if (membershipLoading) return; // wait for membership state
     // Redirect only when the user attempts the action and is not subscribed
     if (active === false) { router.push('/pricing?alert=sub-required'); return; }
+    if (!offeredServiceTitle.trim() || !offeredServiceCategory || !offeredServiceDescription.trim()) {
+      setMessage(t('listings.form.completeOfferedDetails'));
+      return;
+    }
     if (!location.trim() && !geo) {
-      setMessage('Please add location text or use your current GPS location.');
+      setMessage(t('listings.form.locationRequired'));
       return;
     }
     if (requestedKind === 'service') {
       if (!requestedServiceTitle.trim() || !requestedServiceCategory || !requestedServiceDescription.trim()) {
-        setMessage('Please complete the requested service details.');
+        setMessage(t('listings.form.completeRequestedServiceDetails'));
         return;
       }
     } else if (requestedKind === 'product') {
       if (!requestedProductName.trim()) {
-        setMessage('Please enter the requested product name.');
+        setMessage(t('listings.form.requestedProductNameRequired'));
         return;
       }
     } else {
       const amount = Number(requestedMoneyAmount);
       if (!Number.isFinite(amount) || amount <= 0) {
-        setMessage('Please enter a valid requested amount.');
+        setMessage(t('listings.form.requestedAmountInvalid'));
         return;
       }
       if (!requestedMoneyCurrency.trim()) {
-        setMessage('Please enter the requested currency.');
+        setMessage(t('listings.form.requestedCurrencyRequired'));
         return;
       }
     }
@@ -344,7 +366,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
 
 
   return (
-    <form onSubmit={onSubmit}>
+    <form onSubmit={onSubmit} noValidate>
       <Card className="shadow-xl">
         <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 items-start">
           {/* Offered Service Section */}
@@ -352,12 +374,12 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             <h3 className="text-xl font-semibold text-primary border-b pb-2">{t('listings.form.offerSection')}</h3>
             <div className="space-y-1">
               <Label htmlFor="offeredServiceTitle">{t('listings.form.titleLabel')}</Label>
-              <Input id="offeredServiceTitle" placeholder={t('listings.form.offerTitlePlaceholder')} required value={offeredServiceTitle} onChange={(e)=>setOfferedServiceTitle(e.target.value)} />
+              <Input id="offeredServiceTitle" placeholder={t('listings.form.offerTitlePlaceholder')} value={offeredServiceTitle} onChange={(e)=>setOfferedServiceTitle(e.target.value)} />
               {errors?.offeredServiceTitle && <p className="text-sm text-destructive">{errors.offeredServiceTitle.join(', ')}</p>}
             </div>
              <div className="space-y-1">
               <Label htmlFor="offeredServiceCategory">{t('listings.form.categoryLabel')}</Label>
-                <Select value={offeredServiceCategory} onValueChange={setOfferedServiceCategory} required>
+                <Select value={offeredServiceCategory} onValueChange={setOfferedServiceCategory}>
                   <SelectTrigger><SelectValue placeholder={t('listings.form.categoryPlaceholder')} /></SelectTrigger>
                   <SelectContent>
                     {categoryOptions.map(category => (
@@ -369,7 +391,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             </div>
             <div className="space-y-1">
               <Label htmlFor="offeredServiceDescription">{t('listings.form.descriptionLabel')}</Label>
-              <Textarea id="offeredServiceDescription" placeholder={t('listings.form.offerDescriptionPlaceholder')} rows={4} required value={offeredServiceDescription} onChange={(e)=>setOfferedServiceDescription(e.target.value)} />
+              <Textarea id="offeredServiceDescription" placeholder={t('listings.form.offerDescriptionPlaceholder')} rows={4} value={offeredServiceDescription} onChange={(e)=>setOfferedServiceDescription(e.target.value)} />
               {errors?.offeredServiceDescription && <p className="text-sm text-destructive">{errors.offeredServiceDescription.join(', ')}</p>}
             </div>
             <div className="space-y-2">
@@ -395,13 +417,13 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
               {t('listings.form.requestSection')}
             </h3>
             <div className="space-y-1">
-              <Label htmlFor="requestedKind">Exchange Type</Label>
+              <Label htmlFor="requestedKind">{t('listings.form.exchangeTypeLabel')}</Label>
                <Select value={requestedKind} onValueChange={(value) => setRequestedKind(value as 'service' | 'product' | 'money')}>
-                  <SelectTrigger id="requestedKind"><SelectValue placeholder="Select exchange type" /></SelectTrigger>
+                  <SelectTrigger id="requestedKind"><SelectValue placeholder={t('listings.form.exchangeTypePlaceholder')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="service">Service</SelectItem>
-                    <SelectItem value="product">Product</SelectItem>
-                    <SelectItem value="money">Money</SelectItem>
+                    <SelectItem value="service">{t('listings.form.exchangeTypeService')}</SelectItem>
+                    <SelectItem value="product">{t('listings.form.exchangeTypeProduct')}</SelectItem>
+                    <SelectItem value="money">{t('listings.form.exchangeTypeMoney')}</SelectItem>
                   </SelectContent>
                 </Select>
             </div>
@@ -434,19 +456,19 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             {requestedKind === 'product' ? (
               <>
                 <div className="space-y-1">
-                  <Label htmlFor="requestedProductName">Requested Product</Label>
+                  <Label htmlFor="requestedProductName">{t('listings.form.requestedProductNameLabel')}</Label>
                   <Input
                     id="requestedProductName"
-                    placeholder="e.g. Laptop, Camera, Art Supplies"
+                    placeholder={t('listings.form.requestedProductNamePlaceholder')}
                     value={requestedProductName}
                     onChange={(e) => setRequestedProductName(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="requestedProductDescription">Product Details</Label>
+                  <Label htmlFor="requestedProductDescription">{t('listings.form.requestedProductDetailsLabel')}</Label>
                   <Textarea
                     id="requestedProductDescription"
-                    placeholder="Brand, condition, model, or other product details"
+                    placeholder={t('listings.form.requestedProductDetailsPlaceholder')}
                     rows={4}
                     value={requestedProductDescription}
                     onChange={(e) => setRequestedProductDescription(e.target.value)}
@@ -457,22 +479,22 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             {requestedKind === 'money' ? (
               <>
                 <div className="space-y-1">
-                  <Label htmlFor="requestedMoneyAmount">Requested Amount</Label>
+                  <Label htmlFor="requestedMoneyAmount">{t('listings.form.requestedAmountLabel')}</Label>
                   <Input
                     id="requestedMoneyAmount"
                     type="number"
                     min="0"
                     step="0.01"
-                    placeholder="e.g. 50"
+                    placeholder={t('listings.form.requestedAmountPlaceholder')}
                     value={requestedMoneyAmount}
                     onChange={(e) => setRequestedMoneyAmount(e.target.value)}
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor="requestedMoneyCurrency">Currency</Label>
+                  <Label htmlFor="requestedMoneyCurrency">{t('listings.form.requestedCurrencyLabel')}</Label>
                   <Input
                     id="requestedMoneyCurrency"
-                    placeholder="e.g. USD, EUR, EGP"
+                    placeholder={t('listings.form.requestedCurrencyPlaceholder')}
                     value={requestedMoneyCurrency}
                     onChange={(e) => setRequestedMoneyCurrency(e.target.value.toUpperCase())}
                   />
@@ -485,15 +507,28 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
                 <div className="flex items-center gap-2 mt-2">
                   <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
                     {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
-                    Use Current Location
+                    {t('listings.form.useCurrentLocation')}
                   </Button>
                   {geo ? (
                     <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                      <MapPinIcon className="h-3 w-3" />
-                      {geo.lat.toFixed(5)}, {geo.lng.toFixed(5)}
+                      <CheckCircle2Icon className="h-3 w-3" />
+                      {t('listings.form.locationCaptured')}
                     </span>
                   ) : null}
                 </div>
+                {locationHint ? (
+                  <p
+                    className={
+                      locationHintTone === 'warning'
+                        ? 'text-xs text-amber-700'
+                        : locationHintTone === 'success'
+                          ? 'text-xs text-green-700'
+                          : 'text-xs text-muted-foreground'
+                    }
+                  >
+                    {locationHint}
+                  </p>
+                ) : null}
                 {errors?.location && <p className="text-sm text-destructive">{errors.location.join(', ')}</p>}
             </div>
           </div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createSubscriptionSession, mockCompletePayment } from '@/services/api';
 import { useTranslation } from 'react-i18next';
+import { getErrorMessage } from '@/lib/errors';
 
 export default function SubscribeButton() {
   const [loading, setLoading] = useState(false);
@@ -31,7 +32,7 @@ export default function SubscribeButton() {
         window.location.href = paymentUrl;
       }
     } catch (e: any) {
-      setMsg(e.message ?? t('pricing.paymentFailed'));
+      setMsg(getErrorMessage(e, t('pricing.paymentFailedBody')));
     } finally {
       setLoading(false);
     }

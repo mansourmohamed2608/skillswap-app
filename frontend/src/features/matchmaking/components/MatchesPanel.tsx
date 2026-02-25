@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchTriadCycles, fetchMutualPairs, acceptMatch, type ListingSummary, type Participant } from '@/services/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCcw } from 'lucide-react';
+import { Loader2, RefreshCcw, AlertCircleIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
 import { getErrorMessage } from '@/lib/errors';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 type Edge = { from: string; to: string; requestId: string; listingId: string; createdAt?: number };
 type Triad = {
@@ -39,6 +40,15 @@ export function MatchesPanel() {
   const [acceptedKeys, setAcceptedKeys] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, { accepted: number; total: number; conversationId?: string; title?: string }>>({});
 
+  const sanitizeError = (raw: string) => {
+    const normalized = String(raw || '').trim().toLowerCase();
+    if (!normalized) return t('matchmaking.panel.errorFallback');
+    if (normalized.includes('internal server error') || normalized.includes('service is temporarily unavailable')) {
+      return t('matchmaking.panel.errorUnavailable');
+    }
+    return raw;
+  };
+
   const load = async () => {
     if (!user) {
       setTriads([]);
@@ -57,7 +67,7 @@ export function MatchesPanel() {
       setTriads((tri?.cycles || []).map((c) => ({ users: c.users, edges: c.edges as [Edge,Edge,Edge], participants: c.participants, perspective: c.perspective })));
       setPairs((mut?.pairs || []).map((p) => ({ users: p.users, edges: p.edges as [Edge,Edge], participants: p.participants, perspective: p.perspective })));
     } catch (e: any) {
-      setError(getErrorMessage(e, t('matchmaking.panel.errorFallback')));
+      setError(sanitizeError(getErrorMessage(e, t('matchmaking.panel.errorFallback'))));
     } finally {
       setLoading(false);
     }
@@ -142,7 +152,7 @@ export function MatchesPanel() {
       setAcceptedKeys(new Set([...Array.from(acceptedKeys), key]));
     } catch (e) {
       // Surface error inline without breaking flow
-      setError(getErrorMessage(e, t('matchmaking.panel.acceptFailed')));
+      setError(sanitizeError(getErrorMessage(e, t('matchmaking.panel.acceptFailed'))));
     } finally {
       setAccepting(null);
     }
@@ -156,7 +166,7 @@ export function MatchesPanel() {
       await acceptMatch({ type: 'mutual', users: p.users as unknown as string[], edges: p.edges });
       setAcceptedKeys(new Set([...Array.from(acceptedKeys), key]));
     } catch (e) {
-      setError(getErrorMessage(e, t('matchmaking.panel.acceptFailed')));
+      setError(sanitizeError(getErrorMessage(e, t('matchmaking.panel.acceptFailed'))));
     } finally {
       setAccepting(null);
     }
@@ -189,7 +199,11 @@ export function MatchesPanel() {
       )}
 
       {error && (
-        <div className="text-destructive text-sm">{error}</div>
+        <Alert variant="destructive">
+          <AlertCircleIcon className="h-4 w-4" />
+          <AlertTitle>{t('matchmaking.form.errorTitle')}</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Triad cycles */}

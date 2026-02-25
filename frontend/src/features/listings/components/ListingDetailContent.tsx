@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createReview, fetchReviewsForListing, submitReport } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { getUserById } from '@/services/data';
+import { getPublicLocationLabel } from '@/lib/location';
 
 type Props = {
   listing: ServiceListing;
@@ -52,6 +53,13 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     day: 'numeric',
     year: 'numeric',
   }).format(postedDate);
+  const requestedHeading = listing.requestedKind === 'money'
+    ? t('listings.card.paymentRequested')
+    : listing.requestedKind === 'product'
+      ? t('listings.card.productRequested')
+      : t('listings.detail.requestedTitle');
+  const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
+  const publicOwnerLocation = getPublicLocationLabel(resolvedOwner?.location, t('listings.card.locationApprox'));
 
   const statusMap: Record<ServiceListing['status'], { text: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: ReactNode }> = {
     open: { text: t('listings.card.status.open'), variant: 'default', icon: <InfoIcon className="h-4 w-4" /> },
@@ -159,11 +167,11 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
            <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
               <CalendarDaysIcon className="h-4 w-4" />
               {t('listings.detail.postedOn', { date: postedLabel })}
-              {listing.location && (
+              {publicListingLocation && (
                 <>
                   <span className="mx-1">·</span>
                   <MapPinIcon className="h-4 w-4" />
-                  {listing.location}
+                  {publicListingLocation}
                 </>
               )}
             </div>
@@ -180,7 +188,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           </div>
 
           <div>
-            <h3 className="text-xl font-semibold mb-2 text-accent">{t('listings.detail.requestedTitle')}</h3>
+            <h3 className="text-xl font-semibold mb-2 text-accent">{requestedHeading}</h3>
             <p className="font-medium text-lg text-accent/90">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
             <CategoryPill category={listing.requestedService?.category || t('listings.card.generalCategory')} className="my-2"/>
             <p className="text-foreground/90 leading-relaxed">{listing.requestedService.description}</p>
@@ -199,10 +207,10 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                   </Avatar>
                   <div>
                     <p className="text-lg font-semibold">{resolvedOwner.name}</p>
-                    {resolvedOwner.location && (
+                    {publicOwnerLocation && (
                       <div className="flex items-center text-sm text-muted-foreground">
                         <MapPinIcon className="h-4 w-4 mr-1" />
-                        {resolvedOwner.location}
+                        {publicOwnerLocation}
                       </div>
                     )}
                     <RatingDisplay rating={resolvedOwner.rating} reviewCount={resolvedOwner.reviewsCount} className="mt-1" />

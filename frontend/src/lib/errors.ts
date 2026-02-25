@@ -158,11 +158,6 @@ export function getStatusMessage(
   options?: ErrorMessageOptions
 ) {
   const merged = mergeOptions(options);
-  const mappedServer = serverMessage ? resolveCodeMessage(serverMessage, merged) : null;
-  if (mappedServer) return mappedServer;
-  const lang = merged?.language ? merged.language.toLowerCase() : 'en';
-  if (serverMessage && lang.startsWith('en')) return serverMessage;
-
   const statusMessages = merged?.statusMessages || {};
   if (status === 0) {
     return merged?.networkMessage || statusMessages['0'] || DEFAULT_STATUS_MESSAGES['0'];
@@ -170,6 +165,12 @@ export function getStatusMessage(
   if (status >= 500) {
     return statusMessages['500'] || DEFAULT_STATUS_MESSAGES['500'];
   }
+
+  const mappedServer = serverMessage ? resolveCodeMessage(serverMessage, merged) : null;
+  if (mappedServer) return mappedServer;
+  const lang = merged?.language ? merged.language.toLowerCase() : 'en';
+  if (serverMessage && lang.startsWith('en')) return serverMessage;
+
   const key = String(status);
   if (statusMessages[key]) return statusMessages[key];
   if (status === 408 || status === 429) {

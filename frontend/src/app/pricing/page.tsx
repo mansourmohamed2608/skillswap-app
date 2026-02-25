@@ -17,10 +17,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { ToastAction } from '@/components/ui/toast';
+import { getErrorMessage } from '@/lib/errors';
 
 type Currency = 'egp' | 'sar';
 type Duration = '3mo' | '6mo' | '12mo';
 type PlanKey = 'basic' | 'standard' | 'pro' | 'business';
+const durationOrder: Duration[] = ['3mo', '6mo', '12mo'];
 
 const planKeyToBackend = {
   basic: 'Basic',
@@ -200,10 +202,38 @@ function PricingPageInner() {
       });
       return;
     }
+
+    const requestedDuration = duration;
+    const hasRequestedDuration = pricingData[planKey][currency][requestedDuration] !== null;
+    const finalDuration = hasRequestedDuration
+      ? requestedDuration
+      : (durationOrder.find((d) => pricingData[planKey][currency][d] !== null) || '3mo');
+    if (!hasRequestedDuration) {
+      setDuration(finalDuration);
+      toast({
+        title: t('pricing.durationAdjustedTitle'),
+        description: t('pricing.durationAdjustedBody', {
+          plan: t(`pricing.planTitles.${planKey}`),
+          duration: t(`pricing.${finalDuration === '3mo' ? 'dur3mo' : finalDuration === '6mo' ? 'dur6mo' : 'dur12mo'}`),
+        }),
+      });
+    }
+
+    const selectedDurationLabel = t(
+      `pricing.${finalDuration === '3mo' ? 'dur3mo' : finalDuration === '6mo' ? 'dur6mo' : 'dur12mo'}`
+    );
+    toast({
+      title: t('pricing.checkoutPreparingTitle'),
+      description: t('pricing.checkoutPreparingBody', {
+        plan: t(`pricing.planTitles.${planKey}`),
+        duration: selectedDurationLabel,
+      }),
+    });
+
     try {
       const res = await createSubscriptionSession({
         plan: planKeyToBackend[planKey],
-        duration: durationToBackend[duration],
+        duration: durationToBackend[finalDuration],
         currency: currency.toUpperCase() as 'EGP' | 'SAR',
       });
 
@@ -216,7 +246,11 @@ function PricingPageInner() {
         window.location.href = res.paymentUrl; // real processor path
       }
     } catch (e: any) {
-      toast({ title: t('pricing.paymentFailed'), description: e?.message, variant: 'destructive' });
+      toast({
+        title: t('pricing.paymentFailed'),
+        description: getErrorMessage(e, t('pricing.paymentFailedBody')),
+        variant: 'destructive',
+      });
     }
   }
 
