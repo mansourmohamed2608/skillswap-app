@@ -3,6 +3,9 @@ import { getStatusMessage } from "@/lib/errors";
 
 export class ApiError extends Error {
   status: number;
+  code?: string;
+  field?: string;
+  keyword?: string;
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
@@ -31,6 +34,9 @@ export async function toApiError(res: Response, fallback?: string) {
   } catch {
     text = '';
   }
+  let errorCode: string | undefined;
+  let errorField: string | undefined;
+  let errorKeyword: string | undefined;
   let serverMessage = text.trim() || undefined;
   if (serverMessage && (serverMessage.startsWith('{') || serverMessage.startsWith('['))) {
     try {
@@ -47,11 +53,25 @@ export async function toApiError(res: Response, fallback?: string) {
         else if (msg && typeof msg === 'object') {
           const nestedCode = (msg as any).code;
           const nestedMessage = (msg as any).message;
+          const nestedField = (msg as any).field;
+          const nestedKeyword = (msg as any).keyword;
           if (typeof nestedCode === 'string') serverMessage = nestedCode;
           else if (typeof nestedMessage === 'string') serverMessage = nestedMessage;
+          if (typeof nestedCode === 'string') errorCode = nestedCode;
+          if (typeof nestedField === 'string') errorField = nestedField;
+          if (typeof nestedKeyword === 'string') errorKeyword = nestedKeyword;
         }
         if (!serverMessage && typeof (data as any).code === 'string') {
           serverMessage = (data as any).code;
+        }
+        if (!errorCode && typeof (data as any).code === 'string') {
+          errorCode = (data as any).code;
+        }
+        if (!errorField && typeof (data as any).field === 'string') {
+          errorField = (data as any).field;
+        }
+        if (!errorKeyword && typeof (data as any).keyword === 'string') {
+          errorKeyword = (data as any).keyword;
         }
       }
     } catch {
@@ -59,7 +79,11 @@ export async function toApiError(res: Response, fallback?: string) {
     }
   }
   const message = messageForStatus(res.status, serverMessage, fallback);
-  return new ApiError(res.status, message);
+  const err = new ApiError(res.status, message);
+  if (errorCode) err.code = errorCode;
+  if (errorField) err.field = errorField;
+  if (errorKeyword) err.keyword = errorKeyword;
+  return err;
 }
 
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';

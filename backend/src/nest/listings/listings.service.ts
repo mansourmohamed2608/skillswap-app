@@ -41,7 +41,7 @@ export class ListingsService {
       { label: 'requestedProduct.description', value: (listing as any).requestedProduct?.description },
     ]);
     if (banned) {
-      throw new BadRequestException({ code: 'content/banned', field: banned.field });
+      throw new BadRequestException({ code: 'content/banned', field: banned.field, keyword: banned.keyword });
     }
 
     const actorSnap = await getUserDocument(userId);
@@ -156,7 +156,7 @@ export class ListingsService {
       { label: 'requestedProduct.description', value: (safeUpdates as any).requestedProduct?.description },
     ]);
     if (banned) {
-      throw new BadRequestException({ code: 'content/banned', field: banned.field });
+      throw new BadRequestException({ code: 'content/banned', field: banned.field, keyword: banned.keyword });
     }
     const updatedAtVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)

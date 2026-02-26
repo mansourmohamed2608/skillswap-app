@@ -433,6 +433,11 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         router.push('/pricing?alert=sub-required');
         return;
       }
+      if (err instanceof ApiError && (err.code === 'content/banned' || err.message === 'content/banned')) {
+        const blocked = err.keyword ? ` (${err.keyword})` : '';
+        setMessage(`${t('errors.codes.content/banned')}${blocked}`);
+        return;
+      }
       setMessage(getErrorMessage(err, t('listings.form.errorGeneric')));
     } finally {
       setCreating(false);

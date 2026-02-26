@@ -209,13 +209,16 @@ export async function findBannedKeyword(input: string): Promise<string | null> {
   if (!text) return null;
   
   const keywords = await loadKeywords();
+
+  const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const isAsciiKeyword = (value: string) => /^[a-z0-9]+$/i.test(value);
   
-  // First, check the original text for direct matches (whole word or substring)
+  // First, check direct matches in the original text.
+  // Use strict token boundaries for ASCII keywords to avoid false positives.
   for (const keyword of keywords) {
     if (!keyword) continue;
-    // Use word boundary check for short keywords to avoid false positives
-    if (keyword.length <= 3) {
-      const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+    if (isAsciiKeyword(keyword)) {
+      const regex = new RegExp(`(^|[^a-z0-9])${escapeRegex(keyword)}([^a-z0-9]|$)`, 'i');
       if (regex.test(text)) return keyword;
     } else {
       if (text.includes(keyword)) return keyword;
@@ -232,16 +235,13 @@ export async function findBannedKeyword(input: string): Promise<string | null> {
     for (const token of tokens) {
       // Exact match
       if (token === keyword) return keyword;
-      
-      // For longer keywords, check if token contains it
-      if (keyword.length > 3 && token.includes(keyword)) return keyword;
     }
     
     // Check variations of the keyword against tokens
     const variations = generateWordVariations(keyword);
     for (const variation of variations) {
       for (const token of tokens) {
-        if (token === variation || (variation.length > 3 && token.includes(variation))) {
+        if (token === variation) {
           return keyword;
         }
       }
