@@ -75,7 +75,7 @@ function inferFunctionsBase() {
     : `https://${FUNCTIONS_REGION}-${inferredProjectId}.cloudfunctions.net`;
 }
 
-function getFunctionsBase() {
+export function getFunctionsBase() {
   return inferFunctionsBase();
 }
 

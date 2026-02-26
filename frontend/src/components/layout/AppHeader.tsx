@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -54,13 +55,14 @@ const AppLogo = () => (
   </svg>
 );
 
-function SignOutButton({ isMobile = false }) {
+function SignOutButton({ isMobile = false, onDone }: { isMobile?: boolean; onDone?: () => void }) {
     const router = useRouter();
     const { t } = useTranslation();
     const handleSignOut = async () => {
         if (auth) {
             await signOut(auth);
         }
+        onDone?.();
         router.push('/');
     };
 
@@ -78,8 +80,9 @@ function SignOutButton({ isMobile = false }) {
 
 export function AppHeader() {
   const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isAuthenticated = !!user;
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const labelFor = (href: string, fallback: string) => {
     const map: Record<string, string> = {
@@ -99,7 +102,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
           <AppLogo />
           <span className="font-bold text-xl">{t('common.appName')}</span>
@@ -140,7 +143,50 @@ export function AppHeader() {
           <LanguageSwitcher compact />
         </nav>
 
-        {/* Mobile Navigation removed by request */}
+        <div className="flex items-center gap-2 md:hidden">
+          <LanguageSwitcher compact />
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Open menu">
+                <MenuIcon className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side={i18n.dir() === 'rtl' ? 'left' : 'right'}>
+              <div className="mt-8 flex flex-col gap-1">
+                {publicNavItems.map((item) => (
+                  <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
+                    <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      {labelFor(item.href, item.label)}
+                    </Link>
+                  </Button>
+                ))}
+                {isAuthenticated ? (
+                  <>
+                    {privateNavItems.map((item) => (
+                      <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
+                        <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          {labelFor(item.href, item.label)}
+                        </Link>
+                      </Button>
+                    ))}
+                    <SignOutButton isMobile onDone={() => setMobileOpen(false)} />
+                  </>
+                ) : (
+                  authNavItems.map((item) => (
+                    <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
+                      <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4" />
+                        {labelFor(item.href, item.label)}
+                      </Link>
+                    </Button>
+                  ))
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
     </header>
   );

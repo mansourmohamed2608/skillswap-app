@@ -14,6 +14,7 @@ import { AlertCircleIcon, UserPlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { auth, db } from '@/services/firebase';
+import { getFunctionsBase } from '@/services/api';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
@@ -125,16 +126,24 @@ export function SignUpForm() {
       }, { merge: true });
 
       // Create Didit session via backend and redirect
-      const base = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || (process.env.NEXT_PUBLIC_API_BASE ? process.env.NEXT_PUBLIC_API_BASE.replace(/\/api$/, '') : '');
-      const url = base ? `${base}/api/didit/session` : '/api/didit/session';
+      const base = getFunctionsBase();
+      const url = `${base}/api/didit/session`;
       const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ vendor: uid }),
       });
-      const resp = await r.json();
-      if (!r.ok || !resp?.url) {
-        const msg = resp?.error || t('auth.signUp.errors.sessionFailed');
+      const raw = await r.text();
+      let resp: any = null;
+      try {
+        resp = raw ? JSON.parse(raw) : null;
+      } catch {
+        resp = null;
+      }
+      if (!r.ok || typeof resp?.url !== 'string') {
+        const msg = typeof resp?.error === 'string'
+          ? resp.error
+          : t('auth.signUp.errors.sessionFailed');
         setState({ message: msg, success: false });
         toast({ title: t('auth.signUp.errors.kycFailedTitle'), description: msg, variant: 'destructive' });
         setLoading(false);
