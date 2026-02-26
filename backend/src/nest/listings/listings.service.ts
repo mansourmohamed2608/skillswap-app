@@ -33,17 +33,12 @@ export class ListingsService {
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (listing as any).title },
       { label: 'description', value: (listing as any).description },
-      { label: 'category', value: (listing as any).category },
-      { label: 'location', value: (listing as any).location },
       { label: 'offeredService.title', value: (listing as any).offeredService?.title },
       { label: 'offeredService.description', value: (listing as any).offeredService?.description },
-      { label: 'offeredService.category', value: (listing as any).offeredService?.category },
       { label: 'requestedService.title', value: (listing as any).requestedService?.title },
       { label: 'requestedService.description', value: (listing as any).requestedService?.description },
-      { label: 'requestedService.category', value: (listing as any).requestedService?.category },
       { label: 'requestedProduct.name', value: (listing as any).requestedProduct?.name },
       { label: 'requestedProduct.description', value: (listing as any).requestedProduct?.description },
-      { label: 'requestedMoney.currency', value: (listing as any).requestedMoney?.currency },
     ]);
     if (banned) {
       throw new BadRequestException({ code: 'content/banned', field: banned.field });
@@ -153,17 +148,12 @@ export class ListingsService {
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (safeUpdates as any).title },
       { label: 'description', value: (safeUpdates as any).description },
-      { label: 'category', value: (safeUpdates as any).category },
-      { label: 'location', value: (safeUpdates as any).location },
       { label: 'offeredService.title', value: (safeUpdates as any).offeredService?.title },
       { label: 'offeredService.description', value: (safeUpdates as any).offeredService?.description },
-      { label: 'offeredService.category', value: (safeUpdates as any).offeredService?.category },
       { label: 'requestedService.title', value: (safeUpdates as any).requestedService?.title },
       { label: 'requestedService.description', value: (safeUpdates as any).requestedService?.description },
-      { label: 'requestedService.category', value: (safeUpdates as any).requestedService?.category },
       { label: 'requestedProduct.name', value: (safeUpdates as any).requestedProduct?.name },
       { label: 'requestedProduct.description', value: (safeUpdates as any).requestedProduct?.description },
-      { label: 'requestedMoney.currency', value: (safeUpdates as any).requestedMoney?.currency },
     ]);
     if (banned) {
       throw new BadRequestException({ code: 'content/banned', field: banned.field });

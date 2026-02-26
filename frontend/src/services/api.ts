@@ -44,6 +44,15 @@ export async function toApiError(res: Response, fallback?: string) {
         const msg = (data as any).message ?? (data as any).error ?? (data as any).detail ?? (data as any).code;
         if (Array.isArray(msg)) serverMessage = msg.filter(Boolean).join(', ');
         else if (typeof msg === 'string') serverMessage = msg;
+        else if (msg && typeof msg === 'object') {
+          const nestedCode = (msg as any).code;
+          const nestedMessage = (msg as any).message;
+          if (typeof nestedCode === 'string') serverMessage = nestedCode;
+          else if (typeof nestedMessage === 'string') serverMessage = nestedMessage;
+        }
+        if (!serverMessage && typeof (data as any).code === 'string') {
+          serverMessage = (data as any).code;
+        }
       }
     } catch {
       // keep raw text

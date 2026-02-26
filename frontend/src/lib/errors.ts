@@ -28,6 +28,7 @@ const DEFAULT_AUTH_MESSAGES: Record<string, string> = {
 };
 const DEFAULT_CODE_MESSAGES: Record<string, string> = {
   ...DEFAULT_AUTH_MESSAGES,
+  'content/banned': 'Your text includes restricted words. Please edit and try again.',
   'permission-denied': 'You do not have permission to do that.',
   'unauthenticated': 'Please sign in to continue.',
   'not-found': 'We could not find what you requested.',
@@ -182,6 +183,8 @@ export function getStatusMessage(
 export function getErrorMessage(error: unknown, fallback: string, options?: ErrorMessageOptions) {
   const merged = mergeOptions(options);
   if (isApiLikeError(error)) {
+    const mapped = resolveCodeMessage(error.message, merged);
+    if (mapped) return mapped;
     return error.message || fallback;
   }
 

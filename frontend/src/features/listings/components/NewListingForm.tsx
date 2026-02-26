@@ -332,14 +332,10 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     const banned = findBannedKeywordInFields([
       { label: 'offeredService.title', value: offeredServiceTitle },
       { label: 'offeredService.description', value: offeredServiceDescription },
-      { label: 'offeredService.category', value: offeredServiceCategory },
       { label: 'requestedService.title', value: requestedServiceTitle },
       { label: 'requestedService.description', value: requestedServiceDescription },
-      { label: 'requestedService.category', value: requestedServiceCategory },
       { label: 'requestedProduct.name', value: requestedProductName },
       { label: 'requestedProduct.description', value: requestedProductDescription },
-      { label: 'requestedMoney.currency', value: requestedMoneyCurrency },
-      { label: 'location', value: location },
     ]);
     if (banned) {
       setMessage(t('errors.codes.content/banned'));
