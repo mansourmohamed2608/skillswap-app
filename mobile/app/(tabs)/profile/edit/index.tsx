@@ -5,7 +5,7 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { cn } from '@/lib/cn';
 import { db, storage, auth } from '@/services/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import Input from '@/components/ui/Input';
 import PasswordInput from '@/components/ui/PasswordInput';
@@ -42,6 +42,20 @@ export default function EditProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const autoLocationRequestedRef = useRef(false);
+
+  async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
+    try {
+      const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      const first = rows?.[0];
+      if (!first) return undefined;
+      const city = String(first.city || first.subregion || first.region || '').trim();
+      const countryValue = String(first.country || '').trim();
+      const parts = [city, countryValue].filter(Boolean);
+      return parts.length ? parts.join(', ') : undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   useEffect(() => { setFade(0); }, [setFade]);
 
@@ -167,7 +181,7 @@ export default function EditProfilePage() {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
         if (!auto) {
-          Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+          Alert.alert(t('common.error') || 'Error', t('profile.edit.locationPermissionDenied'));
         }
         return;
       }
@@ -176,14 +190,16 @@ export default function EditProfilePage() {
       const lng = Number(position.coords.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         if (!auto) {
-          Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+          Alert.alert(t('common.error') || 'Error', t('profile.edit.locationReadFailed'));
         }
         return;
       }
+      const resolved = await formatLocationFromGeo(lat, lng);
+      if (resolved) setLocation(resolved);
       setGeo({ lat, lng });
     } catch {
       if (!auto) {
-        Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+        Alert.alert(t('common.error') || 'Error', t('profile.edit.locationFetchFailed'));
       }
     } finally {
       setLocating(false);
@@ -213,26 +229,26 @@ export default function EditProfilePage() {
       <View style={cn('px-4 py-6')}>
         <Card>
           <CardHeader>
-            <CardTitle>Edit Profile</CardTitle>
+            <CardTitle>{t('profile.edit.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             {error ? <Text style={cn('text-red-600 mb-2')}>{error}</Text> : null}
-            <Text style={cn('text-sm text-foreground mb-1')}>Name</Text>
+            <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.nameLabel')}</Text>
             <Input value={displayName} onChangeText={setDisplayName} className="mb-3" />
-            <Text style={cn('text-sm text-foreground mb-1')}>Username</Text>
+            <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.usernameLabel')}</Text>
             <Input value={username} onChangeText={setUsername} className="mb-3" />
-            <Text style={cn('text-sm text-foreground mb-1')}>City</Text>
+            <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.cityLabel')}</Text>
             <Input value={location} onChangeText={setLocation} className="mb-3" />
-            <Text style={cn('text-sm text-foreground mb-1')}>Country</Text>
+            <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.countryLabel')}</Text>
             <Input value={country} onChangeText={setCountry} className="mb-3" />
             <TouchableOpacity onPress={useCurrentLocation} disabled={locating} style={cn('mt-1 mb-3 rounded-md border border-border px-3 py-2 bg-card', locating ? 'opacity-70' : '')}>
-              <Text style={cn('text-foreground text-center')}>{locating ? 'Locating...' : 'Use Current Location'}</Text>
+              <Text style={cn('text-foreground text-center')}>{locating ? t('profile.edit.locating') : t('profile.edit.useCurrentLocation')}</Text>
             </TouchableOpacity>
             {geo ? (
-              <Text style={cn('text-xs text-muted-foreground mb-3')}>GPS location selected</Text>
+              <Text style={cn('text-xs text-muted-foreground mb-3')}>{t('profile.edit.locationCaptured')}</Text>
             ) : null}
             <TouchableOpacity onPress={pickAvatar} style={cn('mt-2 rounded-md border border-dashed border-border px-3 py-2')}>
-              <Text style={cn('text-foreground text-center')}>{avatarUri ? 'Change Avatar' : 'Upload Avatar'}</Text>
+              <Text style={cn('text-foreground text-center')}>{avatarUri ? t('profile.edit.changeAvatar') : t('profile.edit.uploadAvatar')}</Text>
             </TouchableOpacity>
             {avatarUri ? (
               <View style={cn('items-center mt-2')}>
@@ -240,32 +256,32 @@ export default function EditProfilePage() {
               </View>
             ) : null}
             <TouchableOpacity onPress={pickCover} style={cn('mt-2 rounded-md border border-dashed border-border px-3 py-2')}>
-              <Text style={cn('text-foreground text-center')}>{coverUri ? 'Change Cover Photo' : 'Upload Cover Photo (1600x400)'}</Text>
+              <Text style={cn('text-foreground text-center')}>{coverUri ? t('profile.edit.changeCover') : t('profile.edit.uploadCover')}</Text>
             </TouchableOpacity>
             {coverUri ? (
               <View style={cn('items-center mt-2')}>
                 <Image source={{ uri: coverUri }} style={{ width: '100%', height: 120, borderRadius: 8 }} resizeMode="cover" />
               </View>
             ) : null}
-            <Text style={cn('text-sm text-foreground mt-4 mb-1')}>Email</Text>
+            <Text style={cn('text-sm text-foreground mt-4 mb-1')}>{t('profile.edit.emailLabel')}</Text>
             <Input autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} className="mb-3" />
             <TouchableOpacity onPress={() => setShowPasswordSection(v => !v)} style={cn('mt-2 rounded-md border border-border px-3 py-2 bg-card')}>
-              <Text style={cn('text-foreground text-center')}>{showPasswordSection ? 'Cancel Password Change' : 'Change Password'}</Text>
+              <Text style={cn('text-foreground text-center')}>{showPasswordSection ? t('profile.edit.cancelPasswordChange') : t('profile.edit.changePassword')}</Text>
             </TouchableOpacity>
             {showPasswordSection ? (
               <View style={cn('mt-3')}>
-                <Text style={cn('text-sm text-foreground mb-1')}>Current Password</Text>
+                <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.currentPassword')}</Text>
                 <PasswordInput value={currentPassword} onChangeText={setCurrentPassword} className="mb-3" />
-                <Text style={cn('text-sm text-foreground mb-1')}>New Password</Text>
+                <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.newPassword')}</Text>
                 <PasswordInput value={newPassword} onChangeText={setNewPassword} className="mb-3" />
-                <Text style={cn('text-sm text-foreground mb-1')}>Confirm New Password</Text>
+                <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.confirmNewPassword')}</Text>
                 <PasswordInput value={confirmNewPassword} onChangeText={setConfirmNewPassword} className="mb-3" />
               </View>
             ) : null}
           </CardContent>
           <CardFooter>
             <TouchableOpacity disabled={loading} onPress={save} style={cn('rounded-md bg-primary px-4 py-3 min-w-[160px] items-center')}>
-              {loading ? <ActivityIndicator color="#fff" /> : <Text style={cn('text-primary-foreground font-semibold')}>Save Changes</Text>}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={cn('text-primary-foreground font-semibold')}>{t('profile.edit.save')}</Text>}
             </TouchableOpacity>
           </CardFooter>
         </Card>

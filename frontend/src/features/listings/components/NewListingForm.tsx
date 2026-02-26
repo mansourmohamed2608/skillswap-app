@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon, CheckCircle2Icon } from 'lucide-react';
+import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError, createListing, updateListing } from '@/services/api';
@@ -24,6 +24,7 @@ import { useTranslation } from 'react-i18next';
 import type { ServiceListing } from '@/types';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
+import { isCoordinatePair } from '@/lib/location';
 
 type NewListingFormProps = {
   initialListing?: ServiceListing | null;
@@ -52,7 +53,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const { user } = useAuth();
   const { toast } = useToast();
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { active, loading: membershipLoading, membership } = useMembership();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(undefined);
@@ -79,8 +80,10 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const [locationHint, setLocationHint] = useState<string | null>(null);
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
   const [offeredFile, setOfferedFile] = useState<File | null>(null);
+  const [offeredFileName, setOfferedFileName] = useState('');
   const isBusiness = membership?.plan === 'Business' && active;
   const autoLocationRequestedRef = useRef(false);
+  const offeredFileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -139,7 +142,8 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         : ''
     );
     setRequestedMoneyCurrency(initialListing.requestedMoney?.currency || 'USD');
-    setLocation(initialListing.location || '');
+    const initialLocation = initialListing.location || '';
+    setLocation(isCoordinatePair(initialLocation) ? '' : initialLocation);
     setGeo(initialListing.geo);
     setExistingImageUrl(initialListing.offeredService?.imageUrl || undefined);
     setImagePreview(initialListing.offeredService?.imageUrl || null);
@@ -149,6 +153,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     const file = event.target.files?.[0];
     if (file) {
       setOfferedFile(file);
+      setOfferedFileName(file.name);
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -157,8 +162,39 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     } else {
       setImagePreview(existingImageUrl || null);
       setOfferedFile(null);
+      setOfferedFileName('');
     }
   };
+
+  async function reverseGeocode(lat: number, lng: number): Promise<string | undefined> {
+    try {
+      const url = new URL('https://nominatim.openstreetmap.org/reverse');
+      url.searchParams.set('format', 'jsonv2');
+      url.searchParams.set('lat', String(lat));
+      url.searchParams.set('lon', String(lng));
+      url.searchParams.set('zoom', '12');
+      url.searchParams.set('addressdetails', '1');
+      const res = await fetch(url.toString(), {
+        headers: {
+          'Accept-Language': i18n.resolvedLanguage || i18n.language || 'en',
+        },
+      });
+      if (!res.ok) return undefined;
+      const data: any = await res.json();
+      const address = data?.address || {};
+      const city = String(address.city || address.town || address.village || address.state_district || '').trim();
+      const state = String(address.state || '').trim();
+      const country = String(address.country || '').trim();
+      const parts = [city, state, country].filter(Boolean);
+      if (parts.length) return Array.from(new Set(parts)).join(', ');
+      const display = String(data?.display_name || '').trim();
+      if (!display) return undefined;
+      const compact = display.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 3).join(', ');
+      return compact || undefined;
+    } catch {
+      return undefined;
+    }
+  }
 
   async function useCurrentLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -169,7 +205,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     setLocating(true);
     setLocationHint(null);
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = Number(position.coords.latitude);
         const lng = Number(position.coords.longitude);
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -179,8 +215,16 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
           return;
         }
         setGeo({ lat, lng });
+        const resolvedLocation = await reverseGeocode(lat, lng);
+        if (resolvedLocation) {
+          setLocation(resolvedLocation);
+        }
         setLocationHintTone('success');
-        setLocationHint(t('listings.form.locationCaptured'));
+        setLocationHint(
+          resolvedLocation
+            ? t('listings.form.locationCapturedWithAddress', { location: resolvedLocation })
+            : t('listings.form.locationCaptured')
+        );
         setLocating(false);
       },
       (error) => {
@@ -350,8 +394,10 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         setLocation('');
         setGeo(undefined);
         setOfferedFile(null);
+        setOfferedFileName('');
         setImagePreview(null);
         setExistingImageUrl(undefined);
+        setLocationHint(null);
       }
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403) {
@@ -396,15 +442,54 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             </div>
             <div className="space-y-2">
                 <Label htmlFor="offeredServiceImage">{t('listings.form.imageLabel')}</Label>
-                <div className="flex items-center gap-4">
-                    <Input id="offeredServiceImage" type="file" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} className="w-full" />
+                <Input
+                  id="offeredServiceImage"
+                  ref={offeredFileInputRef}
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <div className="rounded-lg border border-dashed border-border p-3">
+                  <div className="flex items-center gap-3">
                     {imagePreview ? (
-                        <Image src={imagePreview} alt={t('listings.form.imageAlt')} width={80} height={80} className="rounded-md object-cover" data-ai-hint="service photo"/>
+                      <Image src={imagePreview} alt={t('listings.form.imageAlt')} width={80} height={80} className="rounded-md object-cover" data-ai-hint="service photo" />
                     ) : (
-                        <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-                            <UploadCloudIcon className="h-8 w-8"/>
-                        </div>
+                      <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+                        <UploadCloudIcon className="h-8 w-8" />
+                      </div>
                     )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {offeredFileName || t('listings.form.imageNoFile')}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{t('listings.form.imageFormatsHint')}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => offeredFileInputRef.current?.click()}
+                    >
+                      <UploadCloudIcon className="mr-2 h-4 w-4" />
+                      {imagePreview ? t('listings.form.imageChange') : t('listings.form.imageChoose')}
+                    </Button>
+                    {imagePreview ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => {
+                          setOfferedFile(null);
+                          setOfferedFileName('');
+                          setImagePreview(existingImageUrl || null);
+                          if (offeredFileInputRef.current) offeredFileInputRef.current.value = '';
+                        }}
+                      >
+                        {t('listings.form.imageClear')}
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
                 {errors?.offeredServiceImage && <p className="text-sm text-destructive">{errors.offeredServiceImage.join(', ')}</p>}
             </div>
@@ -505,15 +590,11 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
                 <Label htmlFor="location">{t('listings.form.locationLabel')}</Label>
                 <Input id="location" placeholder={t('listings.form.locationPlaceholder')} value={location} onChange={(e)=>setLocation(e.target.value)} />
                 <div className="flex items-center gap-2 mt-2">
-                  <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
-                    {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
-                    {t('listings.form.useCurrentLocation')}
-                  </Button>
-                  {geo ? (
-                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                      <CheckCircle2Icon className="h-3 w-3" />
-                      {t('listings.form.locationCaptured')}
-                    </span>
+                  {(locating || !geo || !location.trim()) ? (
+                    <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+                      {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
+                      {t('listings.form.useCurrentLocation')}
+                    </Button>
                   ) : null}
                 </div>
                 {locationHint ? (

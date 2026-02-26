@@ -41,6 +41,20 @@ export default function EditListingScreen() {
   const [pickedImage, setPickedImage] = useState(false);
   const autoLocationRequestedRef = useRef(false);
 
+  async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
+    try {
+      const rows = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lng });
+      const first = rows?.[0];
+      if (!first) return undefined;
+      const city = String(first.city || first.subregion || first.region || '').trim();
+      const country = String(first.country || '').trim();
+      const parts = [city, country].filter(Boolean);
+      return parts.length ? parts.join(', ') : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   useEffect(() => {
     (async () => {
       if (!id) return;
@@ -116,21 +130,21 @@ export default function EditListingScreen() {
     }
     if (!title.trim()) return Alert.alert(t('common.error') || 'Error', t('listings.missing_title') || 'Offer title is required.');
     if (!location.trim() && !geo) {
-      return Alert.alert(t('common.error') || 'Error', 'Please add location text or use current GPS location.');
+      return Alert.alert(t('common.error') || 'Error', t('listings.form.locationRequired'));
     }
     if (requestedKind === 'service' && !requestedTitle.trim()) {
       return Alert.alert(t('common.error') || 'Error', t('listings.missing_request') || 'Request title is required.');
     }
     if (requestedKind === 'product' && !requestedProductName.trim()) {
-      return Alert.alert(t('common.error') || 'Error', 'Requested product is required.');
+      return Alert.alert(t('common.error') || 'Error', t('listings.form.requestedProductRequired'));
     }
     if (requestedKind === 'money') {
       const amount = Number(requestedMoneyAmount);
       if (!Number.isFinite(amount) || amount <= 0) {
-        return Alert.alert(t('common.error') || 'Error', 'Requested amount must be greater than zero.');
+        return Alert.alert(t('common.error') || 'Error', t('listings.form.requestedAmountInvalid'));
       }
       if (!requestedMoneyCurrency.trim()) {
-        return Alert.alert(t('common.error') || 'Error', 'Requested currency is required.');
+        return Alert.alert(t('common.error') || 'Error', t('listings.form.requestedCurrencyRequired'));
       }
     }
     setSaving(true);
@@ -210,7 +224,7 @@ export default function EditListingScreen() {
       const perm = await Location.requestForegroundPermissionsAsync();
       if (!perm.granted) {
         if (!auto) {
-          Alert.alert(t('common.error') || 'Error', 'Location permission denied. Please enable location access in your device settings.');
+          Alert.alert(t('common.error') || 'Error', t('listings.form.locationPermissionDenied'));
         }
         return;
       }
@@ -219,14 +233,16 @@ export default function EditListingScreen() {
       const lng = Number(position.coords.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
         if (!auto) {
-          Alert.alert(t('common.error') || 'Error', 'Unable to read your current location.');
+          Alert.alert(t('common.error') || 'Error', t('listings.form.locationReadFailed'));
         }
         return;
       }
+      const resolved = await formatLocationFromGeo(lat, lng);
+      if (resolved) setLocation(resolved);
       setGeo({ lat, lng });
     } catch {
       if (!auto) {
-        Alert.alert(t('common.error') || 'Error', 'Unable to get your current location.');
+        Alert.alert(t('common.error') || 'Error', t('listings.form.locationFetchFailed'));
       }
     } finally {
       setLocating(false);
@@ -275,12 +291,12 @@ export default function EditListingScreen() {
             <TouchableOpacity
               key={kind}
               onPress={() => setRequestedKind(kind)}
-              style={cn(
-                'rounded-full border px-3 py-1.5',
-                requestedKind === kind ? 'border-primary bg-primary/10' : 'border-border'
-              )}
-            >
-              <Text style={cn('text-xs text-foreground')}>{kind.toUpperCase()}</Text>
+            style={cn(
+              'rounded-full border px-3 py-1.5',
+              requestedKind === kind ? 'border-primary bg-primary/10' : 'border-border'
+            )}
+          >
+              <Text style={cn('text-xs text-foreground')}>{t(`listings.form.kind.${kind}`)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -298,12 +314,12 @@ export default function EditListingScreen() {
             <Input
               value={requestedProductName}
               onChangeText={setRequestedProductName}
-              placeholder="Requested product"
+              placeholder={t('listings.form.requestedProductPlaceholder')}
             />
             <Textarea
               value={requestedProductDescription}
               onChangeText={setRequestedProductDescription}
-              placeholder="Product details"
+              placeholder={t('listings.form.productDetailsPlaceholder')}
             />
           </>
         ) : null}
@@ -312,13 +328,13 @@ export default function EditListingScreen() {
             <Input
               value={requestedMoneyAmount}
               onChangeText={setRequestedMoneyAmount}
-              placeholder="Requested amount"
+              placeholder={t('listings.form.requestedAmountPlaceholder')}
               keyboardType="decimal-pad"
             />
             <Input
               value={requestedMoneyCurrency}
               onChangeText={(v) => setRequestedMoneyCurrency(v.toUpperCase())}
-              placeholder="Currency (USD, EGP...)"
+              placeholder={t('listings.form.requestedCurrencyPlaceholder')}
             />
           </>
         ) : null}
@@ -330,12 +346,12 @@ export default function EditListingScreen() {
           style={cn('rounded-lg border border-border px-4 py-2', locating ? 'opacity-70' : '')}
         >
           <Text style={cn('text-center text-foreground')}>
-            {locating ? 'Locating...' : 'Use Current Location'}
+            {locating ? t('listings.form.locating') : t('listings.form.useCurrentLocation')}
           </Text>
         </TouchableOpacity>
         {geo ? (
           <Text style={cn('text-xs text-muted-foreground')}>
-            GPS location selected
+            {t('listings.form.locationCaptured')}
           </Text>
         ) : null}
         {imageUri ? (
