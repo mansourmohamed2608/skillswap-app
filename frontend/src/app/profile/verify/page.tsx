@@ -24,6 +24,11 @@ export default function VerifyProfilePage() {
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
 
+  const statusCode = String(status?.status || '').trim().toUpperCase();
+  const statusLabel = statusCode
+    ? t(`profile.verify.status.${statusCode.toLowerCase()}`, { defaultValue: statusCode })
+    : '';
+
   useEffect(() => {
     if (!loading && !user) router.push('/auth/signin');
   }, [user, loading, router]);
@@ -57,8 +62,8 @@ export default function VerifyProfilePage() {
     // Validate file size (5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
-        title: 'File Too Large',
-        description: 'File must be smaller than 5MB',
+        title: t('profile.verify.fileTooLargeTitle'),
+        description: t('profile.verify.fileTooLargeBody'),
         variant: 'destructive',
       });
       return;
@@ -68,8 +73,8 @@ export default function VerifyProfilePage() {
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'];
     if (!validTypes.includes(file.type)) {
       toast({
-        title: 'Invalid File Type',
-        description: 'Only JPG, PNG, WEBP, or PDF files are allowed',
+        title: t('profile.verify.invalidFileTypeTitle'),
+        description: t('profile.verify.invalidFileTypeBody'),
         variant: 'destructive',
       });
       return;
@@ -99,8 +104,8 @@ export default function VerifyProfilePage() {
   async function submitVerification() {
     if (!user || !frontFile || !backFile) {
       toast({
-        title: 'Missing Files',
-        description: 'Please upload both front and back of your ID',
+        title: t('profile.verify.missingFilesTitle'),
+        description: t('profile.verify.missingFilesBody'),
         variant: 'destructive',
       });
       return;
@@ -113,26 +118,26 @@ export default function VerifyProfilePage() {
 
       if (data.result?.status === 'VERIFIED') {
         toast({
-          title: 'Verification Successful',
-          description: 'Your identity has been verified!',
+          title: t('profile.verify.successTitle'),
+          description: t('profile.verify.successBody'),
         });
       } else if (data.result?.status === 'FAILED') {
         toast({
-          title: 'Verification Failed',
-          description: data.result?.reason || 'Please check your documents and try again',
+          title: t('profile.verify.failedTitle'),
+          description: data.result?.reason || t('profile.verify.failedBody'),
           variant: 'destructive',
         });
       } else if (data.result?.status === 'IN_REVIEW') {
         toast({
-          title: 'Under Review',
-          description: 'Your documents are being reviewed. This may take a few minutes.',
+          title: t('profile.verify.inReviewTitle'),
+          description: t('profile.verify.inReviewBody'),
         });
       }
     } catch (err: any) {
       console.error('Verification failed', err);
       toast({
-        title: 'Verification Error',
-        description: err.message || 'An error occurred',
+        title: t('profile.verify.errorTitle'),
+        description: err.message || t('profile.verify.errorBody'),
         variant: 'destructive',
       });
     } finally {
@@ -154,53 +159,53 @@ export default function VerifyProfilePage() {
         <CardHeader>
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-7 w-7 text-primary" />
-            <CardTitle className="text-2xl">Identity Verification</CardTitle>
+            <CardTitle className="text-2xl">{t('profile.verify.title')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
           {status && (
             <div className="rounded-lg border bg-muted/30 p-4">
               <div className="flex items-center gap-2 font-medium mb-2">
-                {status.status === 'VERIFIED' && <CheckCircle className="h-5 w-5 text-emerald-600" />}
-                {status.status === 'FAILED' && <XCircle className="h-5 w-5 text-rose-600" />}
-                Current Status:{' '}
+                {statusCode === 'VERIFIED' && <CheckCircle className="h-5 w-5 text-emerald-600" />}
+                {statusCode === 'FAILED' && <XCircle className="h-5 w-5 text-rose-600" />}
+                {t('profile.verify.currentStatus')}{' '}
                 <span className={`uppercase ${
-                  status.status === 'VERIFIED' ? 'text-emerald-600' :
-                  status.status === 'FAILED' ? 'text-rose-600' :
+                  statusCode === 'VERIFIED' ? 'text-emerald-600' :
+                  statusCode === 'FAILED' ? 'text-rose-600' :
                   'text-amber-600'
                 }`}>
-                  {status.status}
+                  {statusLabel}
                 </span>
               </div>
               {status.reason && <div className="text-sm text-muted-foreground">{status.reason}</div>}
               {status.verifiedName && (
                 <div className="text-sm text-muted-foreground">
-                  Verified as: {status.verifiedName}
+                  {t('profile.verify.verifiedAs', { name: status.verifiedName })}
                 </div>
               )}
               {status.documentNumber && (
                 <div className="text-sm text-muted-foreground">
-                  Document No.: {status.documentNumber}
+                  {t('profile.verify.documentNumber', { number: status.documentNumber })}
                 </div>
               )}
             </div>
           )}
 
-          {(!status || status.status === 'FAILED') && (
+          {(!status || statusCode === 'FAILED') && (
             <>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>Upload clear photos of the front and back of your Egypt National ID</p>
+                <p>{t('profile.verify.uploadHint')}</p>
                 <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Ensure all text is clearly visible</li>
-                  <li>Photos should be well-lit with no glare</li>
-                  <li>Accepted formats: JPG, PNG, WEBP, PDF (max 5MB each)</li>
+                  <li>{t('profile.verify.uploadRule1')}</li>
+                  <li>{t('profile.verify.uploadRule2')}</li>
+                  <li>{t('profile.verify.uploadRule3')}</li>
                 </ul>
               </div>
 
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="front-upload" className="mb-2 block">
-                    Front of ID *
+                    {t('profile.verify.uploadFront')}
                   </Label>
                   <div className="space-y-2">
                     <Input
@@ -212,7 +217,7 @@ export default function VerifyProfilePage() {
                     />
                     {frontPreview && (
                       <div className="relative w-full h-48 border rounded-lg overflow-hidden bg-muted">
-                        <img src={frontPreview} alt="Front preview" className="w-full h-full object-contain" />
+                        <img src={frontPreview} alt={t('profile.verify.frontPreviewAlt')} className="w-full h-full object-contain" />
                       </div>
                     )}
                     {frontFile && !frontPreview && (
@@ -226,7 +231,7 @@ export default function VerifyProfilePage() {
 
                 <div>
                   <Label htmlFor="back-upload" className="mb-2 block">
-                    Back of ID *
+                    {t('profile.verify.uploadBack')}
                   </Label>
                   <div className="space-y-2">
                     <Input
@@ -238,7 +243,7 @@ export default function VerifyProfilePage() {
                     />
                     {backPreview && (
                       <div className="relative w-full h-48 border rounded-lg overflow-hidden bg-muted">
-                        <img src={backPreview} alt="Back preview" className="w-full h-full object-contain" />
+                        <img src={backPreview} alt={t('profile.verify.backPreviewAlt')} className="w-full h-full object-contain" />
                       </div>
                     )}
                     {backFile && !backPreview && (
@@ -260,40 +265,40 @@ export default function VerifyProfilePage() {
                 {busy ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Verifying...
+                    {t('profile.verify.submitting')}
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="mr-2 h-4 w-4" />
-                    Submit for Verification
+                    {t('profile.verify.submit')}
                   </>
                 )}
               </Button>
             </>
           )}
 
-          {status?.status === 'PENDING' && (
+          {statusCode === 'PENDING' && (
             <div className="text-center space-y-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-              <p className="text-muted-foreground">Your verification is in progress. This may take a few minutes.</p>
+              <p className="text-muted-foreground">{t('profile.verify.pendingBody')}</p>
             </div>
           )}
 
-          {status?.status === 'IN_REVIEW' && (
+          {statusCode === 'IN_REVIEW' && (
             <div className="text-center space-y-3">
-              <p className="text-amber-600">Your documents are being reviewed manually. This may take up to 24 hours.</p>
+              <p className="text-amber-600">{t('profile.verify.inReviewLongBody')}</p>
               <Button onClick={() => router.push('/profile')} variant="outline">
-                Back to Profile
+                {t('profile.verify.backToProfile')}
               </Button>
             </div>
           )}
 
-          {status?.status === 'VERIFIED' && (
+          {statusCode === 'VERIFIED' && (
             <div className="text-center space-y-3">
               <CheckCircle className="h-12 w-12 text-emerald-600 mx-auto" />
-              <p className="text-emerald-600 font-medium">Your identity has been verified!</p>
+              <p className="text-emerald-600 font-medium">{t('profile.verify.verifiedBody')}</p>
               <Button onClick={() => router.push('/profile')} variant="outline">
-                Back to Profile
+                {t('profile.verify.backToProfile')}
               </Button>
             </div>
           )}

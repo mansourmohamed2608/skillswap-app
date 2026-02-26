@@ -25,6 +25,7 @@ import { createReview, fetchReviewsForListing, submitReport } from '@/services/a
 import { getErrorMessage } from '@/lib/errors';
 import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
 
 type Props = {
   listing: ServiceListing;
@@ -58,6 +59,12 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     : listing.requestedKind === 'product'
       ? t('listings.card.productRequested')
       : t('listings.detail.requestedTitle');
+  const offeredCategory = listing.offeredService?.category
+    ? getServiceCategoryLabel(listing.offeredService.category, t)
+    : t('listings.card.generalCategory');
+  const requestedCategory = listing.requestedService?.category
+    ? getServiceCategoryLabel(listing.requestedService.category, t)
+    : t('listings.card.generalCategory');
   const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
   const publicOwnerLocation = getPublicLocationLabel(resolvedOwner?.location, t('listings.card.locationApprox'));
 
@@ -156,7 +163,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
         <CardHeader className="p-6">
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
-              <CategoryPill category={listing.offeredService?.category || t('listings.card.generalCategory')} className="mb-2" />
+              <CategoryPill category={offeredCategory} className="mb-2" />
               <CardTitle className="text-3xl font-bold">{listing.offeredService?.title || t('listings.card.untitled')}</CardTitle>
             </div>
             <Badge variant={statusInfo.variant} className="text-md px-3 py-1.5 self-start md:self-center">
@@ -190,7 +197,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           <div>
             <h3 className="text-xl font-semibold mb-2 text-accent">{requestedHeading}</h3>
             <p className="font-medium text-lg text-accent/90">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
-            <CategoryPill category={listing.requestedService?.category || t('listings.card.generalCategory')} className="my-2"/>
+            <CategoryPill category={requestedCategory} className="my-2"/>
             <p className="text-foreground/90 leading-relaxed">{listing.requestedService.description}</p>
           </div>
 

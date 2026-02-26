@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { SearchIcon, FilterIcon } from 'lucide-react';
-import { serviceCategories } from '@/services/serviceCategories';
+import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
 import { useState } from 'react';
 import { SearchResults } from '@/features/listings/components/SearchResults';
 
@@ -44,7 +44,7 @@ export function ServicesHeaderAndFilters() {
                 <SelectItem value="all">{t('services.allCategories')}</SelectItem>
                 {serviceCategories.map((category) => (
                   <SelectItem key={category} value={category}>
-                    {category}
+                    {getServiceCategoryLabel(category, t)}
                   </SelectItem>
                 ))}
               </SelectContent>

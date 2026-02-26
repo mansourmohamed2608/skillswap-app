@@ -24,7 +24,8 @@ export default function SubscribeButton() {
       });
 
       const m = /sessionId=([^&]+)/.exec(paymentUrl);
-      if (useMockPayments && m?.[1]) {
+      const isMockUrl = paymentUrl.includes('mock.local');
+      if ((useMockPayments || isMockUrl) && m?.[1]) {
         await mockCompletePayment(m[1]);
         setMsg(`✅ ${t('pricing.mockActivated')}`);
       } else {

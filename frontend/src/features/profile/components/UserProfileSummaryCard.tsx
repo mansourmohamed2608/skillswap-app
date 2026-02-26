@@ -12,6 +12,7 @@ import { CategoryPill } from '@/features/listings/components/CategoryPill';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
 
 interface UserProfileSummaryCardProps {
   user: User;
@@ -97,7 +98,7 @@ export function UserProfileSummaryCard({ user }: UserProfileSummaryCardProps) {
                 {user.servicesOffered.map(service => (
                   <li key={service.id} className="p-3 bg-background rounded-md border">
                     <p className="font-medium">{service.title}</p>
-                    <CategoryPill category={service.category} className="mt-1" />
+                    <CategoryPill category={getServiceCategoryLabel(service.category, t)} className="mt-1" />
                   </li>
                 ))}
               </ul>
@@ -112,7 +113,7 @@ export function UserProfileSummaryCard({ user }: UserProfileSummaryCardProps) {
                 {user.servicesRequested.map(service => (
                   <li key={service.id} className="p-3 bg-background rounded-md border">
                     <p className="font-medium">{service.title}</p>
-                    <CategoryPill category={service.category} className="mt-1" />
+                    <CategoryPill category={getServiceCategoryLabel(service.category, t)} className="mt-1" />
                   </li>
                 ))}
               </ul>

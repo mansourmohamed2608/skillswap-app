@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState, FormEvent } from 'react';
 import Image from 'next/image';
-import { serviceCategories } from '@/services/serviceCategories';
+import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -76,6 +76,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const [requestedMoneyCurrency, setRequestedMoneyCurrency] = useState('USD');
   const [location, setLocation] = useState('');
   const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
+  const [locationSource, setLocationSource] = useState<'none' | 'manual' | 'gps'>('none');
   const [locating, setLocating] = useState(false);
   const [locationHint, setLocationHint] = useState<string | null>(null);
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
@@ -117,6 +118,13 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     return Array.from(new Set(combined));
   }, [customCategories, initialListing?.offeredService?.category, initialListing?.requestedService?.category]);
 
+  const localizedCategoryOptions = useMemo(() => {
+    return categoryOptions.map((value) => ({
+      value,
+      label: getServiceCategoryLabel(value, t),
+    }));
+  }, [categoryOptions, i18n.resolvedLanguage, t]);
+
   useEffect(() => {
     if (!initialListing) return;
     setOfferedServiceTitle(initialListing.offeredService?.title || '');
@@ -143,7 +151,15 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     );
     setRequestedMoneyCurrency(initialListing.requestedMoney?.currency || 'USD');
     const initialLocation = initialListing.location || '';
-    setLocation(isCoordinatePair(initialLocation) ? '' : initialLocation);
+    const initialLocationText = isCoordinatePair(initialLocation) ? '' : initialLocation;
+    setLocation(initialLocationText);
+    setLocationSource(
+      initialLocationText.trim()
+        ? 'manual'
+        : initialListing.geo
+          ? 'gps'
+          : 'none'
+    );
     setGeo(initialListing.geo);
     setExistingImageUrl(initialListing.offeredService?.imageUrl || undefined);
     setImagePreview(initialListing.offeredService?.imageUrl || null);
@@ -215,6 +231,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
           return;
         }
         setGeo({ lat, lng });
+        setLocationSource('gps');
         const resolvedLocation = await reverseGeocode(lat, lng);
         if (resolvedLocation) {
           setLocation(resolvedLocation);
@@ -256,6 +273,21 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     // Intentionally run only when auth/location readiness changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, location, geo]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!geo || locationSource !== 'gps') return;
+      const resolvedLocation = await reverseGeocode(geo.lat, geo.lng);
+      if (!mounted || !resolvedLocation) return;
+      setLocation(resolvedLocation);
+      setLocationHintTone('success');
+      setLocationHint(t('listings.form.locationCapturedWithAddress', { location: resolvedLocation }));
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [geo?.lat, geo?.lng, i18n.resolvedLanguage, locationSource, t]);
   
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -392,6 +424,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         setRequestedMoneyAmount('');
         setRequestedMoneyCurrency('USD');
         setLocation('');
+        setLocationSource('none');
         setGeo(undefined);
         setOfferedFile(null);
         setOfferedFileName('');
@@ -428,8 +461,8 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
                 <Select value={offeredServiceCategory} onValueChange={setOfferedServiceCategory}>
                   <SelectTrigger><SelectValue placeholder={t('listings.form.categoryPlaceholder')} /></SelectTrigger>
                   <SelectContent>
-                    {categoryOptions.map(category => (
-                      <SelectItem key={`offered-${category}`} value={category}>{category}</SelectItem>
+                    {localizedCategoryOptions.map((category) => (
+                      <SelectItem key={`offered-${category.value}`} value={category.value}>{category.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -524,8 +557,8 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
                   <Select value={requestedServiceCategory} onValueChange={setRequestedServiceCategory}>
                     <SelectTrigger><SelectValue placeholder={t('listings.form.categoryPlaceholder')} /></SelectTrigger>
                     <SelectContent>
-                      {categoryOptions.map(category => (
-                        <SelectItem key={`requested-${category}`} value={category}>{category}</SelectItem>
+                      {localizedCategoryOptions.map((category) => (
+                        <SelectItem key={`requested-${category.value}`} value={category.value}>{category.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -588,7 +621,16 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
             ) : null}
              <div className="space-y-1 !mt-12">
                 <Label htmlFor="location">{t('listings.form.locationLabel')}</Label>
-                <Input id="location" placeholder={t('listings.form.locationPlaceholder')} value={location} onChange={(e)=>setLocation(e.target.value)} />
+                <Input
+                  id="location"
+                  placeholder={t('listings.form.locationPlaceholder')}
+                  value={location}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setLocation(next);
+                    setLocationSource(next.trim() ? 'manual' : geo ? 'gps' : 'none');
+                  }}
+                />
                 <div className="flex items-center gap-2 mt-2">
                   {(locating || !geo || !location.trim()) ? (
                     <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>

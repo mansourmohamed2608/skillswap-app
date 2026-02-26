@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
 
 
 interface ServiceCardProps {
@@ -89,6 +90,12 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
     : listing.requestedKind === 'product'
       ? t('listings.card.productRequested')
       : t('listings.card.exchangeFor');
+  const offeredCategory = listing.offeredService?.category
+    ? getServiceCategoryLabel(listing.offeredService.category, t)
+    : t('listings.card.generalCategory');
+  const requestedCategory = listing.requestedService?.category
+    ? getServiceCategoryLabel(listing.requestedService.category, t)
+    : t('listings.card.generalCategory');
   const publicOwnerLocation = getPublicLocationLabel(resolvedUser?.location, t('listings.card.locationApprox'));
   const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
 
@@ -131,7 +138,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
       </CardHeader>
       <CardContent className="p-4 flex-grow">
         <div className="mb-2">
-          <CategoryPill category={listing.offeredService?.category || t('listings.card.generalCategory')} />
+          <CategoryPill category={offeredCategory} />
         </div>
         <CardTitle className="text-lg mb-1">{listing.offeredService?.title || t('listings.card.untitled')}</CardTitle>
         <CardDescription className="text-sm text-muted-foreground mb-2 line-clamp-2">
@@ -144,7 +151,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
 
         <h4 className="font-semibold text-md mb-1">{exchangeLabel}</h4>
         <p className="text-sm font-medium text-primary mb-1">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
-        <CategoryPill category={listing.requestedService?.category || t('listings.card.generalCategory')} className="mb-1"/>
+        <CategoryPill category={requestedCategory} className="mb-1"/>
         <CardDescription className="text-xs text-muted-foreground line-clamp-2">
           {listing.requestedService?.description ?? ''}
         </CardDescription>
