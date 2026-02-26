@@ -1,6 +1,5 @@
 
 import { auth, db, isFirebaseConfigured } from './firebase';
-console.log("isFirebaseConfigured in data.ts:", isFirebaseConfigured.toString());
 
 import { collection, getDocs, doc, getDoc, query, where, DocumentData, Timestamp, limit, orderBy } from 'firebase/firestore';
 import type { ServiceListing, User } from '@/types';
@@ -81,15 +80,38 @@ const mapApiHitToListing = (hit: any): ServiceListing => {
     const requestedTitle = hit.requestedService?.title || '';
     const requestedCategory = hit.requestedService?.category || '';
     const requestedDescription = hit.requestedService?.description || '';
+    const requestedKind = (hit.requestedKind || 'service') as ServiceListing['requestedKind'];
+    const requestedProduct = hit.requestedProduct && typeof hit.requestedProduct === 'object'
+        ? {
+            name: String(hit.requestedProduct.name || ''),
+            description: hit.requestedProduct.description ? String(hit.requestedProduct.description) : undefined,
+        }
+        : hit.requestedProductName
+            ? { name: String(hit.requestedProductName), description: undefined }
+        : undefined;
+    const requestedMoney = hit.requestedMoney && typeof hit.requestedMoney === 'object'
+        ? {
+            amount: Number(hit.requestedMoney.amount || 0),
+            currency: String(hit.requestedMoney.currency || 'USD'),
+        }
+        : hit.requestedMoneyAmount !== undefined && hit.requestedMoneyAmount !== null
+            ? { amount: Number(hit.requestedMoneyAmount || 0), currency: String(hit.requestedMoneyCurrency || 'USD') }
+        : undefined;
     const createdAt = hit.createdAt || hit.postedDate;
     return {
         id: hit.objectID || hit.id || `${Math.random()}`,
         offeredByUserId: hit.userId || hit.offeredByUserId || 'unknown',
         offeredService: { title, description, category, imageUrl },
         requestedService: { title: requestedTitle, description: requestedDescription, category: requestedCategory },
+        requestedKind,
+        requestedProduct,
+        requestedMoney,
         postedDate: toIsoOrNow(createdAt),
         status: (hit.status as ServiceListing['status']) || 'open',
         location: hit.location || '',
+        geo: (hit.geo && Number.isFinite(Number(hit.geo.lat)) && Number.isFinite(Number(hit.geo.lng)))
+            ? { lat: Number(hit.geo.lat), lng: Number(hit.geo.lng) }
+            : undefined,
     };
 };
 
@@ -131,9 +153,21 @@ function docToServiceListing(doc: DocumentData): ServiceListing {
         offeredByUserId: data.userId ?? data.offeredByUserId ?? 'unknown',
         offeredService: offered,
         requestedService: requested,
+        requestedKind: (data.requestedKind || 'service') as ServiceListing['requestedKind'],
+        requestedProduct: data.requestedProduct ? {
+            name: String(data.requestedProduct.name || ''),
+            description: data.requestedProduct.description ? String(data.requestedProduct.description) : undefined,
+        } : undefined,
+        requestedMoney: data.requestedMoney ? {
+            amount: Number(data.requestedMoney.amount || 0),
+            currency: String(data.requestedMoney.currency || 'USD'),
+        } : undefined,
         postedDate: posted,
         status: (data.status as ServiceListing['status']) ?? 'open',
         location: data.location,
+        geo: (data.geo && Number.isFinite(Number(data.geo.lat)) && Number.isFinite(Number(data.geo.lng)))
+            ? { lat: Number(data.geo.lat), lng: Number(data.geo.lng) }
+            : undefined,
     };
 }
 
@@ -315,22 +349,27 @@ export type WishSummary = {
 
 export async function getFeaturedWishes(options?: { count?: number }): Promise<WishSummary[]> {
     if (!isFirebaseConfigured() || !db) return [];
-    const size = Math.min(20, Math.max(1, options?.count ?? 4));
-    const q = query(collection(db, 'wishes'), orderBy('createdAt', 'desc'), limit(size));
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => {
-        const data: any = d.data() || {};
-        return {
-            id: d.id,
-            title: data.title,
-            description: data.description,
-            totalDonated: data.totalDonated,
-            goalAmount: data.goalAmount,
-            currency: data.currency,
-            category: data.category,
-            deadline: data.deadline,
-            imageUrl: data.imageUrl || null,
-            videoUrl: data.videoUrl || null,
-        } as WishSummary;
-    });
+    try {
+        const size = Math.min(20, Math.max(1, options?.count ?? 4));
+        const q = query(collection(db, 'wishes'), orderBy('createdAt', 'desc'), limit(size));
+        const snap = await getDocs(q);
+        return snap.docs.map((d) => {
+            const data: any = d.data() || {};
+            return {
+                id: d.id,
+                title: data.title,
+                description: data.description,
+                totalDonated: data.totalDonated,
+                goalAmount: data.goalAmount,
+                currency: data.currency,
+                category: data.category,
+                deadline: data.deadline,
+                imageUrl: data.imageUrl || null,
+                videoUrl: data.videoUrl || null,
+            } as WishSummary;
+        });
+    } catch (error) {
+        console.error("Error fetching featured wishes:", error);
+        return [];
+    }
 }
