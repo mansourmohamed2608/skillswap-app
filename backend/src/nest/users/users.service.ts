@@ -48,9 +48,13 @@ export class UsersService {
     if (bpWebsite) businessProfile.website = bpWebsite;
     if (bpBrandColor) businessProfile.brandColor = bpBrandColor;
     if (bpLogoUrl) businessProfile.logoUrl = bpLogoUrl;
+    const username = String(data?.profile?.username || data?.username || '').trim();
+    const usernameLower = String(data?.profile?.usernameLower || data?.usernameLower || username.toLowerCase()).trim().toLowerCase();
 
     return {
       uid,
+      username: username || null,
+      usernameLower: username ? usernameLower : null,
       name: data?.name || data?.fullName || data?.displayName || 'Member',
       avatarUrl: data?.avatarUrl || 'https://placehold.co/128x128.png',
       coverUrl: data?.profile?.coverUrl || data?.coverUrl || undefined,
@@ -125,6 +129,24 @@ export class UsersService {
     }
     if (!Object.keys(sanitized).length) {
       throw new StatusError(400, 'No updatable profile fields provided');
+    }
+    if (sanitized.profile && typeof sanitized.profile === 'object') {
+      const profileObj = { ...(sanitized.profile as Record<string, any>) };
+      if (Object.prototype.hasOwnProperty.call(profileObj, 'username')) {
+        const username = String(profileObj.username || '').trim();
+        if (username) {
+          profileObj.username = username;
+          profileObj.usernameLower = username.toLowerCase();
+        } else {
+          delete profileObj.username;
+          delete profileObj.usernameLower;
+        }
+      }
+      if (Object.keys(profileObj).length > 0) {
+        sanitized.profile = profileObj;
+      } else {
+        delete sanitized.profile;
+      }
     }
     const banned = await findBannedKeywordInFields([
       { label: 'name', value: (sanitized as any).name },

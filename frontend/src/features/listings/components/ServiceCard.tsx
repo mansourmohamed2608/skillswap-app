@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getProfilePath } from '@/lib/profile';
 
 
 interface ServiceCardProps {
@@ -165,7 +166,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                   {ownerContent}
                 </div>
               ) : (
-                <Link href={`/profile/${resolvedUser.id}`} className="flex items-start gap-2 group">
+                <Link href={getProfilePath(resolvedUser)} className="flex items-start gap-2 group">
                   {ownerContent}
                 </Link>
               )

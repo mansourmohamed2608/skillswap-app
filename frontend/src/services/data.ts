@@ -24,6 +24,7 @@ const mapUserFromDoc = (id: string, data: any): User => {
 
     return {
         id,
+        username: String(data?.username || data?.profile?.username || '').trim() || undefined,
         name: data?.name || data?.fullName || data?.displayName || 'Anonymous User',
         avatarUrl: data?.avatarUrl || 'https://placehold.co/128x128.png',
         coverUrl: (data?.profile && data.profile.coverUrl) || data?.coverUrl || undefined,
@@ -265,43 +266,145 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
 
 // Fetch user by ID. Returns null on any error or misconfiguration.
 export async function getUserById(id: string): Promise<User | null> {
-    if (!id) return null;
+    const uid = String(id || '').trim();
+    if (!uid) return null;
     if (!isFirebaseConfigured() || !db) return null;
-    if (!hasClientAuth()) return null;
-    const isSelf = auth?.currentUser?.uid === id;
-    if (isSelf) {
-        try {
-            const userDocRef = doc(db!, 'users', id);
-            const userDoc = await getDoc(userDocRef);
-            if (userDoc.exists()) {
-                return mapUserFromDoc(userDoc.id, userDoc.data());
-            }
-        } catch (error) {
-            console.error(`Error fetching user with id ${id}.`, error);
-        }
-    }
-    if (!isSelf) {
-        try {
-            const publicRef = doc(db!, 'publicProfiles', id);
-            const publicSnap = await getDoc(publicRef);
-            if (publicSnap.exists()) {
-                return mapUserFromDoc(publicSnap.id, publicSnap.data());
-            }
-        } catch (error) {
-            console.warn(`Public profile read failed for user ${id}.`, error);
-        }
-        return null;
-    }
+
+    const viewerUid = auth?.currentUser?.uid || null;
+    const isSelf = viewerUid === uid;
+
+    // 1) Public profile (works for both self and others when available).
     try {
-        const publicRef = doc(db!, 'publicProfiles', id);
+        const publicRef = doc(db!, 'publicProfiles', uid);
         const publicSnap = await getDoc(publicRef);
         if (publicSnap.exists()) {
             return mapUserFromDoc(publicSnap.id, publicSnap.data());
         }
     } catch (error) {
-        console.warn(`Public profile read failed for user ${id}.`, error);
+        console.warn(`Public profile read failed for user ${uid}.`, error);
     }
-    console.warn(`User with id ${id} not found in Firestore.`);
+
+    // 2) Fallback to users/{uid} (always for self; best-effort for others).
+    // This covers users created before publicProfiles sync existed.
+    try {
+        const userDocRef = doc(db!, 'users', uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+            if (isSelf) {
+                return mapUserFromDoc(userDoc.id, userDoc.data());
+            }
+            // For non-self, return a safe subset if direct read succeeded.
+            const data: any = userDoc.data() || {};
+            return mapUserFromDoc(userDoc.id, {
+                username: data?.profile?.username || data?.username,
+                name: data?.name || data?.fullName || data?.displayName,
+                avatarUrl: data?.avatarUrl,
+                bio: data?.bio,
+                rating: data?.rating,
+                reviewsCount: data?.reviewsCount,
+                location: data?.location || data?.city,
+                country: data?.country,
+                membershipPlan: data?.membershipPlan || data?.membership?.plan,
+                membershipActive: data?.membershipActive ?? data?.membership?.active,
+                servicesOffered: data?.servicesOffered || [],
+                servicesRequested: data?.servicesRequested || [],
+                businessProfile: data?.businessProfile,
+                kyc: data?.kyc,
+            });
+        }
+    } catch (error) {
+        if (isSelf) {
+            console.error(`Error fetching self user with id ${uid}.`, error);
+        } else {
+            console.warn(`User document read failed for user ${uid}.`, error);
+        }
+    }
+
+    console.warn(`User with id ${uid} not found in Firestore.`);
+    return null;
+}
+
+function normalizeUsername(value: string): string {
+    return String(value || '').trim().toLowerCase();
+}
+
+async function getUserByUsername(username: string): Promise<User | null> {
+    const candidate = String(username || '').trim();
+    if (!candidate || !isFirebaseConfigured() || !db) return null;
+    const usernameLower = normalizeUsername(candidate);
+
+    // 1) Preferred lookup path: indexed lowercase username in publicProfiles.
+    try {
+        const snap = await getDocs(
+            query(collection(db!, 'publicProfiles'), where('usernameLower', '==', usernameLower), limit(1))
+        );
+        if (!snap.empty) {
+            const hit = snap.docs[0];
+            return mapUserFromDoc(hit.id, hit.data());
+        }
+    } catch (error) {
+        console.warn(`Username lookup failed on publicProfiles.usernameLower for "${candidate}".`, error);
+    }
+
+    // 2) Backward compatibility for older docs that only stored username.
+    try {
+        const snap = await getDocs(
+            query(collection(db!, 'publicProfiles'), where('username', '==', candidate), limit(1))
+        );
+        if (!snap.empty) {
+            const hit = snap.docs[0];
+            return mapUserFromDoc(hit.id, hit.data());
+        }
+    } catch (error) {
+        console.warn(`Username lookup failed on publicProfiles.username for "${candidate}".`, error);
+    }
+
+    // 3) Last resort fallback to users collection.
+    try {
+        const snap = await getDocs(
+            query(collection(db!, 'users'), where('profile.usernameLower', '==', usernameLower), limit(1))
+        );
+        if (!snap.empty) {
+            const hit = snap.docs[0];
+            return mapUserFromDoc(hit.id, hit.data());
+        }
+    } catch (error) {
+        console.warn(`Username lookup failed on users.profile.usernameLower for "${candidate}".`, error);
+    }
+
+    try {
+        const snap = await getDocs(
+            query(collection(db!, 'users'), where('profile.username', '==', candidate), limit(1))
+        );
+        if (!snap.empty) {
+            const hit = snap.docs[0];
+            return mapUserFromDoc(hit.id, hit.data());
+        }
+    } catch (error) {
+        console.warn(`Username lookup failed on users.profile.username for "${candidate}".`, error);
+    }
+
+    return null;
+}
+
+export async function getUserByIdentifier(identifier: string): Promise<User | null> {
+    const raw = String(identifier || '').trim();
+    if (!raw) return null;
+
+    // Keep old UID links working.
+    const looksLikeUid = /^[A-Za-z0-9]{20,}$/.test(raw);
+    if (looksLikeUid) {
+        const byId = await getUserById(raw);
+        if (byId) return byId;
+    }
+
+    const byUsername = await getUserByUsername(raw);
+    if (byUsername) return byUsername;
+
+    // In case a custom non-standard id is used, fallback to direct lookup.
+    if (!looksLikeUid) {
+        return await getUserById(raw);
+    }
     return null;
 }
 

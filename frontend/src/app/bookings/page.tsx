@@ -12,7 +12,7 @@ import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { auth, db, isFirebaseConfigured } from "@/services/firebase";
-import { collection, getDocs, query, where, getDoc, doc, DocumentData, Timestamp } from "firebase/firestore";
+import { collection, getDocs, query, where, getDoc, doc, DocumentData } from "firebase/firestore";
 import { RescheduleDialog } from "@/features/bookings/components/RescheduleDialog";
 import {
   acceptRequest,
@@ -24,6 +24,8 @@ import {
 import { useTranslation } from "react-i18next";
 import { formatDate, formatTime } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
+import { getUserById } from "@/services/data";
+import { getProfilePath } from "@/lib/profile";
 
 type RequestItem = {
   id: string;
@@ -94,6 +96,7 @@ export default function BookingsPage() {
 
   const [listingTitles, setListingTitles] = useState<Record<string, string>>({});
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({});
+  const [partnerProfilePaths, setPartnerProfilePaths] = useState<Record<string, string>>({});
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -124,24 +127,25 @@ export default function BookingsPage() {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!db || !auth?.currentUser) return;
+      if (!auth?.currentUser) return;
       const me = auth.currentUser.uid;
       const partnerIds = Array.from(new Set(requests.map(r => (r.ownerId === me ? r.requesterId : r.ownerId))));
-      const map: Record<string, string> = {};
+      const nameMap: Record<string, string> = {};
+      const pathMap: Record<string, string> = {};
       for (const pid of partnerIds) {
         try {
-          const snap = await getDoc(doc(db, 'users', pid));
-          if (snap.exists()) {
-            const d = snap.data() as any;
-            map[pid] = d?.name || d?.fullName || pid;
-          } else {
-            map[pid] = pid;
-          }
+          const profile = await getUserById(pid);
+          nameMap[pid] = profile?.name || pid;
+          pathMap[pid] = profile ? getProfilePath(profile) : `/profile/${encodeURIComponent(pid)}`;
         } catch {
-          map[pid] = pid;
+          nameMap[pid] = pid;
+          pathMap[pid] = `/profile/${encodeURIComponent(pid)}`;
         }
       }
-      if (mounted) setPartnerNames(map);
+      if (mounted) {
+        setPartnerNames(nameMap);
+        setPartnerProfilePaths(pathMap);
+      }
     })();
     return () => { mounted = false };
   }, [requests]);
@@ -204,9 +208,10 @@ export default function BookingsPage() {
                 const uid = auth?.currentUser?.uid;
                 const partnerId = uid === booking.requesterId ? booking.ownerId : booking.requesterId;
                 const name = partnerNames[partnerId] || partnerId;
+                const profilePath = partnerProfilePaths[partnerId] || `/profile/${encodeURIComponent(partnerId)}`;
                 return (
                   <span>
-                    {t('bookings.withLabel')}: <Link href={`/profile/${partnerId}`} className="text-primary hover:underline font-medium">{name}</Link>
+                    {t('bookings.withLabel')}: <Link href={profilePath} className="text-primary hover:underline font-medium">{name}</Link>
                   </span>
                 );
               })()}

@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { UserProfileSummaryCard } from '@/features/profile/components/UserProfileSummaryCard';
-import { getUserById, getListingsByUserId } from '@/services/data';
+import { getUserByIdentifier, getListingsByUserId } from '@/services/data';
 import { PublicProfileContent } from '@/features/profile/components/PublicProfileContent';
 import type { ServiceListing, User } from '@/types';
 
@@ -30,10 +30,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     }
     setLoading(true);
     (async () => {
-      const [user, listings] = await Promise.all([
-        getUserById(params.userId),
-        getListingsByUserId(params.userId),
-      ]);
+      const user = await getUserByIdentifier(params.userId);
+      const listings = user ? await getListingsByUserId(user.id) : [];
       if (!mounted) return;
       setProfile(user);
       setUserListings(listings);

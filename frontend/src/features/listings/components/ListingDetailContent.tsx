@@ -26,6 +26,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getProfilePath } from '@/lib/profile';
 
 type Props = {
   listing: ServiceListing;
@@ -206,7 +207,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           {resolvedOwner ? (
             <div>
               <h3 className="text-xl font-semibold mb-4 text-primary">{t('listings.detail.offeredBy')}</h3>
-              <Link href={`/profile/${resolvedOwner.id}`} className="block hover:bg-card/50 p-4 rounded-lg border transition-colors">
+              <Link href={getProfilePath(resolvedOwner)} className="block hover:bg-card/50 p-4 rounded-lg border transition-colors">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={resolvedOwner.avatarUrl} alt={resolvedOwner.name} data-ai-hint="person photo" />

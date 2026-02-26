@@ -18,9 +18,13 @@ function buildPublicProfile(uid: string, data: Record<string, any>) {
   if (bpWebsite) businessProfile.website = bpWebsite;
   if (bpBrandColor) businessProfile.brandColor = bpBrandColor;
   if (bpLogoUrl) businessProfile.logoUrl = bpLogoUrl;
+  const username = String(data?.profile?.username || data?.username || '').trim();
+  const usernameLower = String(data?.profile?.usernameLower || data?.usernameLower || username.toLowerCase()).trim().toLowerCase();
 
   return {
     uid,
+    username: username || null,
+    usernameLower: username ? usernameLower : null,
     name: data?.name || data?.fullName || data?.displayName || 'Member',
     avatarUrl: data?.avatarUrl || 'https://placehold.co/128x128.png',
     coverUrl: data?.profile?.coverUrl || data?.coverUrl || undefined,
