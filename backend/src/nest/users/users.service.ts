@@ -44,6 +44,16 @@ export class UsersService {
       .slice(0, 64);
   }
 
+  private normalizeSearchToken(value: string): string {
+    const raw = String(value || '').trim().toLowerCase();
+    return raw
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\p{L}\p{N}._\-\s]+/gu, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
     const geo = readGeoPoint(value);
     if (!geo) return undefined;
@@ -399,7 +409,132 @@ export class UsersService {
       }
     } catch {}
 
+    // 5) Last-resort fallback for legacy links when publicProfiles is stale/missing.
+    // This is intentionally bounded and only attempted for slug-like identifiers.
+    if (fallbackSlugMatch) {
+      try {
+        const sample = await admin.firestore()
+          .collection('users')
+          .limit(500)
+          .get();
+        if (!sample.empty) {
+          const matched = sample.docs.find((d) => {
+            const uid = String(d.id || '').toLowerCase();
+            const name = String((d.data() as any)?.name || (d.data() as any)?.fullName || (d.data() as any)?.displayName || '').trim();
+            const slug = this.toNameSlug(name);
+            if (fallbackUidSuffix && uid.endsWith(fallbackUidSuffix)) {
+              return slug === fallbackNameSlug || fallbackNameSlug === 'member';
+            }
+            if (!fallbackUidSuffix) {
+              return Boolean(slug && slug === fallbackNameSlug);
+            }
+            return false;
+          });
+          if (matched) {
+            return this.buildPublicProfile(matched.id, matched.data() || {});
+          }
+        }
+      } catch {}
+    }
+
     return null;
+  }
+
+  async searchPublicProfiles(q: string, limit = 8): Promise<Array<{ uid: string; username?: string; name: string; avatarUrl?: string }>> {
+    const token = this.normalizeSearchToken(q);
+    if (!token || token.length < 2) return [];
+    const lim = Math.min(20, Math.max(1, Number(limit) || 8));
+    const usernamePrefix = this.normalizeUsername(token);
+    const nameSlugPrefix = token
+      .replace(/[^\p{L}\p{N}]+/gu, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-')
+      .slice(0, 64);
+
+    const results = new Map<string, { uid: string; username?: string; name: string; avatarUrl?: string }>();
+
+    try {
+      const [byUsername, byNameSlug] = await Promise.all([
+        admin.firestore()
+          .collection('publicProfiles')
+          .orderBy('usernameLower')
+          .startAt(usernamePrefix)
+          .endAt(`${usernamePrefix}\uf8ff`)
+          .limit(lim)
+          .get()
+          .catch(() => null),
+        nameSlugPrefix
+          ? admin.firestore()
+              .collection('publicProfiles')
+              .orderBy('nameSlug')
+              .startAt(nameSlugPrefix)
+              .endAt(`${nameSlugPrefix}\uf8ff`)
+              .limit(lim)
+              .get()
+              .catch(() => null)
+          : Promise.resolve(null),
+      ]);
+
+      const addSnap = (snap: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData> | null) => {
+        if (!snap || snap.empty) return;
+        snap.docs.forEach((d) => {
+          const data = d.data() || {};
+          const name = String(data?.name || '').trim();
+          const username = String(data?.username || '').trim();
+          if (!name && !username) return;
+          if (!results.has(d.id)) {
+            results.set(d.id, {
+              uid: d.id,
+              username: username || undefined,
+              name: name || username,
+              avatarUrl: String(data?.avatarUrl || '').trim() || undefined,
+            });
+          }
+        });
+      };
+
+      addSnap(byUsername);
+      addSnap(byNameSlug);
+    } catch {}
+
+    if (!results.size) {
+      // Fallback to users collection for stale projects before publicProfiles sync.
+      try {
+        const byNested = await admin.firestore()
+          .collection('users')
+          .orderBy('profile.usernameLower')
+          .startAt(usernamePrefix)
+          .endAt(`${usernamePrefix}\uf8ff`)
+          .limit(lim)
+          .get()
+          .catch(() => null);
+        if (byNested && !byNested.empty) {
+          byNested.docs.forEach((d) => {
+            const data = d.data() || {};
+            const name = String(data?.name || data?.fullName || data?.displayName || '').trim();
+            const username = String(data?.profile?.username || data?.username || '').trim();
+            if (!name && !username) return;
+            if (!results.has(d.id)) {
+              results.set(d.id, {
+                uid: d.id,
+                username: username || undefined,
+                name: name || username,
+                avatarUrl: String(data?.avatarUrl || '').trim() || undefined,
+              });
+            }
+          });
+        }
+      } catch {}
+    }
+
+    const lowered = token.toLowerCase();
+    return Array.from(results.values())
+      .filter((item) => {
+        const name = String(item.name || '').toLowerCase();
+        const username = String(item.username || '').toLowerCase();
+        return name.includes(lowered) || username.includes(lowered);
+      })
+      .slice(0, lim);
   }
 
   async isUsernameAvailable(username: string, currentUserId?: string): Promise<boolean> {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -20,14 +20,23 @@ function normalizeKycStatus(raw?: string | null) {
   return 'PENDING';
 }
 
+function mergeKycStatus(current: string | null, incoming: string | null) {
+  if (!incoming) return current;
+  if (!current) return incoming;
+  if (current === 'VERIFIED' || incoming === 'VERIFIED') return 'VERIFIED';
+  // Avoid downgrading to pending if another source has a stronger status.
+  if (incoming === 'PENDING' && current !== 'PENDING') return current;
+  return incoming;
+}
+
 export function KycGate({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname() || '/';
   const { t } = useTranslation();
   const [kycStatus, setKycStatus] = useState<string | null>(null);
-  const [checking, setChecking] = useState(false);
-  const hasKycDocRef = useRef(false);
+  const [statusDocReady, setStatusDocReady] = useState(false);
+  const [userDocReady, setUserDocReady] = useState(false);
 
   const isVerifyRoute = useMemo(
     () => VERIFY_ROUTES.some((p) => pathname.startsWith(p)),
@@ -38,12 +47,14 @@ export function KycGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!user?.uid || !db) {
       setKycStatus(null);
-      setChecking(false);
-      hasKycDocRef.current = false;
+      setStatusDocReady(false);
+      setUserDocReady(false);
       return;
     }
 
-    setChecking(true);
+    setStatusDocReady(false);
+    setUserDocReady(false);
+    setKycStatus(null);
     const statusRef = doc(db, 'users', user.uid, 'kyc', 'status');
     const userRef = doc(db, 'users', user.uid);
 
@@ -51,28 +62,28 @@ export function KycGate({ children }: { children: React.ReactNode }) {
       statusRef,
       (snap) => {
         if (snap.exists()) {
-          hasKycDocRef.current = true;
-          setKycStatus(normalizeKycStatus((snap.data() as any)?.status));
-          setChecking(false);
-        } else {
-          setChecking(false);
+          const normalized = normalizeKycStatus((snap.data() as any)?.status);
+          setKycStatus((prev) => mergeKycStatus(prev, normalized));
         }
+        setStatusDocReady(true);
       },
-      () => setChecking(false)
+      () => setStatusDocReady(true)
     );
 
     const unsubUser = onSnapshot(
       userRef,
       (snap) => {
-        if (hasKycDocRef.current) return;
         const data: any = snap.data() || {};
         const raw = data?.kyc?.status || data?.kycStatus;
         if (raw) {
-          setKycStatus(normalizeKycStatus(raw));
+          const normalized = normalizeKycStatus(raw);
+          setKycStatus((prev) => mergeKycStatus(prev, normalized));
+        } else {
+          setKycStatus((prev) => mergeKycStatus(prev, 'PENDING'));
         }
-        setChecking(false);
+        setUserDocReady(true);
       },
-      () => setChecking(false)
+      () => setUserDocReady(true)
     );
 
     return () => {
@@ -81,9 +92,11 @@ export function KycGate({ children }: { children: React.ReactNode }) {
     };
   }, [user?.uid]);
 
+  const checking = Boolean(user?.uid) && (!statusDocReady || !userDocReady);
+
   const verified = kycStatus === 'VERIFIED';
   const shouldGate =
-    !!user && !loading && !checking && !verified && !isVerifyRoute;
+    !!user && !loading && !checking && kycStatus !== null && !verified && !isVerifyRoute;
   const shouldBounceAuth =
     !!user && !loading && !checking && verified && isAuthRoute;
 

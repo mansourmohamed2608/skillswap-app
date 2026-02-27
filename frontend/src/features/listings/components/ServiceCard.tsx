@@ -99,6 +99,9 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
     : t('listings.card.generalCategory');
   const publicOwnerLocation = getPublicLocationLabel(resolvedUser?.location, t('listings.card.locationApprox'));
   const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
+  const numericDistance = Number(listing.distanceKm);
+  const hasDistance = Number.isFinite(numericDistance);
+  const roundedDistance = hasDistance ? (numericDistance < 10 ? numericDistance.toFixed(1) : numericDistance.toFixed(0)) : null;
 
   const isOwner = Boolean(authUser?.uid && listing.offeredByUserId === authUser.uid);
   const ownerName = resolvedUser?.name || t('listings.actions.ownerFallback');
@@ -110,12 +113,12 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
         <AvatarImage src={resolvedUser?.avatarUrl} alt={displayName} data-ai-hint="person face"/>
         <AvatarFallback>{displayName.substring(0,1)}</AvatarFallback>
       </Avatar>
-      <div>
-        <span className="text-sm font-medium group-hover:text-primary transition-colors">{displayName}</span>
+      <div className="min-w-0">
+        <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2 break-words">{displayName}</span>
         {publicOwnerLocation && (
-          <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+          <div className="flex items-center text-xs text-muted-foreground mt-0.5 min-w-0">
             <MapPinIcon className="h-3 w-3 mr-1" />
-            {publicOwnerLocation}
+            <span className="truncate">{publicOwnerLocation}</span>
           </div>
         )}
       </div>
@@ -141,7 +144,9 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
         <div className="mb-2">
           <CategoryPill category={offeredCategory} />
         </div>
-        <CardTitle className="text-lg mb-1">{listing.offeredService?.title || t('listings.card.untitled')}</CardTitle>
+        <CardTitle className="text-lg mb-1 line-clamp-2 min-h-[3.25rem]">
+          {listing.offeredService?.title || t('listings.card.untitled')}
+        </CardTitle>
         <CardDescription className="text-sm text-muted-foreground mb-2 line-clamp-2">
           {listing.offeredService?.description ?? ''}
         </CardDescription>
@@ -159,14 +164,14 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
       </CardContent>
       <CardFooter className="p-4 border-t">
         <div className="flex flex-col w-full">
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between gap-3 mb-3">
             {resolvedUser ? (
               isOwner ? (
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-2 min-w-0">
                   {ownerContent}
                 </div>
               ) : (
-                <Link href={getProfilePath(resolvedUser)} className="flex items-start gap-2 group">
+                <Link href={getProfilePath(resolvedUser)} className="flex items-start gap-2 group min-w-0">
                   {ownerContent}
                 </Link>
               )
@@ -181,16 +186,25 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                 )}
               </div>
             )}
-             <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center">{getStatusText(listing.status)}</Badge>
+            <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0">
+              {getStatusText(listing.status)}
+            </Badge>
           </div>
-          <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-            <div className="flex items-center gap-1">
+          <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground mb-3">
+            <div className="flex items-center gap-1 min-w-0">
               <CalendarIcon className="h-3 w-3" />
               {/* On initial render (server and client), postedAt is null, so 'Posted recently' is shown.
                   After client-side hydration, useEffect runs and sets the actual relative time. */}
-              <span>{postedLabel}</span>
+              <span className="truncate">{postedLabel}</span>
             </div>
-            {publicListingLocation && <span>{publicListingLocation}</span>}
+            <div className="flex items-center justify-between gap-2">
+              {hasDistance && roundedDistance && (
+                <div className="font-medium text-primary shrink-0">
+                  {t('listings.card.distanceKm', { km: roundedDistance })}
+                </div>
+              )}
+              {publicListingLocation && <span className="truncate">{publicListingLocation}</span>}
+            </div>
           </div>
           <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
             <Link href={`/listings/${listing.id}`}>

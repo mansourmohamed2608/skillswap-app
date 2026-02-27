@@ -206,6 +206,14 @@ export function MatchesPanel() {
         </Alert>
       )}
 
+      {!loading && !error && user && triads.length === 0 && pairs.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="p-4 text-sm text-muted-foreground">
+            {t('matchmaking.form.noMatchesTitle')}
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Triad cycles */}
       {triads.length > 0 && (
         <div className="space-y-3">

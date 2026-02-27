@@ -6,6 +6,106 @@ import { geocodeAddress, readGeoPoint } from '../../core/geo';
 
 @Injectable()
 export class ListingsService {
+  private normalizeText(value: unknown): string {
+    return String(value || '').trim();
+  }
+
+  private hasLowQualityContent(value: unknown, options: { minLength: number; minLetters: number }) {
+    const text = this.normalizeText(value);
+    if (!text) return true;
+    if (text.length < options.minLength) return true;
+
+    const letters = (text.match(/\p{L}/gu) || []).length;
+    if (letters < options.minLetters) return true;
+
+    const symbols = (text.match(/[^\p{L}\p{N}\s]/gu) || []).length;
+    const symbolRatio = symbols / Math.max(text.length, 1);
+    if (symbolRatio > 0.45) return true;
+
+    if (/([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(text)) return true;
+    if (/(\p{L})\1{4,}/u.test(text)) return true;
+
+    return false;
+  }
+
+  private assertListingQuality(listing: any, partial = false) {
+    const offered = listing?.offeredService || {};
+    const requested = listing?.requestedService || {};
+    const requestedKind = String(listing?.requestedKind || '').toLowerCase();
+    const hasLocationText = this.normalizeText(listing?.location).length > 0;
+    const hasGeo = Boolean(this.normalizeGeo(listing?.geo || listing?.locationGeo));
+
+    const validate = (
+      fieldLabel: string,
+      value: unknown,
+      options: { minLength: number; minLetters: number },
+      touched: boolean
+    ) => {
+      if (!touched) return;
+      if (this.hasLowQualityContent(value, options)) {
+        throw new BadRequestException({ code: 'content/low_quality', field: fieldLabel });
+      }
+    };
+
+    validate(
+      'offeredService.title',
+      offered?.title,
+      { minLength: 3, minLetters: 2 },
+      !partial || Object.prototype.hasOwnProperty.call(offered, 'title')
+    );
+    validate(
+      'offeredService.description',
+      offered?.description,
+      { minLength: 8, minLetters: 4 },
+      !partial || Object.prototype.hasOwnProperty.call(offered, 'description')
+    );
+    validate(
+      'requestedService.title',
+      requested?.title,
+      { minLength: 2, minLetters: 2 },
+      !partial || Object.prototype.hasOwnProperty.call(requested, 'title')
+    );
+    validate(
+      'requestedService.description',
+      requested?.description,
+      { minLength: 4, minLetters: 3 },
+      !partial || Object.prototype.hasOwnProperty.call(requested, 'description')
+    );
+
+    const touchedRequestedKind = !partial || Object.prototype.hasOwnProperty.call(listing || {}, 'requestedKind');
+    if (touchedRequestedKind && !['service', 'product', 'money'].includes(requestedKind || 'service')) {
+      throw new BadRequestException('Invalid requestedKind');
+    }
+
+    if ((requestedKind === 'product' || (!partial && requestedKind === '')) && (listing?.requestedProduct || !partial)) {
+      validate(
+        'requestedProduct.name',
+        listing?.requestedProduct?.name,
+        { minLength: 2, minLetters: 2 },
+        !partial || Object.prototype.hasOwnProperty.call(listing?.requestedProduct || {}, 'name')
+      );
+    }
+
+    if (requestedKind === 'money' && (listing?.requestedMoney || !partial)) {
+      const amount = Number(listing?.requestedMoney?.amount);
+      const currency = this.normalizeText(listing?.requestedMoney?.currency);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException('Invalid requestedMoney.amount');
+      }
+      if (!currency || currency.length < 3) {
+        throw new BadRequestException('Invalid requestedMoney.currency');
+      }
+    }
+
+    const touchedLocation = !partial
+      || Object.prototype.hasOwnProperty.call(listing || {}, 'location')
+      || Object.prototype.hasOwnProperty.call(listing || {}, 'geo')
+      || Object.prototype.hasOwnProperty.call(listing || {}, 'locationGeo');
+    if (touchedLocation && !hasLocationText && !hasGeo) {
+      throw new BadRequestException('Location is required');
+    }
+  }
+
   private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
     const geo = readGeoPoint(value);
     if (!geo) return undefined;
@@ -30,6 +130,7 @@ export class ListingsService {
     if (!listing || typeof listing !== 'object') {
       throw new BadRequestException('Missing listing object');
     }
+    this.assertListingQuality(listing, false);
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (listing as any).title },
       { label: 'description', value: (listing as any).description },
@@ -145,6 +246,7 @@ export class ListingsService {
     }
 
     const { status: _status, userId: _userId, offeredByUserId: _offeredByUserId, ...safeUpdates } = updates || {};
+    this.assertListingQuality(safeUpdates, true);
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (safeUpdates as any).title },
       { label: 'description', value: (safeUpdates as any).description },

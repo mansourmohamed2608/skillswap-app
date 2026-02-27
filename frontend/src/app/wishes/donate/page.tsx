@@ -16,6 +16,9 @@ import { getFeaturedWishes, type WishSummary } from "@/services/data";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
+import { useAuth } from "@/context/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import Image from "next/image";
 
 function DonatePageContent() {
   const params = useSearchParams();
@@ -23,6 +26,7 @@ function DonatePageContent() {
   const router = useRouter();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [wish, setWish] = useState<any>(null);
   const [availableWishes, setAvailableWishes] = useState<WishSummary[]>([]);
   const [loadingWishes, setLoadingWishes] = useState(false);
@@ -31,6 +35,7 @@ function DonatePageContent() {
   const [donorEmail, setDonorEmail] = useState<string>('');
   const [anonymous, setAnonymous] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
+  const isOwner = Boolean(user?.uid && wish?.userId && user.uid === wish.userId);
 
   useEffect(() => {
     (async () => {
@@ -74,6 +79,16 @@ function DonatePageContent() {
         <CardContent className="space-y-6">
           {wish ? (
             <div className="space-y-3">
+              {wish.imageUrl ? (
+                <div className="relative h-44 w-full overflow-hidden rounded-md border">
+                  <Image src={wish.imageUrl} alt={wish.title || "wish"} fill style={{ objectFit: "cover" }} />
+                </div>
+              ) : null}
+              {wish.videoUrl ? (
+                <div className="w-full overflow-hidden rounded-md border">
+                  <video className="w-full max-h-[320px] object-cover" src={wish.videoUrl} controls preload="metadata" />
+                </div>
+              ) : null}
               <div className="text-center">
                 <div className="text-xl font-semibold">{wish.title}</div>
                 <div className="text-muted-foreground">{t('wishes.donate.goalLabel', { amount: wish.goalAmount, currency: wish.currency || 'EGP' })}</div>
@@ -91,7 +106,7 @@ function DonatePageContent() {
               ) : availableWishes.length > 0 ? (
                 <div className="grid gap-3">
                   {availableWishes.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between rounded-md border bg-card p-3">
+                    <div key={item.id} className="flex items-center justify-between rounded-md border bg-card p-3 gap-3">
                       <div>
                         <div className="font-medium">{item.title || t('wishes.donate.fallbackTitle')}</div>
                         <div className="text-xs text-muted-foreground">
@@ -114,6 +129,13 @@ function DonatePageContent() {
             </div>
           )}
 
+          {isOwner ? (
+            <Alert className="border-amber-300 bg-amber-50">
+              <AlertDescription className="text-amber-800">
+                You cannot donate to your own wish.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="amount">{t('wishes.donate.amountLabel', { currency: wish?.currency || 'EGP' })}</Label>
             <Input id="amount" type="number" value={amount || ''} onChange={(e) => setAmount(Number(e.target.value))} placeholder={t('wishes.donate.amountPlaceholder')} />
@@ -134,8 +156,12 @@ function DonatePageContent() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button disabled={!wishId || submitting} onClick={async () => {
+          <Button disabled={!wishId || submitting || isOwner} onClick={async () => {
             if (!wishId) return;
+            if (isOwner) {
+              toast({ title: "You cannot donate to your own wish.", variant: 'destructive' });
+              return;
+            }
             if (!(amount > 0) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donorEmail)) {
               toast({ title: t('wishes.detail.invalidInput'), variant: 'destructive' });
               return;

@@ -77,7 +77,7 @@ export class ChatService {
 
       return { conversationId: convId, messageId: msgRef.key };
     } catch (error: any) {
-      if (error instanceof HttpException) throw error;
+      if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
       console.error('[Chat] sendMessage failed', {
         uid,
         recipientId: String(payload?.recipientId || '').trim(),
@@ -160,6 +160,17 @@ export class ChatService {
           if (hit) return hit.id;
         }
       } catch {}
+
+      // Last-resort compatibility for synthetic identifiers like member-<suffix>.
+      if (fallbackNameSlug === 'member') {
+        try {
+          const sample = await admin.firestore().collection('users').limit(500).get();
+          if (!sample.empty) {
+            const hit = sample.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(fallbackUidSuffix));
+            if (hit) return hit.id;
+          }
+        } catch {}
+      }
     }
 
     throw new BadRequestException('Recipient not found');

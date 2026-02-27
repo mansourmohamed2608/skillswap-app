@@ -4,11 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UserPlusIcon } from "lucide-react";
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/hooks/use-toast";
+import { getFunctionsBase } from "@/services/api";
+import { getUserByIdentifier } from "@/services/data";
+import { getProfileIdentifier } from "@/lib/profile";
+
+type UserMatch = { uid: string; username?: string; name: string };
 
 export function NewChatButton() {
   const { active, canSendMessage, loading } = useMembership();
@@ -16,22 +21,48 @@ export function NewChatButton() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [targetIdentifier, setTargetIdentifier] = useState("");
+  const [targetIdentifier, setTargetIdentifier] = useState('');
+  const [searching, setSearching] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<UserMatch | null>(null);
+  const [matches, setMatches] = useState<UserMatch[]>([]);
 
-  function extractIdentifier(input: string) {
-    const raw = input.trim();
-    if (!raw) return '';
-    try {
-      const u = new URL(raw);
-      const parts = u.pathname.split('/').filter(Boolean);
-      if (parts.length >= 2 && (parts[0] === 'profile' || parts[0] === 'chat')) {
-        return decodeURIComponent(parts[1] || '').trim();
-      }
-    } catch {
-      // Not a URL; continue.
+  const normalizedQuery = useMemo(() => targetIdentifier.trim().replace(/^@+/, ''), [targetIdentifier]);
+
+  useEffect(() => {
+    if (!open) return;
+    if (normalizedQuery.length < 2) {
+      setMatches([]);
+      setSearching(false);
+      return;
     }
-    return raw.replace(/^@+/, '').trim();
-  }
+    let cancelled = false;
+    setSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const base = getFunctionsBase();
+        const url = base
+          ? `${base}/api/user/search?q=${encodeURIComponent(normalizedQuery)}&limit=8`
+          : `/api/user/search?q=${encodeURIComponent(normalizedQuery)}&limit=8`;
+        const res = await fetch(url, { method: 'GET' });
+        const data: any = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        const items = Array.isArray(data?.items) ? data.items : [];
+        setMatches(items.map((item: any) => ({
+          uid: String(item?.uid || '').trim(),
+          username: String(item?.username || '').trim() || undefined,
+          name: String(item?.name || '').trim() || String(item?.username || '').trim() || t('chat.list.conversationFallback'),
+        })).filter((item: any) => item.uid));
+      } catch {
+        if (!cancelled) setMatches([]);
+      } finally {
+        if (!cancelled) setSearching(false);
+      }
+    }, 220);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [normalizedQuery, open, t]);
 
   function onClick() {
     if (loading) return;
@@ -42,15 +73,42 @@ export function NewChatButton() {
     setOpen(true);
   }
 
-  function startChat() {
-    const nextId = extractIdentifier(targetIdentifier);
-    if (!nextId) {
+  async function startChat() {
+    const query = normalizedQuery;
+    if (!query) {
       toast({ title: t('chat.newChat.missing'), variant: 'destructive' });
       return;
     }
+
+    const toChatIdentifier = (item: UserMatch) =>
+      item.username || getProfileIdentifier({ id: item.uid, name: item.name, username: item.username });
+
+    let nextIdentifier = selectedMatch ? toChatIdentifier(selectedMatch) : '';
+    if (!nextIdentifier) {
+      const exact = matches.find((item) =>
+        item.username?.toLowerCase() === query.toLowerCase() ||
+        item.name.toLowerCase() === query.toLowerCase()
+      );
+      if (exact) {
+        nextIdentifier = toChatIdentifier(exact);
+      }
+    }
+    if (!nextIdentifier) {
+      const resolved = await getUserByIdentifier(query);
+      if (resolved) {
+        nextIdentifier = getProfileIdentifier(resolved);
+      }
+    }
+    if (!nextIdentifier) {
+      toast({ title: t('chat.newChat.notFound'), variant: 'destructive' });
+      return;
+    }
+
     setOpen(false);
     setTargetIdentifier("");
-    router.push(`/chat/${encodeURIComponent(nextId)}`);
+    setSelectedMatch(null);
+    setMatches([]);
+    router.push(`/chat/${encodeURIComponent(nextIdentifier)}`);
   }
 
   return (
@@ -66,14 +124,40 @@ export function NewChatButton() {
           </DialogHeader>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="chat-user-id">
-              {t('chat.newChat.userIdLabel')}
+              Username
             </label>
             <Input
               id="chat-user-id"
               value={targetIdentifier}
-              onChange={(e) => setTargetIdentifier(e.target.value)}
-              placeholder={t('chat.newChat.userIdPlaceholder')}
+              onChange={(e) => {
+                setTargetIdentifier(e.target.value);
+                setSelectedMatch(null);
+              }}
+              placeholder="Type @username or a profile name"
             />
+            {searching ? (
+              <p className="text-xs text-muted-foreground">{t('chat.newChat.searching')}</p>
+            ) : null}
+            {!searching && matches.length > 0 ? (
+              <div className="max-h-56 overflow-auto rounded-md border">
+                {matches.map((item) => (
+                  <button
+                    key={item.uid}
+                    type="button"
+                    className={`w-full px-3 py-2 text-left hover:bg-muted ${selectedMatch?.uid === item.uid ? 'bg-muted' : ''}`}
+                    onClick={() => {
+                      setSelectedMatch(item);
+                      setTargetIdentifier(item.username ? `@${item.username}` : item.name);
+                    }}
+                  >
+                    <p className="text-sm font-medium">{item.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.username ? `@${item.username}` : getProfileIdentifier({ id: item.uid, name: item.name })}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>

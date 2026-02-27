@@ -4,13 +4,15 @@ import { useTranslation } from "react-i18next";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon } from 'lucide-react';
+import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon, PlusCircleIcon } from 'lucide-react';
 import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
 import { useEffect, useRef, useState } from 'react';
 import { SearchResults } from '@/features/listings/components/SearchResults';
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
 import { ServicesEmptyState } from '@/features/listings/components/ServicesEmptyState';
 import type { ServiceListing, User } from '@/types';
+import Link from 'next/link';
+import { useAuth } from '@/context/AuthContext';
 
 type ListingWithUser = {
   listing: ServiceListing;
@@ -28,6 +30,7 @@ type SubmittedFilters = {
 
 export function ServicesHeaderAndFilters({ initialItems }: { initialItems: ListingWithUser[] }) {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [manualLocation, setManualLocation] = useState('');
@@ -139,7 +142,6 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
         if (resolved) setManualLocation(resolved);
         setLocationHintTone('success');
         setLocationHint(resolved ? t('services.locationResolved', { location: resolved }) : t('services.locationReady'));
-        setSubmitted(buildSubmitted({ lat, lng }, resolved || manualLocation.trim() || undefined));
         setLocating(false);
       },
       (error) => {
@@ -173,6 +175,9 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
       } else if (!nextNear) {
         setLocationHintTone('warning');
         setLocationHint(t('services.locationFailed'));
+        // Avoid strict text-location filtering when geocoding fails,
+        // otherwise valid nearby listings are frequently filtered out.
+        nextLocation = undefined;
       }
     }
 
@@ -193,6 +198,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
   useEffect(() => {
     if (autoLocationRequestedRef.current) return;
     autoLocationRequestedRef.current = true;
+    // Request location permission early for better UX, but do not auto-apply filters.
     void useCurrentLocation();
     // intentionally run once after first render
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -200,11 +206,21 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
 
   return (
     <>
-      <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">{t('services.title')}</h1>
-        <p className="mt-2 text-lg text-muted-foreground">
-          {t('services.subtitle')}
-        </p>
+      <header className="mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl font-bold tracking-tight text-primary">{t('services.title')}</h1>
+            <p className="mt-2 text-lg text-muted-foreground">
+              {t('services.subtitle')}
+            </p>
+          </div>
+          <Button asChild className="w-full md:w-auto">
+            <Link href={user ? "/listings/new" : "/auth/signin"}>
+              <PlusCircleIcon className="mr-2 h-4 w-4" />
+              {t('profile.createNewListing')}
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {/* Filters Section */}

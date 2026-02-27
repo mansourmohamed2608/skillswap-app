@@ -49,7 +49,7 @@ export class WishesService {
     return { id: docRef.id };
   }
 
-  async donate(wishId: string, body: any) {
+  async donate(wishId: string, body: any, donorUserId?: string | null) {
     const { amount, donorName, donorEmail, anonymous } = body || {};
     const amt = Number(amount || 0);
     if (!wishId) throw new BadRequestException('Missing wishId');
@@ -61,6 +61,13 @@ export class WishesService {
     const wishSnap = await wishRef.get();
     if (!wishSnap.exists) throw new NotFoundException('Wish not found');
     const wish = wishSnap.data() as any;
+    const ownerId = String(wish?.userId || '').trim();
+    if (donorUserId && ownerId && donorUserId === ownerId) {
+      throw new ForbiddenException('Cannot donate to your own wish');
+    }
+    if (String(wish?.status || '').toLowerCase() !== 'open') {
+      throw new BadRequestException('Wish is not open for donations');
+    }
 
     const currency = wish.currency || 'EGP';
     const normalizedName = anonymous ? 'Anonymous' : String(donorName || '').trim() || 'Anonymous';

@@ -97,6 +97,12 @@ export default function BookingsPage() {
   const [listingTitles, setListingTitles] = useState<Record<string, string>>({});
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({});
   const [partnerProfilePaths, setPartnerProfilePaths] = useState<Record<string, string>>({});
+  const shortId = (value: string) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.length <= 12) return raw;
+    return `${raw.slice(0, 8)}…`;
+  };
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -135,11 +141,11 @@ export default function BookingsPage() {
       for (const pid of partnerIds) {
         try {
           const profile = await getUserById(pid);
-          nameMap[pid] = profile?.name || pid;
-          pathMap[pid] = profile ? getProfilePath(profile) : `/profile/${encodeURIComponent(pid)}`;
+          nameMap[pid] = profile?.name || shortId(pid);
+          pathMap[pid] = profile ? getProfilePath(profile) : '';
         } catch {
-          nameMap[pid] = pid;
-          pathMap[pid] = `/profile/${encodeURIComponent(pid)}`;
+          nameMap[pid] = shortId(pid);
+          pathMap[pid] = '';
         }
       }
       if (mounted) {
@@ -190,7 +196,7 @@ export default function BookingsPage() {
               </Badge>
             </div>
             <CardDescription className="text-sm">
-              {`${t('bookings.requestId')}: ${booking.id}`}
+              {`${t('bookings.requestId')}: ${shortId(booking.id)}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -208,10 +214,15 @@ export default function BookingsPage() {
                 const uid = auth?.currentUser?.uid;
                 const partnerId = uid === booking.requesterId ? booking.ownerId : booking.requesterId;
                 const name = partnerNames[partnerId] || partnerId;
-                const profilePath = partnerProfilePaths[partnerId] || `/profile/${encodeURIComponent(partnerId)}`;
+                const profilePath = partnerProfilePaths[partnerId] || '';
                 return (
                   <span>
-                    {t('bookings.withLabel')}: <Link href={profilePath} className="text-primary hover:underline font-medium">{name}</Link>
+                    {t('bookings.withLabel')}:{' '}
+                    {profilePath ? (
+                      <Link href={profilePath} className="text-primary hover:underline font-medium">{name}</Link>
+                    ) : (
+                      <span className="font-medium">{name}</span>
+                    )}
                   </span>
                 );
               })()}

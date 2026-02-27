@@ -45,6 +45,17 @@ const mapUserFromDoc = (id: string, data: any): User => {
 
 const hasClientAuth = () => typeof window !== 'undefined' && !!auth?.currentUser;
 
+const isLowQualityListing = (listing: ServiceListing) => {
+    const title = String(listing?.offeredService?.title || '').trim();
+    const description = String(listing?.offeredService?.description || '').trim();
+    if (title.length < 2 || description.length < 4) return true;
+    if (/([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(title) || /([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(description)) {
+        return true;
+    }
+    const letters = (title.match(/\p{L}/gu) || []).length + (description.match(/\p{L}/gu) || []).length;
+    return letters < 4;
+};
+
 async function getUserByIdentifierFromApi(identifier: string): Promise<User | null> {
     const key = String(identifier || '').trim();
     if (!key) return null;
@@ -146,7 +157,7 @@ async function fetchListingsFromApi(options?: { count?: number }): Promise<Servi
         if (!resp.ok) throw new Error(`api ${resp.status}`);
         const data = await resp.json();
         const hits = Array.isArray(data?.hits) ? data.hits : [];
-        return hits.map(mapApiHitToListing);
+        return hits.map(mapApiHitToListing).filter((listing) => !isLowQualityListing(listing));
     } catch (e) {
         console.warn('fetchListingsFromApi failed, falling back to Firestore', e);
         return [];
@@ -208,7 +219,7 @@ export async function getListings(): Promise<ServiceListing[]> {
         const listingsCol = collection(db!, 'listings');
         const listingsSnapshot = await getDocs(listingsCol);
         if (listingsSnapshot.empty) return [];
-        return listingsSnapshot.docs.map(docToServiceListing);
+        return listingsSnapshot.docs.map(docToServiceListing).filter((listing) => !isLowQualityListing(listing));
     } catch (error) {
         console.error("Error fetching listings: ", error);
         return [];
@@ -244,7 +255,7 @@ export async function getListingsWithUsers(options?: { count?: number }): Promis
 
         if (listingsSnapshot.empty) return [];
         
-        const listings = listingsSnapshot.docs.map(docToServiceListing);
+        const listings = listingsSnapshot.docs.map(docToServiceListing).filter((listing) => !isLowQualityListing(listing));
         if (!canLoadUsers) {
             return listings.map((listing) => ({ listing, user: null }));
         }
@@ -266,7 +277,7 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
     // Try API (works with admin access even when client Firestore is blocked by rules/emulator auth)
     const apiListings = await fetchListingsFromApi({ count: 200 });
     const apiHit = apiListings.find(l => l.id === id);
-    if (apiHit) return apiHit;
+    if (apiHit && !isLowQualityListing(apiHit)) return apiHit;
 
     if (!isFirebaseConfigured()) {
         console.warn(`Firebase not configured and API returned no data for id: ${id}`);
@@ -276,7 +287,8 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
         const listingDocRef = doc(db!, 'listings', id);
         const listingDoc = await getDoc(listingDocRef);
         if (listingDoc.exists()) {
-            return docToServiceListing(listingDoc);
+            const listing = docToServiceListing(listingDoc);
+            return isLowQualityListing(listing) ? null : listing;
         }
         console.warn(`Listing with id ${id} not found in Firestore.`);
         return null;
@@ -455,7 +467,8 @@ export async function getListingsByUserId(userId: string): Promise<ServiceListin
         const seen = new Set<string>();
         const listings = allDocs
             .filter(d => (seen.has(d.id) ? false : (seen.add(d.id), true)))
-            .map(docToServiceListing);
+            .map(docToServiceListing)
+            .filter((listing) => !isLowQualityListing(listing));
         // Note: We are now allowing an empty array to be returned from Firestore
         // If a user has no real listings, it should show that, not sample data.
         return listings;

@@ -391,9 +391,13 @@ export async function createWish(args: {
 }
 
 export async function donateToWishPublic(baseUrl: string, wishId: string, args: { amount: number; donorEmail: string; donorName?: string; anonymous?: boolean; }) {
+  const token = await auth?.currentUser?.getIdToken();
   const res = await fetch(`${baseUrl}/api/wishes/${encodeURIComponent(wishId)}/donate`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body: JSON.stringify(args),
   });
   if (!res.ok) throw await toApiError(res);

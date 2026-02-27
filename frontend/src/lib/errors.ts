@@ -29,6 +29,7 @@ const DEFAULT_AUTH_MESSAGES: Record<string, string> = {
 const DEFAULT_CODE_MESSAGES: Record<string, string> = {
   ...DEFAULT_AUTH_MESSAGES,
   'content/banned': 'Your text includes restricted words. Please edit and try again.',
+  'content/low_quality': 'Please add clearer, meaningful text before submitting.',
   'permission-denied': 'You do not have permission to do that.',
   'unauthenticated': 'Please sign in to continue.',
   'not-found': 'We could not find what you requested.',
@@ -53,6 +54,7 @@ const DEFAULT_CODE_MESSAGES: Record<string, string> = {
   'storage/unknown': 'File upload failed.',
   'reviews/own_listing': 'You cannot review your own listing.',
   'reports/own_content': 'You cannot report your own content.',
+  'kyc/document-already-used': 'This ID document is already associated with another account.',
 };
 const DEFAULT_STATUS_MESSAGES: Record<string, string> = {
   '0': 'Network error. Check your connection and try again.',

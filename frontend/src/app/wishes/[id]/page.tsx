@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errors';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function WishDetailPage() {
   const params = useParams();
@@ -77,6 +78,10 @@ export default function WishDetailPage() {
 
   async function onDonate() {
     if (!id) return;
+    if (isOwner) {
+      toast({ title: 'You cannot donate to your own wish.', variant: 'destructive' });
+      return;
+    }
     if (!(amount > 0) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donorEmail)) {
       toast({ title: t('wishes.detail.invalidInput'), variant: 'destructive' });
       return;
@@ -174,6 +179,11 @@ export default function WishDetailPage() {
               <Image src={wish.imageUrl} alt={wish.title || t('wishes.detail.imageAlt')} fill style={{ objectFit: 'cover' }} />
             </div>
           )}
+          {wish.videoUrl ? (
+            <div className="w-full overflow-hidden rounded-lg border border-border">
+              <video className="w-full max-h-[340px] object-cover" src={wish.videoUrl} controls preload="metadata" />
+            </div>
+          ) : null}
           <p className="text-muted-foreground whitespace-pre-line">{wish.description}</p>
           {(wish.category || deadlineLabel) && (
             <div className="text-sm text-muted-foreground flex flex-wrap gap-3">
@@ -209,6 +219,13 @@ export default function WishDetailPage() {
           <CardTitle className="text-lg">{t('wishes.detail.donateTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
+          {isOwner ? (
+            <Alert className="border-amber-300 bg-amber-50">
+              <AlertDescription className="text-amber-800">
+                You cannot donate to your own wish.
+              </AlertDescription>
+            </Alert>
+          ) : null}
           <div className="space-y-1">
             <Label htmlFor="amt">{t('wishes.detail.amountLabel', { currency: wish.currency || 'EGP' })}</Label>
             <Input id="amt" type="number" value={amount || ''} onChange={(e) => setAmount(Number(e.target.value))} />
@@ -231,7 +248,9 @@ export default function WishDetailPage() {
           )}
         </CardContent>
         <CardFooter>
-          <Button disabled={busy} onClick={onDonate}>{busy ? t('wishes.detail.processing') : t('wishes.detail.donateButton')}</Button>
+          <Button disabled={busy || isOwner} onClick={onDonate}>
+            {busy ? t('wishes.detail.processing') : t('wishes.detail.donateButton')}
+          </Button>
         </CardFooter>
       </Card>
 

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
 import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
@@ -48,7 +47,7 @@ type FeaturedWish = {
 
 export function HomePageContent({
   featuredListingsData,
-  featuredWishes = [],
+  featuredWishes: _featuredWishes = [],
 }: {
   featuredListingsData: FeaturedListing[];
   featuredWishes?: FeaturedWish[];
@@ -208,43 +207,11 @@ export function HomePageContent({
             </CardFooter>
           </Card>
         </div>
-        {featuredWishes.length > 0 && (
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            {featuredWishes.map((wish) => {
-              const raised = Number(wish.totalDonated || 0);
-              const goal = Number(wish.goalAmount || 1);
-              const pct = Math.min(100, Math.round((raised / goal) * 100));
-              const currency = wish.currency || "EGP";
-              return (
-                <Card key={wish.id} className="shadow-none border-border/70">
-                  <CardHeader>
-                    <CardTitle className="text-xl">{wish.title || t("wishes.list.empty")}</CardTitle>
-                    {wish.category && (
-                      <CardDescription className="text-sm">{wish.category}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    {wish.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">{wish.description}</p>
-                    )}
-                    <Progress value={pct} />
-                    <div className="text-sm text-muted-foreground">
-                      {t("wishes.list.raised", { raised, goal, currency })}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="justify-between gap-3">
-                    <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
-                      <Link href={`/wishes/${wish.id}`}>{t("home.wishes.viewDetails")}</Link>
-                    </Button>
-                    <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                      <Link href={`/wishes/donate?id=${encodeURIComponent(wish.id)}`}>{t("home.wishes.donateCta")}</Link>
-                    </Button>
-                  </CardFooter>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        <div className="mt-8 text-center">
+          <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
+            <Link href="/wishes">{t("home.wishes.viewDetails")}</Link>
+          </Button>
+        </div>
       </section>
 
       <HomePageCTAs />

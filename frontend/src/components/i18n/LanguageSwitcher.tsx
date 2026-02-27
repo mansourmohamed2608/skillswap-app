@@ -27,6 +27,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
       size={compact ? "icon" : "sm"}
       onClick={toggle}
       title={nextLabel}
+      className={compact ? "h-9 min-w-10 px-0 font-semibold tracking-wide" : "font-medium"}
     >
       {compact ? (lang.startsWith("ar") ? "EN" : "AR") : nextLabel}
     </Button>

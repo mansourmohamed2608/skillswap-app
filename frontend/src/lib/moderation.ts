@@ -26,11 +26,23 @@ const BANNED_KEYWORDS = [
 ];
 
 const normalize = (value: string) => String(value || '').trim().toLowerCase();
+const escapeRegex = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const isAsciiKeyword = (value: string) => /^[a-z0-9]+$/i.test(value);
 
 export function findBannedKeyword(input: string) {
   const text = normalize(input);
   if (!text) return null;
-  return BANNED_KEYWORDS.find((word) => word && text.includes(normalize(word))) || null;
+  return (
+    BANNED_KEYWORDS.find((word) => {
+      const keyword = normalize(word);
+      if (!keyword) return false;
+      if (isAsciiKeyword(keyword)) {
+        const re = new RegExp(`(^|[^a-z0-9])${escapeRegex(keyword)}([^a-z0-9]|$)`, 'i');
+        return re.test(text);
+      }
+      return text.includes(keyword);
+    }) || null
+  );
 }
 
 export function findBannedKeywordInFields(fields: Array<{ label: string; value?: string }>) {
@@ -41,4 +53,17 @@ export function findBannedKeywordInFields(fields: Array<{ label: string; value?:
     }
   }
   return null;
+}
+
+export function hasLowQualityText(value: string, minLength = 3, minLetters = 2) {
+  const text = String(value || '').trim();
+  if (!text) return true;
+  if (text.length < minLength) return true;
+  const letters = (text.match(/\p{L}/gu) || []).length;
+  if (letters < minLetters) return true;
+  const symbols = (text.match(/[^\p{L}\p{N}\s]/gu) || []).length;
+  if (symbols / Math.max(text.length, 1) > 0.45) return true;
+  if (/([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(text)) return true;
+  if (/(\p{L})\1{4,}/u.test(text)) return true;
+  return false;
 }

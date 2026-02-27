@@ -2,31 +2,78 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { MessageCircleIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import NewChatButton from "@/features/chat/components/NewChatButton";
 import { useConversationsRTDB } from '@/services/chatRTDB';
 import { useAuth } from '@/context/AuthContext';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from "react-i18next";
+import { getUserById } from "@/services/data";
+import { getProfileIdentifier } from "@/lib/profile";
 
 export default function ChatPage() {
   const { user } = useAuth();
   const { t } = useTranslation();
   const convs = useConversationsRTDB();
+  const [searchText, setSearchText] = useState('');
+  const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; identifier: string }>>({});
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const otherIds = Array.from(new Set(
+        convs.map((c) => Object.keys(c.participants || {}).find((p) => p !== user?.uid) || '')
+          .filter(Boolean)
+      ));
+      if (!otherIds.length) {
+        if (mounted) setUserMetaById({});
+        return;
+      }
+      const entries: Record<string, { name: string; identifier: string }> = {};
+      for (const uid of otherIds) {
+        try {
+          const profile = await getUserById(uid);
+          if (profile) {
+            entries[uid] = {
+              name: profile.name,
+              identifier: getProfileIdentifier(profile),
+            };
+          }
+        } catch {}
+      }
+      if (mounted) setUserMetaById(entries);
+    })();
+    return () => { mounted = false; };
+  }, [convs, user?.uid]);
+
   const chats = useMemo(() => {
-    return convs.map((c) => {
+    const looksLikeUid = (value: string) => /^[A-Za-z0-9]{20,}$/.test(value);
+    const rows = convs.map((c) => {
       const otherId = Object.keys(c.participants || {}).find((p) => p !== user?.uid) || '';
+      const profileMeta = userMetaById[otherId];
+      const rawTitle = String((c.title as string) || '').trim();
+      const resolvedTitle = profileMeta?.name || (looksLikeUid(rawTitle) ? '' : rawTitle);
+      const fallbackTitle = otherId ? `${t('chat.list.conversationFallback')} ${otherId.slice(0, 6)}` : t('chat.list.conversationFallback');
+      const title = resolvedTitle || fallbackTitle;
       return {
         id: c.id as string,
         otherId,
-        title: (c.title as string) || otherId || t('chat.list.conversationFallback'),
+        title,
+        targetIdentifier: profileMeta?.identifier || otherId,
         lastMessage: (c.lastMessage as string) || '',
         unread: (c.lastMessageAt && user?.uid && c.perUserLastReadAt?.[user.uid] && c.lastMessageAt > c.perUserLastReadAt[user.uid]) ? 1 : 0,
-        timestamp: c.lastMessageAt ? new Date(c.lastMessageAt).toLocaleTimeString() : '',
+        timestamp: c.lastMessageAt
+          ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+          : '',
       };
     });
-  }, [convs, user?.uid]);
+    const q = searchText.trim().toLowerCase();
+    if (!q) return rows;
+    return rows.filter((item) =>
+      item.title.toLowerCase().includes(q) || item.lastMessage.toLowerCase().includes(q)
+    );
+  }, [convs, user?.uid, userMetaById, t, searchText]);
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -40,7 +87,12 @@ export default function ChatPage() {
             <NewChatButton />
           </div>
           <div className="mt-4 relative">
-            <Input placeholder={t('chat.list.searchPlaceholder')} className="pl-10" />
+            <Input
+              placeholder={t('chat.list.searchPlaceholder')}
+              className="pl-10"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+            />
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           </div>
         </CardHeader>
@@ -49,7 +101,7 @@ export default function ChatPage() {
             <ul className="divide-y">
               {chats.map(chat => (
                 <li key={chat.id}>
-                  <Link href={`/chat/${chat.otherId || chat.id}`} className="block hover:bg-muted/50 transition-colors">
+                  <Link href={`/chat/${chat.targetIdentifier || chat.id}`} className="block hover:bg-muted/50 transition-colors">
                     <div className="p-4 flex items-center space-x-4">
                       <Avatar className="h-12 w-12"><AvatarFallback>{chat.title.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>
                       <div className="flex-1 min-w-0">

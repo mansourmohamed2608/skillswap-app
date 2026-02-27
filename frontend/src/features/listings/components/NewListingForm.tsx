@@ -23,7 +23,7 @@ import { useMembership } from '@/hooks/useMembership';
 import { useTranslation } from 'react-i18next';
 import type { ServiceListing } from '@/types';
 import { getErrorMessage } from '@/lib/errors';
-import { findBannedKeywordInFields } from '@/lib/moderation';
+import { findBannedKeywordInFields, hasLowQualityText } from '@/lib/moderation';
 import { isCoordinatePair } from '@/lib/location';
 
 type NewListingFormProps = {
@@ -340,6 +340,26 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     ]);
     if (banned) {
       setMessage(t('errors.codes.content/banned'));
+      return;
+    }
+    const lowQualityFields: Array<{ label: string; value: string; minLength?: number; minLetters?: number }> = [
+      { label: 'offeredService.title', value: offeredServiceTitle, minLength: 3, minLetters: 2 },
+      { label: 'offeredService.description', value: offeredServiceDescription, minLength: 8, minLetters: 4 },
+    ];
+    if (requestedKind === 'service') {
+      lowQualityFields.push(
+        { label: 'requestedService.title', value: requestedServiceTitle, minLength: 2, minLetters: 2 },
+        { label: 'requestedService.description', value: requestedServiceDescription, minLength: 4, minLetters: 3 },
+      );
+    }
+    if (requestedKind === 'product') {
+      lowQualityFields.push({ label: 'requestedProduct.name', value: requestedProductName, minLength: 2, minLetters: 2 });
+    }
+    const lowQuality = lowQualityFields.find((field) =>
+      hasLowQualityText(field.value, field.minLength, field.minLetters)
+    );
+    if (lowQuality) {
+      setMessage('Please add clearer, meaningful text before submitting.');
       return;
     }
     try {

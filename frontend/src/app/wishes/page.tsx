@@ -9,18 +9,24 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
+import Image from 'next/image';
 
 type WishSummary = {
   id: string;
+  userId?: string;
   title?: string;
   description?: string;
   totalDonated?: number;
   goalAmount?: number;
   currency?: string;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
 };
 
 export default function WishesListPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [wishes, setWishes] = useState<WishSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +44,14 @@ export default function WishesListPage() {
           const data = d.data() as any;
           return {
             id: d.id,
+            userId: data.userId,
             title: data.title,
             description: data.description,
             totalDonated: data.totalDonated,
             goalAmount: data.goalAmount,
             currency: data.currency,
+            imageUrl: data.imageUrl || null,
+            videoUrl: data.videoUrl || null,
           } as WishSummary;
         });
         if (mounted) setWishes(items);
@@ -58,7 +67,7 @@ export default function WishesListPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 grid gap-4">
+    <div className="max-w-5xl mx-auto py-8 grid gap-4">
       {wishes.length === 0 ? (
         <div className="text-center text-muted-foreground">{t('wishes.list.empty')}</div>
       ) : wishes.map((w) => {
@@ -66,21 +75,36 @@ export default function WishesListPage() {
         const goal = Number(w.goalAmount || 1);
         const pct = Math.min(100, Math.round((raised / goal) * 100));
         const currency = w.currency || 'EGP';
+        const isOwner = Boolean(user?.uid && w.userId && user.uid === w.userId);
         return (
-          <Card key={w.id} className="shadow-sm">
-            <CardHeader>
+          <Card key={w.id} className="shadow-sm overflow-hidden">
+            {(w.imageUrl || w.videoUrl) ? (
+              <div className="relative h-52 w-full border-b bg-muted/40">
+                {w.videoUrl ? (
+                  <video className="h-full w-full object-cover" src={w.videoUrl} controls preload="metadata" />
+                ) : w.imageUrl ? (
+                  <Image src={w.imageUrl} alt={w.title || 'wish'} fill style={{ objectFit: 'cover' }} />
+                ) : null}
+              </div>
+            ) : null}
+            <CardHeader className="pb-2">
               <CardTitle className="text-xl">{w.title}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 pt-0">
               <p className="text-sm text-muted-foreground line-clamp-3">{w.description}</p>
               <Progress value={pct} />
               <div className="text-sm text-muted-foreground">
                 {t('wishes.list.raised', { raised, goal, currency })}
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="gap-2">
+              <Link href={`/wishes/${w.id}`} className="w-full">
+                <Button variant="outline" className="w-full">{t('home.wishes.viewDetails')}</Button>
+              </Link>
               <Link href={`/wishes/donate?id=${encodeURIComponent(w.id)}`} className="w-full">
-                <Button className="w-full">{t('wishes.list.donate')}</Button>
+                <Button className="w-full" disabled={isOwner}>
+                  {isOwner ? 'Your wish' : t('wishes.list.donate')}
+                </Button>
               </Link>
             </CardFooter>
           </Card>

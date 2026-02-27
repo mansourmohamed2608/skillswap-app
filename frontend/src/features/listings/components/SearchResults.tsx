@@ -18,8 +18,9 @@ export type SearchParams = {
 export function SearchResults({ params }: { params: SearchParams }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
+    let cancelled = false;
     async function run() {
       setLoading(true);
       try {
@@ -30,10 +31,15 @@ export function SearchResults({ params }: { params: SearchParams }) {
         if (Number.isFinite(params.nearLat)) usp.set('nearLat', String(params.nearLat));
         if (Number.isFinite(params.nearLng)) usp.set('nearLng', String(params.nearLng));
         if (Number.isFinite(params.radiusKm)) usp.set('radiusKm', String(params.radiusKm));
-        const base = getFunctionsBase() || '/api';
-        const resp = await fetch(`${base}/search/listings?${usp.toString()}`);
+        const base = getFunctionsBase();
+        const url = base
+          ? `${base}/api/search/listings?${usp.toString()}`
+          : `/api/search/listings?${usp.toString()}`;
+        const resp = await fetch(url);
         const data = await resp.json();
-        setItems(data.hits || []);
+        if (!cancelled) {
+          setItems(data.hits || []);
+        }
         // fire-and-forget analytics event
         try {
           await track('search_performed', {
@@ -47,15 +53,35 @@ export function SearchResults({ params }: { params: SearchParams }) {
           });
         } catch {/* noop */}
       } catch (e) {
-        setItems([]);
+        if (!cancelled) {
+          setItems([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
     run();
+    return () => {
+      cancelled = true;
+    };
   }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm]);
 
-  if (loading) return <div className="text-muted-foreground">{t('listings.search.loading')}</div>;
+  if (loading && !items) return <div className="text-muted-foreground">{t('listings.search.loading')}</div>;
+  if (loading && items && items.length > 0) {
+    return (
+      <div className="space-y-3">
+        <div className="text-xs text-muted-foreground">{t('listings.search.loading')}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {items.map((hit: any) => {
+            const listing = toServiceListing(hit);
+            return <ServiceCard key={listing.id} listing={listing} user={null} />;
+          })}
+        </div>
+      </div>
+    );
+  }
   if (!items || items.length === 0) return <div className="text-muted-foreground">{t('listings.search.empty')}</div>;
 
   function safeIsoDate(input: any): string {

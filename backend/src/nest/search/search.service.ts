@@ -4,6 +4,17 @@ import { haversineDistanceKm, readGeoPoint } from '../../core/geo';
 
 @Injectable()
 export class SearchService {
+  private isLikelyLowQualityListing(listing: any) {
+    const title = String(listing?.offeredService?.title || listing?.title || '').trim();
+    const description = String(listing?.offeredService?.description || listing?.description || '').trim();
+    if (title.length < 2 || description.length < 4) return true;
+    if (/([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(title) || /([*#@!$%^&_=+~`|\\/.-])\1{2,}/.test(description)) {
+      return true;
+    }
+    const letters = (title.match(/\p{L}/gu) || []).length + (description.match(/\p{L}/gu) || []).length;
+    return letters < 4;
+  }
+
   async searchListings(opts: {
     q: string;
     category: string;
@@ -41,7 +52,7 @@ export class SearchService {
           ...(center ? { aroundLatLng: `${center.lat}, ${center.lng}` } : {}),
           ...(center && radiusKm !== undefined ? { aroundRadius: Math.round(radiusKm * 1000) } : {}),
         });
-        const hits = (result.hits || []).map((hit: any) => {
+        const rawHits = (result.hits || []).map((hit: any) => {
           const geo = readGeoPoint((hit as any)?._geoloc || (hit as any)?.geo);
           const distanceKm = center && geo ? haversineDistanceKm(center, geo) : undefined;
           return {
@@ -49,21 +60,86 @@ export class SearchService {
             ...(distanceKm !== undefined ? { distanceKm: Number(distanceKm.toFixed(2)) } : {}),
           };
         });
-        return { hits, page: result.page, nbPages: result.nbPages, nbHits: result.nbHits };
+        const refinedHits = rawHits
+          .filter((hit: any) => !this.isLikelyLowQualityListing(hit))
+          .filter((hit: any) => !category || String(hit.category || hit.offeredService?.category || '').toLowerCase().trim() === category.toLowerCase().trim())
+          .filter((hit: any) => !location || String(hit.location || '').toLowerCase().includes(location.toLowerCase()))
+          .filter((hit: any) => {
+            if (!q) return true;
+            const lowered = q.toLowerCase();
+            const haystack = [
+              hit.title,
+              hit.description,
+              hit.offeredService?.title,
+              hit.offeredService?.description,
+              hit.requestedService?.title,
+              hit.requestedService?.description,
+              hit.requestedProduct?.name,
+              hit.requestedProduct?.description,
+            ]
+              .map((value: any) => String(value || '').toLowerCase())
+              .join(' ');
+            return haystack.includes(lowered);
+          });
+
+        if (refinedHits.length > 0) {
+          return { hits: refinedHits, page: result.page, nbPages: result.nbPages, nbHits: refinedHits.length };
+        }
+        // If index is stale/misaligned with current schema, fall back to Firestore search.
+        console.warn('Algolia returned 0 hits, falling back to Firestore search', {
+          q: q || '',
+          category: category || '',
+          location: location || '',
+        });
       }
     } catch (e) {
       console.warn('Algolia search skipped', e);
     }
 
-    const snap = await admin.firestore().collection('listings')
-      .orderBy('createdAt', 'desc')
-      .limit(100)
-      .get();
+    let snap: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>;
+    try {
+      snap = await admin.firestore().collection('listings')
+        .orderBy('createdAt', 'desc')
+        .limit(100)
+        .get();
+    } catch {
+      try {
+        snap = await admin.firestore().collection('listings')
+          .orderBy('postedDate', 'desc')
+          .limit(100)
+          .get();
+      } catch {
+        snap = await admin.firestore().collection('listings')
+          .limit(200)
+          .get();
+      }
+    }
     const lcq = q.toLowerCase();
-    const filtered = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }))
-      .filter(l => !category || (l.category || l.offeredService?.category || '').toLowerCase() === category.toLowerCase())
+    const filtered = snap.docs
+      .map(d => ({ id: d.id, ...(d.data() as any) }))
+      .filter((l) => !this.isLikelyLowQualityListing(l))
+      .filter(l => !category || (l.category || l.offeredService?.category || '').toLowerCase().trim() === category.toLowerCase().trim())
       .filter(l => !location || String(l.location || '').toLowerCase().includes(location.toLowerCase()))
-      .filter(l => !lcq || (String(l.title || l.offeredService?.title || '').toLowerCase().includes(lcq) || String(l.description || l.offeredService?.description || '').toLowerCase().includes(lcq)));
+      .filter((l) => {
+        if (!lcq) return true;
+        const haystack = [
+          l.title,
+          l.description,
+          l.category,
+          l.location,
+          l.offeredService?.title,
+          l.offeredService?.description,
+          l.offeredService?.category,
+          l.requestedService?.title,
+          l.requestedService?.description,
+          l.requestedService?.category,
+          l.requestedProduct?.name,
+          l.requestedProduct?.description,
+        ]
+          .map((v) => String(v || '').toLowerCase())
+          .join(' ');
+        return haystack.includes(lcq);
+      });
     const withDistance = filtered.map((l) => {
       const geo = readGeoPoint((l as any).geo);
       const distanceKm = center && geo ? haversineDistanceKm(center, geo) : undefined;
