@@ -12,6 +12,20 @@ type ReviewInput = {
 
 @Injectable()
 export class ReviewsService {
+  private toMillis(value: any): number {
+    try {
+      if (!value) return 0;
+      if (typeof value?.toDate === 'function') {
+        const d = value.toDate();
+        return Number.isFinite(d?.getTime?.()) ? d.getTime() : 0;
+      }
+      const d = new Date(value);
+      return Number.isFinite(d.getTime()) ? d.getTime() : 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async createReview(reviewerId: string | null, payload: ReviewInput) {
     const listingId = String(payload.listingId || '').trim();
     if (!listingId) throw new BadRequestException('Missing listingId');
@@ -119,26 +133,65 @@ export class ReviewsService {
 
   async listForListing(listingId: string, limit = 50) {
     if (!listingId) throw new BadRequestException('Missing listingId');
-    const snap = await admin.firestore()
-      .collection('reviews')
-      .where('listingId', '==', listingId)
-      .where('status', '==', 'approved')
-      .orderBy('createdAt', 'desc')
-      .limit(Math.min(100, Math.max(1, limit)))
-      .get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+    const lim = Math.min(100, Math.max(1, limit));
+    try {
+      try {
+        const snap = await admin.firestore()
+          .collection('reviews')
+          .where('listingId', '==', listingId)
+          .where('status', '==', 'approved')
+          .orderBy('createdAt', 'desc')
+          .limit(lim)
+          .get();
+        return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      } catch {
+        // Fallback for missing composite index in production.
+        const snap = await admin.firestore()
+          .collection('reviews')
+          .where('listingId', '==', listingId)
+          .limit(300)
+          .get();
+        return snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as any) }))
+          .filter((r: any) => String(r.status || '').toLowerCase() === 'approved')
+          .sort((a: any, b: any) => this.toMillis(b.createdAt) - this.toMillis(a.createdAt))
+          .slice(0, lim);
+      }
+    } catch (error: any) {
+      console.error('[Reviews] listForListing failed', { listingId, message: String(error?.message || error) });
+      return [];
+    }
   }
 
   async listForUser(userId: string, limit = 50) {
     if (!userId) throw new BadRequestException('Missing userId');
-    const snap = await admin.firestore()
-      .collection('reviews')
-      .where('ownerId', '==', userId)
-      .where('status', '==', 'approved')
-      .orderBy('createdAt', 'desc')
-      .limit(Math.min(100, Math.max(1, limit)))
-      .get();
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+    const lim = Math.min(100, Math.max(1, limit));
+    try {
+      try {
+        const snap = await admin.firestore()
+          .collection('reviews')
+          .where('ownerId', '==', userId)
+          .where('status', '==', 'approved')
+          .orderBy('createdAt', 'desc')
+          .limit(lim)
+          .get();
+        return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      } catch {
+        const snap = await admin.firestore()
+          .collection('reviews')
+          .where('ownerId', '==', userId)
+          .limit(300)
+          .get();
+        return snap.docs
+          .map((d) => ({ id: d.id, ...(d.data() as any) }))
+          .filter((r: any) => String(r.status || '').toLowerCase() === 'approved')
+          .sort((a: any, b: any) => this.toMillis(b.createdAt) - this.toMillis(a.createdAt))
+          .slice(0, lim);
+      }
+    } catch (error: any) {
+      console.error('[Reviews] listForUser failed', { userId, message: String(error?.message || error) });
+      return [];
+    }
   }
 
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {

@@ -14,6 +14,36 @@ export class StatusError extends Error {
 
 @Injectable()
 export class UsersService {
+  private normalizeUsername(value: string): string {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  private validateUsernameOrThrow(value: string): string {
+    const username = String(value || '').trim();
+    // 3-32 chars, letters/numbers plus . _ -
+    if (username.length < 3 || username.length > 32) {
+      throw new StatusError(400, 'Invalid username format');
+    }
+    if (!/^[\p{L}\p{N}._-]+$/u.test(username)) {
+      throw new StatusError(400, 'Invalid username format');
+    }
+    return username;
+  }
+
+  private toNameSlug(name: string): string {
+    const source = String(name || '').trim();
+    const parts = source.split(/\s+/).filter(Boolean);
+    const firstLast = parts.slice(0, 2).join(' ');
+    return firstLast
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-{2,}/g, '-')
+      .slice(0, 64);
+  }
+
   private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
     const geo = readGeoPoint(value);
     if (!geo) return undefined;
@@ -50,12 +80,15 @@ export class UsersService {
     if (bpLogoUrl) businessProfile.logoUrl = bpLogoUrl;
     const username = String(data?.profile?.username || data?.username || '').trim();
     const usernameLower = String(data?.profile?.usernameLower || data?.usernameLower || username.toLowerCase()).trim().toLowerCase();
+    const name = String(data?.name || data?.fullName || data?.displayName || 'Member').trim();
+    const nameSlug = this.toNameSlug(name);
 
     return {
       uid,
       username: username || null,
       usernameLower: username ? usernameLower : null,
-      name: data?.name || data?.fullName || data?.displayName || 'Member',
+      name,
+      nameSlug: nameSlug || null,
       avatarUrl: data?.avatarUrl || 'https://placehold.co/128x128.png',
       coverUrl: data?.profile?.coverUrl || data?.coverUrl || undefined,
       bio: data?.bio || '',
@@ -91,6 +124,12 @@ export class UsersService {
     const membership = userSnap.get('membership');
     const current = userSnap.data() || {};
     const isBusinessPlan = membership?.plan === 'Business' && isMembershipActive(membership);
+    const inputProfileObj = (profile as any)?.profile && typeof (profile as any).profile === 'object'
+      ? (profile as any).profile
+      : null;
+    const usernameTouched = Boolean(
+      inputProfileObj && Object.prototype.hasOwnProperty.call(inputProfileObj, 'username')
+    );
 
     const blocked = new Set(['membership', 'kyc', 'role', 'rating', 'ratingSum', 'reviewsCount']);
     const sanitized: Record<string, any> = { ...profile };
@@ -133,7 +172,8 @@ export class UsersService {
     if (sanitized.profile && typeof sanitized.profile === 'object') {
       const profileObj = { ...(sanitized.profile as Record<string, any>) };
       if (Object.prototype.hasOwnProperty.call(profileObj, 'username')) {
-        const username = String(profileObj.username || '').trim();
+        const raw = String(profileObj.username || '').trim();
+        const username = raw ? this.validateUsernameOrThrow(raw) : '';
         if (username) {
           profileObj.username = username;
           profileObj.usernameLower = username.toLowerCase();
@@ -221,7 +261,44 @@ export class UsersService {
       }
     }
 
-    await userRef.set(sanitized, { merge: true });
+    const currentUsernameLower = this.normalizeUsername(
+      String((current as any)?.profile?.usernameLower || (current as any)?.profile?.username || '')
+    );
+    const nextUsernameLower = usernameTouched
+      ? this.normalizeUsername(
+          String((sanitized as any)?.profile?.usernameLower || (sanitized as any)?.profile?.username || '')
+        )
+      : currentUsernameLower;
+    const usernameChanged = usernameTouched && currentUsernameLower !== nextUsernameLower;
+
+    if (usernameChanged) {
+      const idxCol = admin.firestore().collection('usernameIndex');
+      await admin.firestore().runTransaction(async (tx) => {
+        if (nextUsernameLower) {
+          const nextRef = idxCol.doc(nextUsernameLower);
+          const nextSnap = await tx.get(nextRef);
+          if (nextSnap.exists) {
+            const ownerUid = String(nextSnap.get('uid') || '');
+            if (ownerUid && ownerUid !== userId) {
+              throw new StatusError(409, 'Username is already taken');
+            }
+          }
+          tx.set(nextRef, {
+            uid: userId,
+            usernameLower: nextUsernameLower,
+            updatedAt: this.serverTimestamp(),
+          }, { merge: true });
+        }
+
+        if (currentUsernameLower && currentUsernameLower !== nextUsernameLower) {
+          tx.delete(idxCol.doc(currentUsernameLower));
+        }
+
+        tx.set(userRef, sanitized, { merge: true });
+      });
+    } else {
+      await userRef.set(sanitized, { merge: true });
+    }
 
     const updatedSnap = await userRef.get();
     if (updatedSnap.exists) {
@@ -229,4 +306,128 @@ export class UsersService {
       await admin.firestore().collection('publicProfiles').doc(userId).set(publicProfile, { merge: true });
     }
   }
+
+  async getPublicProfileByIdentifier(identifier: string): Promise<Record<string, any> | null> {
+    const raw = String(identifier || '').trim();
+    if (!raw) return null;
+    const usernameLower = this.normalizeUsername(raw);
+    const looksLikeUid = /^[A-Za-z0-9]{20,}$/.test(raw);
+    const fallbackSlugMatch = /^(.+)-([a-z0-9]{6})$/.exec(usernameLower);
+    const fallbackNameSlug = fallbackSlugMatch ? fallbackSlugMatch[1] : usernameLower;
+    const fallbackUidSuffix = fallbackSlugMatch ? fallbackSlugMatch[2] : '';
+
+    // 1) Fast path for legacy uid links.
+    if (looksLikeUid) {
+      const byUid = await admin.firestore().collection('publicProfiles').doc(raw).get();
+      if (byUid.exists) {
+        const data = byUid.data() || {};
+        return { uid: byUid.id, ...data };
+      }
+    }
+
+    // 2) Preferred slug lookup.
+    try {
+      const byUsername = await admin.firestore()
+        .collection('publicProfiles')
+        .where('usernameLower', '==', usernameLower)
+        .limit(1)
+        .get();
+      if (!byUsername.empty) {
+        const hit = byUsername.docs[0];
+        return { uid: hit.id, ...(hit.data() || {}) };
+      }
+    } catch {}
+
+    // 3) Backward compatibility for old profile docs.
+    try {
+      const byUsernameLegacy = await admin.firestore()
+        .collection('publicProfiles')
+        .where('username', '==', raw)
+        .limit(1)
+        .get();
+      if (!byUsernameLegacy.empty) {
+        const hit = byUsernameLegacy.docs[0];
+        return { uid: hit.id, ...(hit.data() || {}) };
+      }
+    } catch {}
+
+    // 3) Fallback slug lookup from first-last name.
+    try {
+      const byNameSlug = await admin.firestore()
+        .collection('publicProfiles')
+        .where('nameSlug', '==', fallbackNameSlug)
+        .limit(fallbackUidSuffix ? 20 : 1)
+        .get();
+      if (!byNameSlug.empty) {
+        const hit = fallbackUidSuffix
+          ? (byNameSlug.docs.find((d) => d.id.toLowerCase().endsWith(fallbackUidSuffix)) || byNameSlug.docs[0])
+          : byNameSlug.docs[0];
+        return { uid: hit.id, ...(hit.data() || {}) };
+      }
+    } catch {}
+
+    // 4) Fallback to users docs (covers stale/missing publicProfiles sync).
+    if (looksLikeUid) {
+      const userDoc = await admin.firestore().collection('users').doc(raw).get();
+      if (userDoc.exists) {
+        const data = userDoc.data() || {};
+        return this.buildPublicProfile(userDoc.id, data);
+      }
+    }
+
+    try {
+      const byUserUsername = await admin.firestore()
+        .collection('users')
+        .where('profile.usernameLower', '==', usernameLower)
+        .limit(1)
+        .get();
+      if (!byUserUsername.empty) {
+        const hit = byUserUsername.docs[0];
+        return this.buildPublicProfile(hit.id, hit.data() || {});
+      }
+    } catch {}
+
+    try {
+      const byUserUsernameLegacy = await admin.firestore()
+        .collection('users')
+        .where('profile.username', '==', raw)
+        .limit(1)
+        .get();
+      if (!byUserUsernameLegacy.empty) {
+        const hit = byUserUsernameLegacy.docs[0];
+        return this.buildPublicProfile(hit.id, hit.data() || {});
+      }
+    } catch {}
+
+    return null;
+  }
+
+  async isUsernameAvailable(username: string, currentUserId?: string): Promise<boolean> {
+    const normalized = this.normalizeUsername(this.validateUsernameOrThrow(username));
+    const existingIdx = await admin.firestore().collection('usernameIndex').doc(normalized).get().catch(() => null);
+    if (existingIdx?.exists) {
+      const ownerUid = String(existingIdx.get('uid') || '');
+      if (!ownerUid || ownerUid !== String(currentUserId || '')) return false;
+    }
+
+    // Backward compatibility before usernameIndex existed.
+    const [byNested, byRoot] = await Promise.all([
+      admin.firestore()
+        .collection('users')
+        .where('profile.usernameLower', '==', normalized)
+        .limit(2)
+        .get()
+        .catch(() => null),
+      admin.firestore()
+        .collection('users')
+        .where('usernameLower', '==', normalized)
+        .limit(2)
+        .get()
+        .catch(() => null),
+    ]);
+    const allDocs = [...(byNested?.docs || []), ...(byRoot?.docs || [])];
+    const conflict = allDocs.find((d) => d.id !== String(currentUserId || ''));
+    return !conflict;
+  }
+
 }

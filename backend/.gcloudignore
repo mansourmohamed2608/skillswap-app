@@ -1,0 +1,21 @@
+# Google Cloud deploy ignore rules for Functions source uploads.
+# Keep compiled output under lib/ included; .gitignore excludes it.
+
+.git/
+.gitignore
+.firebase/
+.vscode/
+
+node_modules/
+
+firebase-debug.log*
+firestore-debug.log*
+database-debug.log*
+*-debug.log
+
+coverage/
+.nyc_output/
+
+.env
+.env.*
+!.env.example

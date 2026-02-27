@@ -14,9 +14,9 @@ import { AlertCircleIcon, UserPlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { auth, db } from '@/services/firebase';
-import { getFunctionsBase } from '@/services/api';
+import { getFunctionsBase, updateUserProfile } from '@/services/api';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { isLatinName } from '@/lib/validation';
 import { findBannedKeywordInFields } from '@/lib/moderation';
@@ -28,6 +28,13 @@ const initialState: LocalFormState = { message: null, success: false };
 const arabWorldCountries = [
   'Algeria','Bahrain','Egypt','Iraq','Jordan','Kuwait','Lebanon','Libya','Morocco','Oman','Palestine','Qatar','Saudi Arabia','Sudan','Syria','Tunisia','Turkey','United Arab Emirates','Yemen'
 ];
+
+function normalizePhoneNumber(value: string) {
+  const raw = String(value || '').trim();
+  const normalized = raw.replace(/[^\d+]/g, '');
+  if (normalized.startsWith('00')) return `+${normalized.slice(2)}`;
+  return normalized;
+}
 
 export function SignUpForm() {
   const router = useRouter();
@@ -54,16 +61,31 @@ export function SignUpForm() {
 
       const form = new FormData(e.currentTarget);
       const fullName = String(form.get('fullName') || '').trim();
+      const username = String(form.get('username') || '').trim();
       const email = String(form.get('email') || '').trim();
       const phoneNumber = String(form.get('phoneNumber') || '').trim();
+      const phoneNumberNormalized = normalizePhoneNumber(phoneNumber);
+      const emailLower = email.toLowerCase();
       const occupation = String(form.get('occupation') || '');
       const country = String(form.get('country') || '');
       const city = String(form.get('city') || '');
       const password = String(form.get('password') || '');
       const confirmPassword = String(form.get('confirmPassword') || '');
 
-      if (!fullName || !email || !phoneNumber || !country || !password || !confirmPassword) {
+      if (!fullName || !username || !email || !phoneNumber || !country || !password || !confirmPassword) {
         setState({ message: t('auth.signUp.errors.required'), success: false });
+        setLoading(false);
+        return;
+      }
+      if (!/^[\p{L}\p{N}._-]{3,32}$/u.test(username)) {
+        const msg = 'Username must be 3-32 characters and can only contain letters, numbers, dot, underscore, or hyphen.';
+        setState({ message: msg, success: false });
+        toast({ title: t('auth.signUp.errorTitle'), description: msg, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+      if (phoneNumberNormalized.length < 7) {
+        setState({ message: t('auth.signUp.errors.phoneInvalid', { defaultValue: 'Enter a valid phone number.' }), success: false });
         setLoading(false);
         return;
       }
@@ -76,6 +98,7 @@ export function SignUpForm() {
       }
       const banned = findBannedKeywordInFields([
         { label: 'fullName', value: fullName },
+        { label: 'profile.username', value: username },
       ]);
       if (banned) {
         const msg = t('errors.codes.content/banned');
@@ -90,6 +113,36 @@ export function SignUpForm() {
         return;
       }
 
+      // Check username availability before creating the account.
+      const base = getFunctionsBase();
+      try {
+        const usernameRes = await fetch(`${base}/api/user/username-available/${encodeURIComponent(username)}`, { method: 'GET' });
+        const usernameData = await usernameRes.json().catch(() => null);
+        if (usernameRes.ok && usernameData && usernameData.available === false) {
+          const msg = 'Username is already taken. Please choose another one.';
+          setState({ message: msg, success: false });
+          toast({ title: t('auth.signUp.errorTitle'), description: msg, variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Ignore network failure here; backend still enforces uniqueness on update.
+      }
+
+      // Basic uniqueness check for phone number before account creation.
+      const usersRef = collection(db, 'users');
+      const [phoneExactSnap, phoneNormalizedSnap] = await Promise.all([
+        getDocs(query(usersRef, where('phoneNumber', '==', phoneNumber), limit(1))),
+        getDocs(query(usersRef, where('phoneNumberNormalized', '==', phoneNumberNormalized), limit(1))),
+      ]);
+      if (!phoneExactSnap.empty || !phoneNormalizedSnap.empty) {
+        const msg = t('auth.signUp.errors.phoneInUse', { defaultValue: 'This phone number is already in use.' });
+        setState({ message: msg, success: false });
+        toast({ title: t('auth.signUp.errorTitle'), description: msg, variant: 'destructive' });
+        setLoading(false);
+        return;
+      }
+
       // Create Firebase user and profile doc
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: fullName });
@@ -98,7 +151,9 @@ export function SignUpForm() {
         uid,
         fullName,
         email,
+        emailLower,
         phoneNumber,
+        phoneNumberNormalized,
         occupation: occupation || '',
         country,
         city: city || '',
@@ -125,8 +180,24 @@ export function SignUpForm() {
         membershipActive: false,
       }, { merge: true });
 
+      // Claim unique username via backend (atomic uniqueness enforcement).
+      try {
+        await updateUserProfile({
+          profile: {
+            username,
+          },
+        });
+      } catch (claimErr) {
+        // Rollback just-created account on username claim failure so user can retry cleanly.
+        await Promise.allSettled([
+          deleteDoc(doc(db, 'users', uid)),
+          deleteDoc(doc(db, 'publicProfiles', uid)),
+        ]);
+        try { await cred.user.delete(); } catch {}
+        throw claimErr;
+      }
+
       // Create Didit session via backend and redirect
-      const base = getFunctionsBase();
       const url = `${base}/api/didit/session`;
       const r = await fetch(url, {
         method: 'POST',
@@ -181,6 +252,11 @@ export function SignUpForm() {
           <div>
             <Label htmlFor="fullName">{t('auth.signUp.fullNameLabel')}</Label>
             <Input required type="text" name="fullName" placeholder={t('auth.signUp.fullNamePlaceholder')} disabled={loading} />
+          </div>
+
+          <div>
+            <Label htmlFor="username">{t('profile.edit.usernameLabel')}</Label>
+            <Input required type="text" name="username" placeholder={t('profile.edit.usernamePlaceholder')} disabled={loading} />
           </div>
 
           <div>

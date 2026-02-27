@@ -1,5 +1,6 @@
 
 import { auth, db, isFirebaseConfigured } from './firebase';
+import { getFunctionsBase } from './api';
 
 import { collection, getDocs, doc, getDoc, query, where, DocumentData, Timestamp, limit, orderBy } from 'firebase/firestore';
 import type { ServiceListing, User } from '@/types';
@@ -43,6 +44,27 @@ const mapUserFromDoc = (id: string, data: any): User => {
 };
 
 const hasClientAuth = () => typeof window !== 'undefined' && !!auth?.currentUser;
+
+async function getUserByIdentifierFromApi(identifier: string): Promise<User | null> {
+    const key = String(identifier || '').trim();
+    if (!key) return null;
+    try {
+        const base = getFunctionsBase();
+        if (!base) return null;
+        const res = await fetch(`${base}/api/user/public/${encodeURIComponent(key)}`, {
+            method: 'GET',
+            headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return null;
+        const data: any = await res.json().catch(() => null);
+        if (!data || typeof data !== 'object') return null;
+        const uid = String(data.uid || data.id || '').trim();
+        if (!uid) return null;
+        return mapUserFromDoc(uid, data);
+    } catch {
+        return null;
+    }
+}
 
 // Fallback-safe date normalizer for heterogeneous Firestore/API shapes
 const toIsoOrNow = (input: any): string => {
@@ -268,7 +290,9 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
 export async function getUserById(id: string): Promise<User | null> {
     const uid = String(id || '').trim();
     if (!uid) return null;
-    if (!isFirebaseConfigured() || !db) return null;
+    if (!isFirebaseConfigured() || !db) {
+        return await getUserByIdentifierFromApi(uid);
+    }
 
     const viewerUid = auth?.currentUser?.uid || null;
     const isSelf = viewerUid === uid;
@@ -321,7 +345,7 @@ export async function getUserById(id: string): Promise<User | null> {
     }
 
     console.warn(`User with id ${uid} not found in Firestore.`);
-    return null;
+    return await getUserByIdentifierFromApi(uid);
 }
 
 function normalizeUsername(value: string): string {
@@ -390,6 +414,10 @@ async function getUserByUsername(username: string): Promise<User | null> {
 export async function getUserByIdentifier(identifier: string): Promise<User | null> {
     const raw = String(identifier || '').trim();
     if (!raw) return null;
+
+    // Prefer backend resolver to avoid client Firestore-rule related misses.
+    const byApi = await getUserByIdentifierFromApi(raw);
+    if (byApi) return byApi;
 
     // Keep old UID links working.
     const looksLikeUid = /^[A-Za-z0-9]{20,}$/.test(raw);
