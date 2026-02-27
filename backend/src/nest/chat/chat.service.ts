@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { canSendMessage, getUserDocument, incrementMessageCount } from '../../core/membership';
 import { sendEmailNotification, sendInAppNotification, sendPushNotification } from '../../core/notifications';
@@ -15,66 +15,76 @@ const UID_RE = /^[A-Za-z0-9]{20,}$/;
 @Injectable()
 export class ChatService {
   async sendMessage(uid: string, payload: SendMessagePayload) {
-    if (!uid) throw new UnauthorizedException('Authentication required');
-    const recipientInput = String(payload?.recipientId || '').trim();
-    if (!recipientInput) throw new BadRequestException('Missing recipientId');
-    const recipientId = await this.resolveRecipientUid(recipientInput);
-    if (recipientId === uid) throw new BadRequestException('Cannot message yourself');
-    const text = String(payload?.text || '').trim();
-    if (!text) throw new BadRequestException('Missing text');
-    const banned = await findBannedKeywordInFields([{ label: 'text', value: text }]);
-    if (banned) throw new BadRequestException({ code: 'content/banned', field: banned.field });
-
-    let userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>;
     try {
-      userSnap = await getUserDocument(uid);
-    } catch {
-      throw new ForbiddenException('Complete your profile to use chat');
-    }
-    this.ensureKycVerified(userSnap);
-    const membership = userSnap.get('membership');
-    const check = canSendMessage(membership);
-    if (!check.allowed) throw new ForbiddenException(check.reason || 'Messaging not allowed');
+      if (!uid) throw new UnauthorizedException('Authentication required');
+      const recipientInput = String(payload?.recipientId || '').trim();
+      if (!recipientInput) throw new BadRequestException('Missing recipientId');
+      const recipientId = await this.resolveRecipientUid(recipientInput);
+      if (recipientId === uid) throw new BadRequestException('Cannot message yourself');
+      const text = String(payload?.text || '').trim();
+      if (!text) throw new BadRequestException('Missing text');
+      const banned = await findBannedKeywordInFields([{ label: 'text', value: text }]);
+      if (banned) throw new BadRequestException({ code: 'content/banned', field: banned.field });
 
-    const convId = conversationIdFor(uid, recipientId);
-    const now = Date.now();
-    const db = admin.database();
-    const convRef = db.ref(`conversations/${convId}`);
+      let userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>;
+      try {
+        userSnap = await getUserDocument(uid);
+      } catch {
+        throw new ForbiddenException('Complete your profile to use chat');
+      }
+      this.ensureKycVerified(userSnap);
+      const membership = userSnap.get('membership');
+      const check = canSendMessage(membership);
+      if (!check.allowed) throw new ForbiddenException(check.reason || 'Messaging not allowed');
 
-    await convRef.update({
-      participants: { [uid]: true, [recipientId]: true },
-      lastMessage: text,
-      lastMessageAt: now,
-      updatedAt: now,
-    });
+      const convId = conversationIdFor(uid, recipientId);
+      const now = Date.now();
+      const db = admin.database();
+      const convRef = db.ref(`conversations/${convId}`);
 
-    await db.ref(`userConversations/${uid}`).update({ [convId]: true });
-    await db.ref(`userConversations/${recipientId}`).update({ [convId]: true });
-
-    const msgRef = convRef.child('messages').push();
-    await msgRef.set({ senderId: uid, text, createdAt: now });
-    await convRef.child(`perUserLastReadAt/${uid}`).set(now);
-    try {
-      await incrementMessageCount(uid);
-    } catch (e) {
-      // Message was already persisted; do not fail the request on quota-counter write issues.
-      console.warn('[Chat] Failed to increment message count', { uid, error: (e as any)?.message || String(e) });
-    }
-
-    try {
-      await sendInAppNotification({
-        userId: recipientId,
-        type: 'message',
-        content: 'New message received',
-        link: `/chat/${uid}`,
+      await convRef.update({
+        participants: { [uid]: true, [recipientId]: true },
+        lastMessage: text,
+        lastMessageAt: now,
+        updatedAt: now,
       });
-      await sendPushNotification(recipientId, 'New message', 'You have a new message.', `/chat/${uid}`);
-      await sendEmailNotification(recipientId, 'New message', 'You have a new message on SkillSwap.');
-    } catch (e) {
-      console.warn('Failed to send message notifications', e);
-    }
 
-    return { conversationId: convId, messageId: msgRef.key };
+      await db.ref(`userConversations/${uid}`).update({ [convId]: true });
+      await db.ref(`userConversations/${recipientId}`).update({ [convId]: true });
+
+      const msgRef = convRef.child('messages').push();
+      await msgRef.set({ senderId: uid, text, createdAt: now });
+      await convRef.child(`perUserLastReadAt/${uid}`).set(now);
+      try {
+        await incrementMessageCount(uid);
+      } catch (e) {
+        // Message was already persisted; do not fail the request on quota-counter write issues.
+        console.warn('[Chat] Failed to increment message count', { uid, error: (e as any)?.message || String(e) });
+      }
+
+      try {
+        await sendInAppNotification({
+          userId: recipientId,
+          type: 'message',
+          content: 'New message received',
+          link: `/chat/${uid}`,
+        });
+        await sendPushNotification(recipientId, 'New message', 'You have a new message.', `/chat/${uid}`);
+        await sendEmailNotification(recipientId, 'New message', 'You have a new message on SkillSwap.');
+      } catch (e) {
+        console.warn('Failed to send message notifications', e);
+      }
+
+      return { conversationId: convId, messageId: msgRef.key };
+    } catch (error: any) {
+      if (error instanceof HttpException) throw error;
+      console.error('[Chat] sendMessage failed', {
+        uid,
+        recipientId: String(payload?.recipientId || '').trim(),
+        message: String(error?.message || error),
+      });
+      throw new ServiceUnavailableException('Unable to send message right now');
+    }
   }
 
   async markRead(uid: string, conversationId: string) {

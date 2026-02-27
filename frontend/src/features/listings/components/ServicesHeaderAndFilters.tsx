@@ -51,7 +51,9 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     return {
       q: trimmedQuery || undefined,
       category,
-      location: nextLocation || undefined,
+      // When geo coordinates are available, don't also apply strict text location filtering.
+      // Otherwise nearby matches get excluded by exact-string mismatches.
+      location: nextNear ? undefined : (nextLocation || undefined),
       nearLat: nextNear?.lat,
       nearLng: nextNear?.lng,
       radiusKm: nextNear && radius !== 'any' ? Number(radius) : undefined,

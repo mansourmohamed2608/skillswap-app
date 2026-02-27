@@ -4,6 +4,7 @@ import { ServiceCard } from '@/features/listings/components/ServiceCard';
 import type { ServiceListing, User } from '@/types';
 import { track } from '@/services/analytics';
 import { useTranslation } from 'react-i18next';
+import { getFunctionsBase } from '@/services/api';
 
 export type SearchParams = {
   q?: string;
@@ -29,7 +30,7 @@ export function SearchResults({ params }: { params: SearchParams }) {
         if (Number.isFinite(params.nearLat)) usp.set('nearLat', String(params.nearLat));
         if (Number.isFinite(params.nearLng)) usp.set('nearLng', String(params.nearLng));
         if (Number.isFinite(params.radiusKm)) usp.set('radiusKm', String(params.radiusKm));
-        const base = process.env.NEXT_PUBLIC_API_BASE || '/api';
+        const base = getFunctionsBase() || '/api';
         const resp = await fetch(`${base}/search/listings?${usp.toString()}`);
         const data = await resp.json();
         setItems(data.hits || []);

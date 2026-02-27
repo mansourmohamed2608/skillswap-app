@@ -13,6 +13,8 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { acceptRequest, cancelRequest, completeRequest, declineRequest } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
+import { getUserById } from "@/services/data";
+import { getProfilePath } from "@/lib/profile";
 
 export default function BookingDetailPage() {
   const { t, i18n } = useTranslation();
@@ -22,7 +24,17 @@ export default function BookingDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any | null>(null);
+  const [ownerProfile, setOwnerProfile] = useState<{ name: string; path: string } | null>(null);
+  const [requesterProfile, setRequesterProfile] = useState<{ name: string; path: string } | null>(null);
+  const [listingTitle, setListingTitle] = useState<string>("");
   const { toast } = useToast();
+
+  const formatShortUid = (value: string) => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (raw.length <= 12) return raw;
+    return `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -39,6 +51,13 @@ export default function BookingDetailPage() {
           return;
         }
         const d = snap.data();
+        const currentUid = auth.currentUser.uid;
+        const ownerId = String((d as any)?.ownerId || '');
+        const requesterId = String((d as any)?.requesterId || '');
+        if (ownerId !== currentUid && requesterId !== currentUid) {
+          setError(t('bookings.notFound'));
+          return;
+        }
         setData({ id: snap.id, ...d });
       } catch (e: any) {
         setError(getErrorMessage(e, t('bookings.failedLoad')));
@@ -48,6 +67,39 @@ export default function BookingDetailPage() {
     })();
     return () => { mounted = false };
   }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!data?.ownerId || !data?.requesterId) return;
+      try {
+        const [owner, requester] = await Promise.all([
+          getUserById(String(data.ownerId)),
+          getUserById(String(data.requesterId)),
+        ]);
+        if (!mounted) return;
+        setOwnerProfile(owner ? { name: owner.name, path: getProfilePath(owner) } : null);
+        setRequesterProfile(requester ? { name: requester.name, path: getProfilePath(requester) } : null);
+      } catch {
+        if (!mounted) return;
+        setOwnerProfile(null);
+        setRequesterProfile(null);
+      }
+
+      try {
+        if (!db || !data?.listingId) return;
+        const listingSnap = await getDoc(doc(db, 'listings', String(data.listingId)));
+        if (!mounted) return;
+        if (listingSnap.exists()) {
+          const listingData: any = listingSnap.data() || {};
+          setListingTitle(String(listingData?.offeredService?.title || listingData?.title || '').trim());
+        }
+      } catch {
+        if (mounted) setListingTitle('');
+      }
+    })();
+    return () => { mounted = false; };
+  }, [data?.ownerId, data?.requesterId, data?.listingId]);
 
   if (loading) return null;
   if (error) return <div className="container">{error}</div>;
@@ -74,8 +126,27 @@ export default function BookingDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div><strong>{t('bookings.owner')}:</strong> {data.ownerId}</div>
-          <div><strong>{t('bookings.requester')}:</strong> {data.requesterId}</div>
+          {listingTitle ? (
+            <div>
+              <strong>{t('bookings.listingFallback')}:</strong> {listingTitle}
+            </div>
+          ) : null}
+          <div>
+            <strong>{t('bookings.owner')}:</strong>{' '}
+            {ownerProfile ? (
+              <Link href={ownerProfile.path} className="text-primary hover:underline">
+                {ownerProfile.name}
+              </Link>
+            ) : formatShortUid(String(data.ownerId))}
+          </div>
+          <div>
+            <strong>{t('bookings.requester')}:</strong>{' '}
+            {requesterProfile ? (
+              <Link href={requesterProfile.path} className="text-primary hover:underline">
+                {requesterProfile.name}
+              </Link>
+            ) : formatShortUid(String(data.requesterId))}
+          </div>
           {createdAt && (
             <div>
               <strong>{t('bookings.created')}:</strong> {formatDate(createdAt, { dateStyle: 'full' }, i18n.language)} {formatTime(createdAt, { hour: '2-digit', minute: '2-digit' }, i18n.language)}
