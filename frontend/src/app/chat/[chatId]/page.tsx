@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { markConversationRead, sendChatMessage } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
+import { getUserByIdentifier } from "@/services/data";
 
 type Params = { chatId: string };
 type Search = { [key: string]: string | string[] | undefined };
@@ -29,17 +30,21 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
   const { toast } = useToast();
 
   const { user } = useAuth();
-  const { convId, otherUserId } = useMemo(() => {
-    if (!user?.uid) return { convId: undefined, otherUserId: chatId };
-    if (chatId.includes("_")) {
-      const parts = chatId.split("_");
-      if (parts.length === 2 && parts.includes(user.uid)) {
-        const otherId = parts[0] === user.uid ? parts[1] : parts[0];
-        return { convId: chatId, otherUserId: otherId };
-      }
-    }
-    return { convId: conversationIdWith(chatId, user.uid), otherUserId: chatId };
+  const parsedConversationId = useMemo(() => {
+    if (!user?.uid) return null;
+    if (!chatId.includes("_")) return null;
+    const parts = chatId.split("_");
+    if (parts.length !== 2 || !parts.includes(user.uid)) return null;
+    const otherId = parts[0] === user.uid ? parts[1] : parts[0];
+    return { convId: chatId, otherUserId: otherId };
   }, [chatId, user?.uid]);
+  const [resolvedOtherUserId, setResolvedOtherUserId] = useState<string>(parsedConversationId?.otherUserId || "");
+  const convId = useMemo(() => {
+    if (!user?.uid) return undefined;
+    if (parsedConversationId?.convId) return parsedConversationId.convId;
+    if (!resolvedOtherUserId) return undefined;
+    return conversationIdWith(resolvedOtherUserId, user.uid);
+  }, [parsedConversationId?.convId, resolvedOtherUserId, user?.uid]);
   const messages = useMessagesRTDB(convId);
   const [text, setText] = useState("");
   const initialName =
@@ -51,9 +56,9 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
   const [otherUserName, setOtherUserName] = useState<string>(initialName);
 
   async function onSend() {
-    if (!user?.uid || !otherUserId || !text.trim()) return;
+    if (!user?.uid || !resolvedOtherUserId || !text.trim()) return;
     try {
-      await sendChatMessage({ recipientId: otherUserId, text: text.trim() });
+      await sendChatMessage({ recipientId: resolvedOtherUserId, text: text.trim() });
       setText("");
     } catch (e: any) {
       toast({
@@ -66,26 +71,56 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
 
   useEffect(() => {
     let active = true;
+    (async () => {
+      if (!user?.uid) {
+        if (active) setResolvedOtherUserId("");
+        return;
+      }
+      if (parsedConversationId?.otherUserId) {
+        if (active) setResolvedOtherUserId(parsedConversationId.otherUserId);
+        return;
+      }
+      const raw = String(chatId || '').trim();
+      if (!raw) {
+        if (active) setResolvedOtherUserId("");
+        return;
+      }
+      if (/^[A-Za-z0-9]{20,}$/.test(raw)) {
+        if (active) setResolvedOtherUserId(raw);
+        return;
+      }
+      const resolved = await getUserByIdentifier(raw);
+      if (!active) return;
+      setResolvedOtherUserId(String(resolved?.id || '').trim());
+      if (resolved?.name) setOtherUserName(resolved.name);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [chatId, parsedConversationId?.otherUserId, user?.uid]);
+
+  useEffect(() => {
+    let active = true;
     async function loadUser() {
-      if (!db || !otherUserId) return;
+      if (!db || !resolvedOtherUserId) return;
       try {
-        const snap = await getDoc(doc(db, "users", otherUserId));
+        const snap = await getDoc(doc(db, "users", resolvedOtherUserId));
         if (!active) return;
         if (snap.exists()) {
           const d = snap.data() as any;
-          setOtherUserName(d.name || d.fullName || d.displayName || otherUserId);
+          setOtherUserName(d.name || d.fullName || d.displayName || resolvedOtherUserId);
         } else {
-          setOtherUserName((prev) => prev || otherUserId);
+          setOtherUserName((prev) => prev || resolvedOtherUserId);
         }
       } catch {
-        if (active) setOtherUserName((prev) => prev || otherUserId);
+        if (active) setOtherUserName((prev) => prev || resolvedOtherUserId);
       }
     }
     loadUser();
     return () => {
       active = false;
     };
-  }, [otherUserId]);
+  }, [resolvedOtherUserId]);
 
   useEffect(() => {
     if (!convId || !user?.uid) return;
@@ -124,7 +159,7 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
               <div className={`flex items-end gap-2 max-w-[75%] ${message.senderId === user?.uid ? "flex-row-reverse" : ""}`}>
                 {message.senderId !== user?.uid && (
                    <Avatar className="h-8 w-8 self-end">
-                  <AvatarFallback>{(otherUserId || chatId).slice(0,1).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{(resolvedOtherUserId || chatId).slice(0,1).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 )}
                 <div className={`p-3 rounded-xl ${message.senderId === user?.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card text-card-foreground border rounded-bl-none"}`}>
@@ -145,7 +180,7 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSend(); } }}
               disabled={!user}
             />
-            <Button onClick={onSend} disabled={!user || !text.trim()}>{t('chat.detail.send')}</Button>
+            <Button onClick={onSend} disabled={!user || !resolvedOtherUserId || !text.trim()}>{t('chat.detail.send')}</Button>
           </div>
         </CardFooter>
       </Card>

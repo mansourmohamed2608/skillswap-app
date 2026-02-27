@@ -9,6 +9,9 @@ export type SearchParams = {
   q?: string;
   category?: string;
   location?: string;
+  nearLat?: number;
+  nearLng?: number;
+  radiusKm?: number;
 };
 
 export function SearchResults({ params }: { params: SearchParams }) {
@@ -23,12 +26,25 @@ export function SearchResults({ params }: { params: SearchParams }) {
         if (params.q) usp.set('q', params.q);
         if (params.category) usp.set('category', params.category);
         if (params.location) usp.set('location', params.location);
+        if (Number.isFinite(params.nearLat)) usp.set('nearLat', String(params.nearLat));
+        if (Number.isFinite(params.nearLng)) usp.set('nearLng', String(params.nearLng));
+        if (Number.isFinite(params.radiusKm)) usp.set('radiusKm', String(params.radiusKm));
         const base = process.env.NEXT_PUBLIC_API_BASE || '/api';
         const resp = await fetch(`${base}/search/listings?${usp.toString()}`);
         const data = await resp.json();
         setItems(data.hits || []);
         // fire-and-forget analytics event
-        try { await track('search_performed', { q: params.q || '', category: params.category || '', location: params.location || '', results: (data.nbHits ?? (data.hits?.length || 0)) }); } catch {/* noop */}
+        try {
+          await track('search_performed', {
+            q: params.q || '',
+            category: params.category || '',
+            location: params.location || '',
+            nearLat: params.nearLat,
+            nearLng: params.nearLng,
+            radiusKm: params.radiusKm,
+            results: (data.nbHits ?? (data.hits?.length || 0)),
+          });
+        } catch {/* noop */}
       } catch (e) {
         setItems([]);
       } finally {
@@ -36,7 +52,7 @@ export function SearchResults({ params }: { params: SearchParams }) {
       }
     }
     run();
-  }, [params.q, params.category, params.location]);
+  }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm]);
 
   if (loading) return <div className="text-muted-foreground">{t('listings.search.loading')}</div>;
   if (!items || items.length === 0) return <div className="text-muted-foreground">{t('listings.search.empty')}</div>;
@@ -65,17 +81,42 @@ export function SearchResults({ params }: { params: SearchParams }) {
     const requestedTitle = hit.requestedService?.title || t('listings.card.openToOffers');
     const requestedCategory = hit.requestedService?.category || t('listings.card.generalCategory');
     const requestedDescription = hit.requestedService?.description || '';
+    const requestedKind = (hit.requestedKind || 'service') as ServiceListing['requestedKind'];
+    const requestedProduct = hit.requestedProduct && typeof hit.requestedProduct === 'object'
+      ? {
+          name: String(hit.requestedProduct.name || ''),
+          description: hit.requestedProduct.description ? String(hit.requestedProduct.description) : undefined,
+        }
+      : hit.requestedProductName
+        ? { name: String(hit.requestedProductName), description: undefined }
+      : undefined;
+    const requestedMoney = hit.requestedMoney && typeof hit.requestedMoney === 'object'
+      ? {
+          amount: Number(hit.requestedMoney.amount || 0),
+          currency: String(hit.requestedMoney.currency || 'USD'),
+        }
+      : hit.requestedMoneyAmount !== undefined && hit.requestedMoneyAmount !== null
+        ? { amount: Number(hit.requestedMoneyAmount || 0), currency: String(hit.requestedMoneyCurrency || 'USD') }
+      : undefined;
     const createdAt = hit.createdAt || hit.postedDate || new Date().toISOString();
     const status = (hit.status as any) || 'open';
     const location = hit.location || '';
+    const distanceKm = Number(hit.distanceKm);
     return {
       id,
       offeredByUserId: hit.userId || hit.offeredByUserId || 'unknown',
       offeredService: { title, description, category },
       requestedService: { title: requestedTitle, description: requestedDescription, category: requestedCategory },
+      requestedKind,
+      requestedProduct,
+      requestedMoney,
       postedDate: safeIsoDate(createdAt),
       status,
       location,
+      distanceKm: Number.isFinite(distanceKm) ? distanceKm : undefined,
+      geo: (hit.geo && Number.isFinite(Number(hit.geo.lat)) && Number.isFinite(Number(hit.geo.lng)))
+        ? { lat: Number(hit.geo.lat), lng: Number(hit.geo.lng) }
+        : undefined,
     } as ServiceListing;
   }
 

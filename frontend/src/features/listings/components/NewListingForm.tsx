@@ -267,12 +267,13 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   useEffect(() => {
     if (autoLocationRequestedRef.current) return;
     if (!user) return;
+    if (initialListing) return;
     if (location.trim() || geo) return;
     autoLocationRequestedRef.current = true;
     void useCurrentLocation();
-    // Intentionally run only when auth/location readiness changes.
+    // Intentionally run once when create form is ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, location, geo]);
+  }, [user, initialListing, location, geo]);
 
   useEffect(() => {
     let mounted = true;

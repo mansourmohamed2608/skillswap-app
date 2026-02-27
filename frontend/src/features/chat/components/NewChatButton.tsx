@@ -16,7 +16,22 @@ export function NewChatButton() {
   const { t } = useTranslation();
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
-  const [targetUserId, setTargetUserId] = useState("");
+  const [targetIdentifier, setTargetIdentifier] = useState("");
+
+  function extractIdentifier(input: string) {
+    const raw = input.trim();
+    if (!raw) return '';
+    try {
+      const u = new URL(raw);
+      const parts = u.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2 && (parts[0] === 'profile' || parts[0] === 'chat')) {
+        return decodeURIComponent(parts[1] || '').trim();
+      }
+    } catch {
+      // Not a URL; continue.
+    }
+    return raw.replace(/^@+/, '').trim();
+  }
 
   function onClick() {
     if (loading) return;
@@ -28,13 +43,13 @@ export function NewChatButton() {
   }
 
   function startChat() {
-    const nextId = targetUserId.trim();
+    const nextId = extractIdentifier(targetIdentifier);
     if (!nextId) {
       toast({ title: t('chat.newChat.missing'), variant: 'destructive' });
       return;
     }
     setOpen(false);
-    setTargetUserId("");
+    setTargetIdentifier("");
     router.push(`/chat/${encodeURIComponent(nextId)}`);
   }
 
@@ -55,8 +70,8 @@ export function NewChatButton() {
             </label>
             <Input
               id="chat-user-id"
-              value={targetUserId}
-              onChange={(e) => setTargetUserId(e.target.value)}
+              value={targetIdentifier}
+              onChange={(e) => setTargetIdentifier(e.target.value)}
               placeholder={t('chat.newChat.userIdPlaceholder')}
             />
           </div>

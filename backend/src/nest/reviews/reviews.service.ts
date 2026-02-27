@@ -50,7 +50,13 @@ export class ReviewsService {
 
     let reviewerName = String(payload.reviewerName || '').trim();
     if (reviewerId) {
-      const userSnap = await getUserDocument(reviewerId);
+      let userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>;
+      try {
+        userSnap = await getUserDocument(reviewerId);
+      } catch {
+        // Keep this as a controlled client error instead of bubbling as 500.
+        throw new ForbiddenException('Complete your profile before posting a review');
+      }
       this.ensureKycVerified(userSnap);
       const userData: any = userSnap.data() || {};
       reviewerName = reviewerName || userData.name || userData.fullName || userData.displayName || 'Member';
