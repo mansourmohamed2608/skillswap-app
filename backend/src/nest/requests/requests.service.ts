@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { canCreateBooking, getUserDocument, incrementBookingCount, decrementListingCount } from '../../core/membership';
 import { sendInAppNotification, sendPushNotification, sendEmailNotification } from '../../core/notifications';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
+import { createRequestPublicId } from '../../core/public-ids';
 
 @Injectable()
 export class RequestsService {
@@ -33,34 +34,43 @@ export class RequestsService {
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
         ? (admin.firestore.FieldValue as any).serverTimestamp()
         : new Date();
+    const docRef = admin.firestore().collection('requests').doc();
+    const publicId = createRequestPublicId({
+      id: docRef.id,
+      listingId,
+      ownerId,
+      requesterId: userId,
+    });
     const requestDoc = {
       listingId,
       ownerId,
       requesterId: userId,
+      publicId,
       proposedTime: proposedTime ? new Date(proposedTime) : null,
       message: message || '',
       status: 'pending',
       createdAt: createdAtVal,
     };
-    const docRef = await admin.firestore().collection('requests').add(requestDoc);
+    await docRef.set(requestDoc);
     await incrementBookingCount(userId);
 
     try {
+      const cleanLink = `/bookings/${publicId}`;
       await sendInAppNotification({
         userId: ownerId,
         type: 'request',
         content: `New exchange request for your listing`,
-        link: `/requests/${docRef.id}`,
+        link: cleanLink,
         listingId,
         requesterId: userId,
       });
-      await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', `/requests/${docRef.id}`);
+      await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', cleanLink);
       await sendEmailNotification(ownerId, 'New exchange request', 'You have a new exchange request on your listing.');
     } catch (e) {
       console.warn('Failed to send notifications for owner', e);
     }
 
-    return { id: docRef.id };
+    return { id: docRef.id, publicId };
   }
 
   async reschedule(userId: string, requestId: string, proposedTime: string) {
@@ -104,6 +114,12 @@ export class RequestsService {
 
     const status = String((data as any).status || 'pending').toLowerCase();
     if (status !== 'pending') throw new BadRequestException(`Request already ${status}`);
+    const publicId = String((data as any).publicId || createRequestPublicId({
+      id: requestId,
+      listingId,
+      ownerId,
+      requesterId,
+    }));
 
     const userSnap = await getUserDocument(userId);
     this.ensureKycVerified(userSnap);
@@ -142,15 +158,16 @@ export class RequestsService {
     await incrementBookingCount(ownerId);
 
     try {
+      const cleanLink = `/bookings/${publicId}`;
       await sendInAppNotification({
         userId: requesterId,
         type: 'request',
         content: `Your exchange request was accepted`,
-        link: `/requests/${requestId}`,
+        link: cleanLink,
         listingId,
         requesterId,
       });
-      await sendPushNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.', `/requests/${requestId}`);
+      await sendPushNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.', cleanLink);
       await sendEmailNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.');
     } catch (e) {
       console.warn('Failed to send accept notifications', e);
@@ -178,6 +195,12 @@ export class RequestsService {
 
     const status = String((data as any).status || 'pending').toLowerCase();
     if (status !== 'pending') throw new BadRequestException(`Request already ${status}`);
+    const publicId = String((data as any).publicId || createRequestPublicId({
+      id: requestId,
+      listingId,
+      ownerId,
+      requesterId,
+    }));
 
     const nowVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
@@ -191,15 +214,16 @@ export class RequestsService {
     });
 
     try {
+      const cleanLink = `/bookings/${publicId}`;
       await sendInAppNotification({
         userId: requesterId,
         type: 'request',
         content: `Your exchange request was declined`,
-        link: `/requests/${requestId}`,
+        link: cleanLink,
         listingId,
         requesterId,
       });
-      await sendPushNotification(requesterId, 'Request declined', 'Your exchange request was declined.', `/requests/${requestId}`);
+      await sendPushNotification(requesterId, 'Request declined', 'Your exchange request was declined.', cleanLink);
       await sendEmailNotification(requesterId, 'Request declined', 'Your exchange request was declined.');
     } catch (e) {
       console.warn('Failed to send decline notifications', e);
@@ -231,6 +255,12 @@ export class RequestsService {
     if (['declined', 'cancelled', 'completed'].includes(status)) {
       throw new BadRequestException(`Request already ${status}`);
     }
+    const publicId = String((data as any).publicId || createRequestPublicId({
+      id: requestId,
+      listingId,
+      ownerId,
+      requesterId,
+    }));
 
     const nowVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
@@ -245,15 +275,16 @@ export class RequestsService {
 
     const otherId = ownerId === userId ? requesterId : ownerId;
     try {
+      const cleanLink = `/bookings/${publicId}`;
       await sendInAppNotification({
         userId: otherId,
         type: 'request',
         content: `An exchange request was cancelled`,
-        link: `/requests/${requestId}`,
+        link: cleanLink,
         listingId,
         requesterId,
       });
-      await sendPushNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.', `/requests/${requestId}`);
+      await sendPushNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.', cleanLink);
       await sendEmailNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.');
     } catch (e) {
       console.warn('Failed to send cancel notifications', e);

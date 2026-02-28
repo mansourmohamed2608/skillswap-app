@@ -14,9 +14,9 @@ import { AlertCircleIcon, UserPlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { auth, db } from '@/services/firebase';
-import { getFunctionsBase, updateUserProfile } from '@/services/api';
+import { bootstrapUserAccount, getFunctionsBase } from '@/services/api';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { collection, deleteDoc, doc, getDocs, limit, query, serverTimestamp, setDoc, where } from 'firebase/firestore';
+import { deleteDoc, doc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
 import { isLatinName } from '@/lib/validation';
 import { findBannedKeywordInFields } from '@/lib/moderation';
@@ -130,68 +130,39 @@ export function SignUpForm() {
       }
 
       // Basic uniqueness check for phone number before account creation.
-      const usersRef = collection(db, 'users');
-      const [phoneExactSnap, phoneNormalizedSnap] = await Promise.all([
-        getDocs(query(usersRef, where('phoneNumber', '==', phoneNumber), limit(1))),
-        getDocs(query(usersRef, where('phoneNumberNormalized', '==', phoneNumberNormalized), limit(1))),
-      ]);
-      if (!phoneExactSnap.empty || !phoneNormalizedSnap.empty) {
-        const msg = t('auth.signUp.errors.phoneInUse', { defaultValue: 'This phone number is already in use.' });
-        setState({ message: msg, success: false });
-        toast({ title: t('auth.signUp.errorTitle'), description: msg, variant: 'destructive' });
-        setLoading(false);
-        return;
+      try {
+        const phoneRes = await fetch(`${base}/api/user/phone-available?value=${encodeURIComponent(phoneNumber)}`, { method: 'GET' });
+        const phoneData = await phoneRes.json().catch(() => null);
+        if (phoneRes.ok && phoneData && phoneData.available === false) {
+          const msg = t('auth.signUp.errors.phoneInUse', { defaultValue: 'This phone number is already in use.' });
+          setState({ message: msg, success: false });
+          toast({ title: t('auth.signUp.errorTitle'), description: msg, variant: 'destructive' });
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Ignore network failure here; the backend still validates subsequent authenticated operations.
       }
 
-      // Create Firebase user and profile doc
+      // Create Firebase auth user, then bootstrap the profile atomically via backend.
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: fullName });
       const uid = cred.user.uid;
-      await setDoc(doc(db, 'users', uid), {
-        uid,
-        fullName,
-        email,
-        emailLower,
-        phoneNumber,
-        phoneNumberNormalized,
-        occupation: occupation || '',
-        country,
-        city: city || '',
-        createdAt: serverTimestamp(),
-        avatarUrl: 'https://placehold.co/128x128.png',
-        bio: '',
-        rating: 0,
-        reviewsCount: 0,
-        servicesOffered: [],
-        servicesRequested: [],
-      }, { merge: true });
-      await setDoc(doc(db, 'publicProfiles', uid), {
-        uid,
-        name: fullName,
-        avatarUrl: 'https://placehold.co/128x128.png',
-        bio: '',
-        rating: 0,
-        reviewsCount: 0,
-        servicesOffered: [],
-        servicesRequested: [],
-        location: city || '',
-        country,
-        membershipPlan: 'Free',
-        membershipActive: false,
-      }, { merge: true });
-
-      // Claim unique username via backend (atomic uniqueness enforcement).
       try {
-        await updateUserProfile({
-          profile: {
-            username,
-          },
+        await bootstrapUserAccount({
+          fullName,
+          username,
+          phoneNumber,
+          phoneNumberNormalized,
+          occupation: occupation || '',
+          country,
+          city: city || '',
+          email,
         });
       } catch (claimErr) {
-        // Rollback just-created account on username claim failure so user can retry cleanly.
+        // Roll back just-created auth account so retrying stays clean.
         await Promise.allSettled([
           deleteDoc(doc(db, 'users', uid)),
-          deleteDoc(doc(db, 'publicProfiles', uid)),
         ]);
         try { await cred.user.delete(); } catch {}
         throw claimErr;

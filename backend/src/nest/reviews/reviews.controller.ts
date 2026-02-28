@@ -1,27 +1,17 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
-import * as admin from 'firebase-admin';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
+import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
 
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
+  @UseGuards(FirebaseAuthGuard)
   @Post()
   async create(@Body() body: CreateReviewDto, @Req() req: Request) {
-    const authHeader = (req.headers.authorization || '').toString();
-    let reviewerId: string | null = null;
-    if (authHeader) {
-      const match = /^Bearer (.+)$/.exec(authHeader);
-      if (!match) throw new UnauthorizedException('Invalid Authorization header');
-      try {
-        const decoded = await admin.auth().verifyIdToken(match[1]);
-        reviewerId = decoded.uid;
-      } catch (e) {
-        throw new UnauthorizedException('Invalid or expired token');
-      }
-    }
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
     return this.reviewsService.createReview(reviewerId, body);
   }
 

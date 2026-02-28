@@ -18,6 +18,13 @@ export class UsersService {
     return String(value || '').trim().toLowerCase();
   }
 
+  private normalizePhone(value: string): string {
+    const raw = String(value || '').trim();
+    const normalized = raw.replace(/[^\d+]/g, '');
+    if (normalized.startsWith('00')) return `+${normalized.slice(2)}`;
+    return normalized;
+  }
+
   private validateUsernameOrThrow(value: string): string {
     const username = String(value || '').trim();
     // 3-32 chars, letters/numbers plus . _ -
@@ -317,6 +324,121 @@ export class UsersService {
     }
   }
 
+  async bootstrapAccount(userId: string, input: Record<string, any>, authEmail?: string | null): Promise<void> {
+    if (!userId) {
+      throw new StatusError(401, 'Unauthenticated request');
+    }
+    const fullName = String(input?.fullName || '').trim();
+    const username = this.validateUsernameOrThrow(String(input?.username || '').trim());
+    const phoneNumber = String(input?.phoneNumber || '').trim();
+    const phoneNumberNormalized = this.normalizePhone(input?.phoneNumberNormalized || phoneNumber);
+    const occupation = String(input?.occupation || '').trim();
+    const country = String(input?.country || '').trim();
+    const city = String(input?.city || '').trim();
+    const email = String(authEmail || input?.email || '').trim();
+    const emailLower = email.toLowerCase();
+
+    if (!fullName || !phoneNumber || !country || phoneNumberNormalized.length < 7) {
+      throw new StatusError(400, 'Missing required signup fields');
+    }
+
+    const banned = await findBannedKeywordInFields([
+      { label: 'fullName', value: fullName },
+      { label: 'profile.username', value: username },
+    ]);
+    if (banned) {
+      throw new StatusError(400, 'content/banned');
+    }
+
+    const userRef = admin.firestore().collection('users').doc(userId);
+    const usernameLower = this.normalizeUsername(username);
+    const usernameIndexRef = admin.firestore().collection('usernameIndex').doc(usernameLower);
+    const phoneIndexRef = admin.firestore().collection('phoneIndex').doc(phoneNumberNormalized);
+
+    await admin.firestore().runTransaction(async (tx) => {
+      const [userSnap, usernameSnap, phoneSnap] = await Promise.all([
+        tx.get(userRef),
+        tx.get(usernameIndexRef),
+        tx.get(phoneIndexRef),
+      ]);
+
+      const current = userSnap.exists ? (userSnap.data() || {}) : {};
+      const currentUsernameLower = this.normalizeUsername(
+        String((current as any)?.profile?.usernameLower || (current as any)?.profile?.username || '')
+      );
+      const currentPhoneNormalized = this.normalizePhone(
+        String((current as any)?.phoneNumberNormalized || (current as any)?.phoneNumber || '')
+      );
+
+      if (usernameSnap.exists) {
+        const ownerUid = String(usernameSnap.get('uid') || '');
+        if (ownerUid && ownerUid !== userId) {
+          throw new StatusError(409, 'Username is already taken');
+        }
+      }
+
+      if (phoneSnap.exists) {
+        const ownerUid = String(phoneSnap.get('uid') || '');
+        if (ownerUid && ownerUid !== userId) {
+          throw new StatusError(409, 'This phone number is already in use.');
+        }
+      }
+
+      tx.set(usernameIndexRef, {
+        uid: userId,
+        usernameLower,
+        updatedAt: this.serverTimestamp(),
+      }, { merge: true });
+
+      tx.set(phoneIndexRef, {
+        uid: userId,
+        phoneNumberNormalized,
+        updatedAt: this.serverTimestamp(),
+      }, { merge: true });
+
+      if (currentUsernameLower && currentUsernameLower !== usernameLower) {
+        tx.delete(admin.firestore().collection('usernameIndex').doc(currentUsernameLower));
+      }
+      if (currentPhoneNormalized && currentPhoneNormalized !== phoneNumberNormalized) {
+        tx.delete(admin.firestore().collection('phoneIndex').doc(currentPhoneNormalized));
+      }
+
+      tx.set(userRef, {
+        uid: userId,
+        name: fullName,
+        fullName,
+        displayName: fullName,
+        email: email || undefined,
+        emailLower: emailLower || undefined,
+        phoneNumber,
+        phoneNumberNormalized,
+        occupation: occupation || '',
+        country,
+        city: city || '',
+        location: city || '',
+        createdAt: userSnap.exists ? ((current as any)?.createdAt || this.serverTimestamp()) : this.serverTimestamp(),
+        avatarUrl: String((current as any)?.avatarUrl || 'https://placehold.co/128x128.png'),
+        bio: String((current as any)?.bio || ''),
+        rating: Number((current as any)?.rating || 0),
+        reviewsCount: Number((current as any)?.reviewsCount || 0),
+        servicesOffered: Array.isArray((current as any)?.servicesOffered) ? (current as any).servicesOffered : [],
+        servicesRequested: Array.isArray((current as any)?.servicesRequested) ? (current as any).servicesRequested : [],
+        accountStatus: String((current as any)?.accountStatus || 'active'),
+        profile: {
+          ...((current as any)?.profile || {}),
+          username,
+          usernameLower,
+        },
+      }, { merge: true });
+    });
+
+    const updatedSnap = await userRef.get();
+    if (updatedSnap.exists) {
+      const publicProfile = this.buildPublicProfile(userId, updatedSnap.data() || {});
+      await admin.firestore().collection('publicProfiles').doc(userId).set(publicProfile, { merge: true });
+    }
+  }
+
   async getPublicProfileByIdentifier(identifier: string): Promise<Record<string, any> | null> {
     const raw = String(identifier || '').trim();
     if (!raw) return null;
@@ -376,6 +498,32 @@ export class UsersService {
       }
     } catch {}
 
+    // 3b) Backward compatibility for publicProfiles created before nameSlug existed.
+    if (fallbackSlugMatch) {
+      try {
+        const sample = await admin.firestore()
+          .collection('publicProfiles')
+          .limit(2000)
+          .get();
+        if (!sample.empty) {
+          const matched = sample.docs.find((d) => {
+            const data = d.data() || {};
+            const uid = String(d.id || '').toLowerCase();
+            const name = String((data as any)?.name || '').trim();
+            const slug = this.toNameSlug(name);
+            if (!slug) return false;
+            if (fallbackUidSuffix) {
+              return slug === fallbackNameSlug && uid.endsWith(fallbackUidSuffix);
+            }
+            return slug === fallbackNameSlug;
+          });
+          if (matched) {
+            return { uid: matched.id, ...(matched.data() || {}) };
+          }
+        }
+      } catch {}
+    }
+
     // 4) Fallback to users docs (covers stale/missing publicProfiles sync).
     if (looksLikeUid) {
       const userDoc = await admin.firestore().collection('users').doc(raw).get();
@@ -415,7 +563,7 @@ export class UsersService {
       try {
         const sample = await admin.firestore()
           .collection('users')
-          .limit(500)
+          .limit(2000)
           .get();
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
@@ -563,6 +711,51 @@ export class UsersService {
     const allDocs = [...(byNested?.docs || []), ...(byRoot?.docs || [])];
     const conflict = allDocs.find((d) => d.id !== String(currentUserId || ''));
     return !conflict;
+  }
+
+  async isPhoneAvailable(phone: string): Promise<boolean> {
+    const exact = String(phone || '').trim();
+    const normalized = this.normalizePhone(phone);
+    if (!exact || normalized.length < 7) {
+      throw new StatusError(400, 'Invalid phone number');
+    }
+
+    const users = admin.firestore().collection('users');
+    const [byExact, byNormalized] = await Promise.all([
+      users.where('phoneNumber', '==', exact).limit(1).get().catch(() => null),
+      users.where('phoneNumberNormalized', '==', normalized).limit(1).get().catch(() => null),
+    ]);
+
+    return Boolean(byExact?.empty && byNormalized?.empty);
+  }
+
+  async markNotificationsRead(userId: string, ids?: string[]): Promise<number> {
+    if (!userId) {
+      throw new StatusError(401, 'Unauthenticated request');
+    }
+    const uniqueIds = Array.isArray(ids)
+      ? Array.from(new Set(ids.map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 200)
+      : [];
+    if (!uniqueIds.length) return 0;
+
+    const refs = uniqueIds.map((id) => admin.firestore().collection('notifications').doc(id));
+    const snaps = await admin.firestore().getAll(...refs);
+    const batch = admin.firestore().batch();
+    let updated = 0;
+
+    for (const snap of snaps) {
+      if (!snap.exists) continue;
+      const data = snap.data() || {};
+      if (String(data.userId || '') !== userId) continue;
+      if (data.isRead === true) continue;
+      batch.update(snap.ref, { isRead: true });
+      updated += 1;
+    }
+
+    if (updated > 0) {
+      await batch.commit();
+    }
+    return updated;
   }
 
 }

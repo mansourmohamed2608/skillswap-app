@@ -3,6 +3,7 @@ import * as admin from 'firebase-admin';
 import { getUserDocument, canCreateListing, incrementListingCount, decrementListingCount, isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
 import { geocodeAddress, readGeoPoint } from '../../core/geo';
+import { createListingPublicId } from '../../core/public-ids';
 
 @Injectable()
 export class ListingsService {
@@ -197,21 +198,24 @@ export class ListingsService {
       }
     }
 
-    const docRef = await admin
-      .firestore()
-      .collection('listings')
-      .add({
-        ...listingToSave,
-        userId: ownerId,
-        offeredByUserId: ownerId,
-        createdByUserId: userId,
-        createdAt: createdAtVal,
-        postedDate: createdAtVal,
-        flagged: false,
-      });
+    const docRef = admin.firestore().collection('listings').doc();
+    const publicId = createListingPublicId({
+      id: docRef.id,
+      title: String(listingToSave?.offeredService?.title || ''),
+    });
+    await docRef.set({
+      ...listingToSave,
+      userId: ownerId,
+      offeredByUserId: ownerId,
+      createdByUserId: userId,
+      publicId,
+      createdAt: createdAtVal,
+      postedDate: createdAtVal,
+      flagged: false,
+    });
 
     await incrementListingCount(ownerId);
-    return { id: docRef.id };
+    return { id: docRef.id, publicId };
   }
 
   async updateListing(userId: string, listingId: string, updates: any) {

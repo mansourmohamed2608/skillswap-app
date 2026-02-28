@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
 import { storage } from "@/services/firebase";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import { getWishPath } from "@/lib/public-ids";
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MAX_VIDEO_BYTES = 25 * 1024 * 1024;
@@ -25,6 +27,7 @@ export default function RequestWishPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { t } = useTranslation();
+  const router = useRouter();
 
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
@@ -100,7 +103,7 @@ export default function RequestWishPage() {
                 uploadedVideoUrl = await getDownloadURL(clipRef);
               }
 
-              await createWish({
+              const created = await createWish({
                 title: title.trim(),
                 description: description.trim(),
                 goalAmount,
@@ -123,6 +126,11 @@ export default function RequestWishPage() {
               setImagePreview("");
               if (imageInputRef.current) imageInputRef.current.value = "";
               if (videoInputRef.current) videoInputRef.current.value = "";
+              router.push(getWishPath({
+                id: created.id,
+                publicId: created.publicId || null,
+                title: title.trim(),
+              }));
             } catch (err: any) {
               toast({
                 title: t("wishes.request.submitFailedTitle"),

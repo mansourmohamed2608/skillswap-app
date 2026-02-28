@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/services/firebase';
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, limit, orderBy, query } from 'firebase/firestore';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
@@ -10,21 +10,24 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { donateToWishPublic, mockCompletePaymentPublic, submitReport } from '@/services/api';
+import { donateToWishPublic, getFunctionsBase, mockCompletePaymentPublic, submitReport } from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errors';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getWishPath, matchesWishPublicId } from '@/lib/public-ids';
 
 export default function WishDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = (params?.id as string) || '';
   const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const [wish, setWish] = useState<any>();
+  const [resolvedWishId, setResolvedWishId] = useState<string>('');
   const [donors, setDonors] = useState<any[]>([]);
   const [amount, setAmount] = useState<number>(0);
   const [donorName, setDonorName] = useState<string>('');
@@ -37,23 +40,62 @@ export default function WishDetailPage() {
   const [reportBusy, setReportBusy] = useState(false);
   const isOwner = Boolean(user?.uid && wish?.userId && user.uid === wish.userId);
 
+  async function loadRecentDonors(targetWishId: string) {
+    const wishId = String(targetWishId || '').trim();
+    if (!wishId) {
+      setDonors([]);
+      return;
+    }
+    try {
+      const base = getFunctionsBase();
+      const res = await fetch(`${base}/api/wishes/${encodeURIComponent(wishId)}/donors?limit=5`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        setDonors([]);
+        return;
+      }
+      const data: any = await res.json().catch(() => null);
+      setDonors(Array.isArray(data?.items) ? data.items : []);
+    } catch {
+      setDonors([]);
+    }
+  }
+
   useEffect(() => {
     (async () => {
       if (!id || !db) return;
-      const snap = await getDoc(doc(db, 'wishes', id));
-      if (snap.exists()) setWish({ id: snap.id, ...snap.data() });
-      const dSnap = await getDocs(
-        query(
-          collection(db, 'wishDonations'),
-          where('wishId', '==', id),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        )
-      );
-      const donations = dSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-      setDonors(donations.filter(d => ['PAID', 'SUCCESS'].includes(String(d.status || '').toUpperCase())));
+      let resolvedId = id;
+      let snap = await getDoc(doc(db, 'wishes', resolvedId));
+      if (!snap.exists()) {
+        const sample = await getDocs(query(collection(db, 'wishes'), orderBy('createdAt', 'desc'), limit(200)));
+        const match = sample.docs.find((d) => matchesWishPublicId(id, {
+          id: d.id,
+          title: (d.data() as any)?.title,
+          publicId: (d.data() as any)?.publicId || null,
+        }));
+        if (match) {
+          resolvedId = match.id;
+          snap = match;
+        }
+      }
+      if (snap.exists()) {
+        setResolvedWishId(resolvedId);
+        const nextWish = { id: snap.id, ...snap.data() } as any;
+        setWish(nextWish);
+        const canonicalPath = getWishPath({
+          id: snap.id,
+          title: nextWish?.title,
+          publicId: nextWish?.publicId || null,
+        });
+        if (canonicalPath !== `/wishes/${encodeURIComponent(id)}`) {
+          router.replace(canonicalPath);
+        }
+      }
+      await loadRecentDonors(resolvedId);
     })();
-  }, [id]);
+  }, [id, router]);
 
   const pct = useMemo(() => {
     const raised = Number(wish?.totalDonated || 0);
@@ -77,7 +119,7 @@ export default function WishDetailPage() {
   const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
 
   async function onDonate() {
-    if (!id) return;
+    if (!resolvedWishId) return;
     if (isOwner) {
       toast({ title: 'You cannot donate to your own wish.', variant: 'destructive' });
       return;
@@ -92,7 +134,7 @@ export default function WishDetailPage() {
     }
     setBusy(true);
     try {
-      const { paymentUrl } = await donateToWishPublic(base, id, { amount, donorEmail, donorName: anonymous ? undefined : donorName.trim(), anonymous });
+      const { paymentUrl } = await donateToWishPublic(base, resolvedWishId, { amount, donorEmail, donorName: anonymous ? undefined : donorName.trim(), anonymous });
       if (useMockPayments && paymentUrl.includes('mock.local')) {
         const match = /sessionId=([^&]+)/.exec(paymentUrl);
         if (!match?.[1]) {
@@ -101,18 +143,9 @@ export default function WishDetailPage() {
         await mockCompletePaymentPublic(match[1], base);
         toast({ title: t('wishes.detail.thanks') });
         if (db) {
-          const snap = await getDoc(doc(db, 'wishes', id));
+          const snap = await getDoc(doc(db, 'wishes', resolvedWishId));
           if (snap.exists()) setWish({ id: snap.id, ...snap.data() });
-          const dSnap = await getDocs(
-            query(
-              collection(db, 'wishDonations'),
-              where('wishId', '==', id),
-              orderBy('createdAt', 'desc'),
-              limit(5)
-            )
-          );
-          const donations = dSnap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
-          setDonors(donations.filter(d => ['PAID', 'SUCCESS'].includes(String(d.status || '').toUpperCase())));
+          await loadRecentDonors(resolvedWishId);
         }
       } else {
         window.location.href = paymentUrl;
@@ -145,7 +178,7 @@ export default function WishDetailPage() {
     try {
       await submitReport({
         type: 'wish',
-        contentId: id,
+        contentId: resolvedWishId || id,
         reason: reportReason.trim(),
         note: reportNote.trim() || undefined,
       });

@@ -142,12 +142,12 @@ export function AppHeader() {
           ))}
           {isAuthenticated ? (
             <>
-              <Button variant="ghost" asChild className="relative">
-                <Link href="/profile?tab=notifications" className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" asChild className="relative">
+                <Link href="/profile?tab=notifications" className="flex items-center justify-center">
                   <BellIcon className="h-4 w-4" />
-                  {t('header.notifications')}
+                  <span className="sr-only">{t('header.notifications')}</span>
                   {unreadNotifications > 0 ? (
-                    <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                    <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
                       {unreadNotifications > 99 ? '99+' : unreadNotifications}
                     </span>
                   ) : null}

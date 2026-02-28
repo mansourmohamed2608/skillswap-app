@@ -46,6 +46,7 @@ export interface User {
 
 export interface ServiceListing {
   id: string;
+  publicId?: string;
   offeredByUserId: string;
   offeredService: {
     title: string;
@@ -67,10 +68,10 @@ export interface ServiceListing {
     amount: number;
     currency: string;
   };
-  postedDate: string;
+  postedDate: string; // ISO date string
   status: 'open' | 'pending_exchange' | 'completed' | 'cancelled';
-  location?: string;
-  distanceKm?: number;
+  location?: string; // Optional: general location for the service
+  distanceKm?: number; // Optional: computed at search-time when user location is provided
   geo?: {
     lat: number;
     lng: number;

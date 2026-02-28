@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import * as admin from 'firebase-admin';
 import { WishesService } from './wishes.service';
@@ -32,5 +32,11 @@ export class WishesController {
       }
     }
     return this.wishesService.donate(id, body, donorUserId);
+  }
+
+  @Get(':id/donors')
+  async donors(@Param('id') id: string, @Query('limit') limit?: string) {
+    const lim = limit ? Number(limit) : 5;
+    return { items: await this.wishesService.listRecentDonors(id, lim) };
   }
 }

@@ -9,7 +9,7 @@ import { Heart } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { db } from "@/services/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query } from "firebase/firestore";
 import { Progress } from "@/components/ui/progress";
 import { donateToWishPublic, mockCompletePaymentPublic } from "@/services/api";
 import { getFeaturedWishes, type WishSummary } from "@/services/data";
@@ -19,10 +19,11 @@ import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
+import { getWishPublicId } from "@/lib/public-ids";
 
 function DonatePageContent() {
   const params = useSearchParams();
-  const wishId = params.get('id') || '';
+  const wishIdentifier = params.get('wish') || params.get('id') || '';
   const router = useRouter();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -35,21 +36,51 @@ function DonatePageContent() {
   const [donorEmail, setDonorEmail] = useState<string>('');
   const [anonymous, setAnonymous] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
+  const [resolvedWishId, setResolvedWishId] = useState('');
   const isOwner = Boolean(user?.uid && wish?.userId && user.uid === wish.userId);
 
   useEffect(() => {
     (async () => {
-      if (!wishId || !db) {
+      if (!wishIdentifier || !db) {
         setWish(null);
+        setResolvedWishId('');
         return;
       }
-      const snap = await getDoc(doc(db, 'wishes', wishId));
-      if (snap.exists()) setWish({ id: snap.id, ...snap.data() });
+      let resolvedId = wishIdentifier;
+      let snap = await getDoc(doc(db, 'wishes', resolvedId));
+      if (!snap.exists()) {
+        const sample = await getDocs(query(collection(db, 'wishes'), orderBy('createdAt', 'desc'), limit(200)));
+        const match = sample.docs.find((d) => {
+          const data: any = d.data() || {};
+          return wishIdentifier === String(data.publicId || '') || wishIdentifier === getWishPublicId({
+            id: d.id,
+            title: data.title,
+            publicId: data.publicId || null,
+          });
+        });
+        if (match) {
+          resolvedId = match.id;
+          snap = match;
+        }
+      }
+      if (snap.exists()) {
+        const nextWish = { id: snap.id, ...snap.data() } as any;
+        const publicId = getWishPublicId({
+          id: snap.id,
+          title: nextWish?.title,
+          publicId: nextWish?.publicId || null,
+        });
+        setResolvedWishId(resolvedId);
+        setWish(nextWish);
+        if (wishIdentifier !== publicId || !params.get('wish')) {
+          router.replace(`/wishes/donate?wish=${encodeURIComponent(publicId)}`);
+        }
+      }
     })();
-  }, [wishId]);
+  }, [wishIdentifier, params, router]);
 
   useEffect(() => {
-    if (wishId) return;
+    if (wishIdentifier) return;
     let mounted = true;
     (async () => {
       setLoadingWishes(true);
@@ -61,7 +92,7 @@ function DonatePageContent() {
       }
     })();
     return () => { mounted = false; };
-  }, [wishId]);
+  }, [wishIdentifier]);
 
   const base = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || `http://127.0.0.1:5001/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/us-central1`;
   const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
@@ -116,7 +147,7 @@ function DonatePageContent() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => router.push(`/wishes/donate?id=${encodeURIComponent(item.id)}`)}
+                        onClick={() => router.push(`/wishes/donate?wish=${encodeURIComponent(item.publicId || item.id)}`)}
                       >
                         {t('wishes.donate.selectWish')}
                       </Button>
@@ -156,8 +187,8 @@ function DonatePageContent() {
           </div>
         </CardContent>
         <CardFooter>
-          <Button disabled={!wishId || submitting || isOwner} onClick={async () => {
-            if (!wishId) return;
+          <Button disabled={!resolvedWishId || submitting || isOwner} onClick={async () => {
+            if (!resolvedWishId) return;
             if (isOwner) {
               toast({ title: "You cannot donate to your own wish.", variant: 'destructive' });
               return;
@@ -172,7 +203,7 @@ function DonatePageContent() {
             }
             setSubmitting(true);
             try {
-              const { paymentUrl } = await donateToWishPublic(base, wishId, { amount, donorEmail, donorName: anonymous ? undefined : donorName.trim(), anonymous });
+              const { paymentUrl } = await donateToWishPublic(base, resolvedWishId, { amount, donorEmail, donorName: anonymous ? undefined : donorName.trim(), anonymous });
               if (useMockPayments && paymentUrl.includes('mock.local')) {
                 const match = /sessionId=([^&]+)/.exec(paymentUrl);
                 if (match?.[1]) {

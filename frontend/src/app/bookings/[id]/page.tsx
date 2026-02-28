@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { auth, db, isFirebaseConfigured } from "@/services/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { getUserById } from "@/services/data";
 import { getProfilePath } from "@/lib/profile";
+import { getBookingPublicId, matchesBookingPublicId } from "@/lib/public-ids";
 
 export default function BookingDetailPage() {
   const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const id = params?.id as string;
+  const currentUid = auth?.currentUser?.uid;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<any | null>(null);
@@ -54,20 +56,51 @@ export default function BookingDetailPage() {
           setError(t('bookings.notSignedIn'));
           return;
         }
-        const snap = await getDoc(doc(db, 'requests', id));
+        const viewerUid = auth.currentUser.uid;
+        let snap = await getDoc(doc(db, 'requests', id));
+        let resolvedId = id;
+        let d: any = snap.exists() ? snap.data() : null;
+
         if (!snap.exists()) {
-          setError(t('bookings.notFound'));
-          return;
+          const col = collection(db, 'requests');
+          const [reqSnap, ownSnap] = await Promise.all([
+            getDocs(query(col, where("requesterId", "==", viewerUid))),
+            getDocs(query(col, where("ownerId", "==", viewerUid))),
+          ]);
+          const combined = [...reqSnap.docs, ...ownSnap.docs];
+          const match = combined.find((docSnap) => matchesBookingPublicId(id, {
+            id: docSnap.id,
+            publicId: String((docSnap.data() as any)?.publicId || ''),
+            listingId: String((docSnap.data() as any)?.listingId || ''),
+            ownerId: String((docSnap.data() as any)?.ownerId || ''),
+            requesterId: String((docSnap.data() as any)?.requesterId || ''),
+          }));
+          if (!match) {
+            setError(t('bookings.notFound'));
+            return;
+          }
+          snap = match;
+          resolvedId = match.id;
+          d = match.data();
         }
-        const d = snap.data();
-        const currentUid = auth.currentUser.uid;
+
         const ownerId = String((d as any)?.ownerId || '');
         const requesterId = String((d as any)?.requesterId || '');
-        if (ownerId !== currentUid && requesterId !== currentUid) {
+        if (ownerId !== viewerUid && requesterId !== viewerUid) {
           setError(t('bookings.notFound'));
           return;
         }
-        setData({ id: snap.id, ...d });
+        const publicId = String((d as any)?.publicId || getBookingPublicId({
+          id: resolvedId,
+          listingId: String((d as any)?.listingId || ''),
+          ownerId,
+          requesterId,
+        }));
+        setData({ id: resolvedId, publicId, ...d });
+        const canonicalPath = `/bookings/${encodeURIComponent(publicId)}`;
+        if (canonicalPath !== `/bookings/${encodeURIComponent(id)}`) {
+          router.replace(canonicalPath);
+        }
       } catch (e: any) {
         setError(getErrorMessage(e, t('bookings.failedLoad')));
       } finally {
@@ -75,7 +108,7 @@ export default function BookingDetailPage() {
       }
     })();
     return () => { mounted = false };
-  }, [id]);
+  }, [id, router, t]);
 
   useEffect(() => {
     let mounted = true;
@@ -147,7 +180,6 @@ export default function BookingDetailPage() {
   }
   if (!data) return null;
 
-  const currentUid = auth?.currentUser?.uid;
   const isOwner = currentUid && data.ownerId === currentUid;
   const isRequester = currentUid && data.requesterId === currentUid;
   const status = String(data.status || 'pending').toLowerCase();
@@ -236,7 +268,7 @@ export default function BookingDetailPage() {
                 <Button
                   onClick={async () => {
                     try {
-                      await acceptRequest(id);
+                      await acceptRequest(data.id);
                       setData((prev: any) => prev ? { ...prev, status: 'accepted' } : prev);
                       toast({ title: t('bookings.accepted') });
                     } catch (e: any) {
@@ -254,7 +286,7 @@ export default function BookingDetailPage() {
                   variant="outline"
                   onClick={async () => {
                     try {
-                      await declineRequest(id);
+                      await declineRequest(data.id);
                       setData((prev: any) => prev ? { ...prev, status: 'declined' } : prev);
                       toast({ title: t('bookings.declined') });
                     } catch (e: any) {
@@ -272,7 +304,7 @@ export default function BookingDetailPage() {
                 variant="outline"
                 onClick={async () => {
                   try {
-                    await cancelRequest(id);
+                    await cancelRequest(data.id);
                     setData((prev: any) => prev ? { ...prev, status: 'cancelled' } : prev);
                     toast({ title: t('bookings.cancelled') });
                   } catch (e: any) {
@@ -289,7 +321,7 @@ export default function BookingDetailPage() {
                 <Button
                   onClick={async () => {
                   try {
-                    await completeRequest(id);
+                    await completeRequest(data.id);
                     setData((prev: any) => prev ? { ...prev, status: 'completed' } : prev);
                     toast({ title: t('bookings.completed') });
                   } catch (e: any) {
@@ -303,7 +335,7 @@ export default function BookingDetailPage() {
                   variant="outline"
                   onClick={async () => {
                   try {
-                    await cancelRequest(id);
+                    await cancelRequest(data.id);
                     setData((prev: any) => prev ? { ...prev, status: 'cancelled' } : prev);
                     toast({ title: t('bookings.cancelled') });
                   } catch (e: any) {

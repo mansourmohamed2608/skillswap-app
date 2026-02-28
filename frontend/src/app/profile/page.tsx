@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { UserProfileSummaryCard } from '@/features/profile/components/UserProfileSummaryCard';
@@ -17,11 +17,11 @@ import { getUserById, getListingsByUserId } from '@/services/data';
 import type { User, ServiceListing, Notification } from '@/types';
 import { NotificationList } from '@/features/profile/components/NotificationList';
 import { db } from '@/services/firebase';
-import { collection, doc, onSnapshot, orderBy, query, where, writeBatch } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useMembership } from '@/hooks/useMembership';
 import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/utils';
-import { fetchReviewsForUser } from '@/services/api';
+import { fetchReviewsForUser, markNotificationsRead } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { cancelKyc, getKycApiBase } from '@/services/kyc';
 
@@ -43,6 +43,7 @@ function CurrentUserProfilePageContent() {
   const [retryError, setRetryError] = useState<string | null>(null);
   const [cancelBusy, setCancelBusy] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const notificationsMarkingRef = useRef(false);
   const { t, i18n } = useTranslation();
   const {
     membership,
@@ -157,17 +158,25 @@ function CurrentUserProfilePageContent() {
   }, [authUser?.uid]);
 
   useEffect(() => {
-    if (!db || !authUser?.uid) return;
     if (activeTab !== 'notifications') return;
-    const unread = notifications.filter((n) => !n.isRead);
-    if (!unread.length) return;
-    const firestoreDb = db; // capture for closure
-    const batch = writeBatch(firestoreDb);
-    unread.forEach((n) => {
-      batch.update(doc(firestoreDb, 'notifications', n.id), { isRead: true });
-    });
-    batch.commit().catch(() => {});
-  }, [activeTab, notifications, authUser?.uid, db]);
+    const unreadIds = notifications.filter((item) => !item.isRead).map((item) => item.id);
+    if (!unreadIds.length || notificationsMarkingRef.current) return;
+
+    notificationsMarkingRef.current = true;
+    setNotifications((prev) => prev.map((item) => (
+      unreadIds.includes(item.id) ? { ...item, isRead: true } : item
+    )));
+
+    markNotificationsRead(unreadIds)
+      .catch(() => {
+        setNotifications((prev) => prev.map((item) => (
+          unreadIds.includes(item.id) ? { ...item, isRead: false } : item
+        )));
+      })
+      .finally(() => {
+        notificationsMarkingRef.current = false;
+      });
+  }, [activeTab, notifications]);
 
   useEffect(() => {
     let mounted = true;

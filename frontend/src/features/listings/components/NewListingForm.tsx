@@ -25,6 +25,7 @@ import type { ServiceListing } from '@/types';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields, hasLowQualityText } from '@/lib/moderation';
 import { isCoordinatePair } from '@/lib/location';
+import { getListingPath } from '@/lib/public-ids';
 
 type NewListingFormProps = {
   initialListing?: ServiceListing | null;
@@ -423,11 +424,12 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       if (listingId) {
         await updateListing(listingId, listing);
         toast({ title: t('listings.form.updatedTitle'), description: t('listings.form.updatedDescription') });
-        router.push(`/listings/${listingId}`);
+        router.push(getListingPath({ id: listingId, publicId: initialListing?.publicId, offeredService: { title: offeredServiceTitle } }));
       } else {
         // Call backend endpoint which enforces membership and bypasses Firestore rules
-        await createListing(listing);
+        const created = await createListing(listing);
         toast({ title: t('listings.form.successTitle'), description: t('listings.form.successDescription') });
+        router.push(getListingPath({ id: created.id, publicId: created.publicId, offeredService: { title: offeredServiceTitle } }));
         // Reset form
         setOfferedServiceTitle('');
         setOfferedServiceCategory(undefined);

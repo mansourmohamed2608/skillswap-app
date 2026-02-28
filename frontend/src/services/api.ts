@@ -205,6 +205,35 @@ export async function updateUserProfile(profile: Record<string, any>) {
   return (await res.json()) as { success: boolean };
 }
 
+export async function bootstrapUserAccount(profile: {
+  fullName: string;
+  username: string;
+  phoneNumber: string;
+  phoneNumberNormalized: string;
+  occupation?: string;
+  country: string;
+  city?: string;
+  email?: string;
+}) {
+  const res = await authedFetch(`/api/user/bootstrap`, {
+    body: JSON.stringify(profile),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { success: boolean };
+}
+
+export async function markNotificationsRead(ids: string[]) {
+  const cleanIds = Array.isArray(ids)
+    ? Array.from(new Set(ids.map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 200)
+    : [];
+  if (!cleanIds.length) return { success: true, updated: 0 };
+  const res = await authedFetch(`/api/user/notifications/read`, {
+    body: JSON.stringify({ ids: cleanIds }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { success: boolean; updated: number };
+}
+
 export async function createListing(listing: any) {
   const userId = auth?.currentUser?.uid;
   if (!userId) throw new ApiError(401, messageForStatus(401));
@@ -217,7 +246,7 @@ export async function createListing(listing: any) {
     throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
   }
   if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as { id: string };
+  return (await res.json()) as { id: string; publicId?: string };
 }
 
 export async function updateListing(listingId: string, listing: any) {
@@ -304,7 +333,7 @@ export async function createServiceRequest(args: {
     throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
   }
   if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as { id: string };
+  return (await res.json()) as { id: string; publicId?: string };
 }
 
 // Reschedule an existing service request by updating its proposedTime
@@ -387,7 +416,7 @@ export async function createWish(args: {
     throw new ApiError(403, messageForStatus(403, msg, 'Active membership required'));
   }
   if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as { id: string };
+  return (await res.json()) as { id: string; publicId?: string };
 }
 
 export async function donateToWishPublic(baseUrl: string, wishId: string, args: { amount: number; donorEmail: string; donorName?: string; anonymous?: boolean; }) {

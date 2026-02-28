@@ -417,7 +417,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
             ) : null}
             <Button asChild className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
               <Link href="/listings">
-                {t('home.featuredListings.viewAll')}
+                {t('home.featured.viewAll')}
               </Link>
             </Button>
           </div>

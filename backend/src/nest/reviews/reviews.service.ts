@@ -93,6 +93,11 @@ export class ReviewsService {
           throw new BadRequestException({ code: 'reviews/own_listing' });
         }
 
+        const ownerRef = admin.firestore().collection('users').doc(freshOwnerId);
+        const publicOwnerRef = admin.firestore().collection('publicProfiles').doc(freshOwnerId);
+        const ownerSnap = await tx.get(ownerRef);
+        const publicOwnerSnap = await tx.get(publicOwnerRef);
+
         const reviewDoc = {
           listingId,
           ownerId: freshOwnerId,
@@ -122,10 +127,6 @@ export class ReviewsService {
             updatedAt: nowVal,
           });
 
-          const ownerRef = admin.firestore().collection('users').doc(freshOwnerId);
-          const publicOwnerRef = admin.firestore().collection('publicProfiles').doc(freshOwnerId);
-          const ownerSnap = await tx.get(ownerRef);
-          const publicOwnerSnap = await tx.get(publicOwnerRef);
           const currentOwnerData: any = ownerSnap.exists ? (ownerSnap.data() || {}) : (publicOwnerSnap.exists ? (publicOwnerSnap.data() || {}) : {});
           const ownerSum = this.safeNumber(currentOwnerData.ratingSum, 0);
           const ownerCount = this.safeNumber(currentOwnerData.reviewsCount, 0);

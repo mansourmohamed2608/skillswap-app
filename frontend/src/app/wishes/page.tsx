@@ -11,9 +11,11 @@ import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import Image from 'next/image';
+import { getWishPath } from '@/lib/public-ids';
 
 type WishSummary = {
   id: string;
+  publicId?: string | null;
   userId?: string;
   title?: string;
   description?: string;
@@ -44,6 +46,7 @@ export default function WishesListPage() {
           const data = d.data() as any;
           return {
             id: d.id,
+            publicId: data.publicId || null,
             userId: data.userId,
             title: data.title,
             description: data.description,
@@ -98,10 +101,10 @@ export default function WishesListPage() {
               </div>
             </CardContent>
             <CardFooter className="gap-2">
-              <Link href={`/wishes/${w.id}`} className="w-full">
+              <Link href={getWishPath(w)} className="w-full">
                 <Button variant="outline" className="w-full">{t('home.wishes.viewDetails')}</Button>
               </Link>
-              <Link href={`/wishes/donate?id=${encodeURIComponent(w.id)}`} className="w-full">
+              <Link href={`/wishes/donate?wish=${encodeURIComponent(w.publicId || w.id)}`} className="w-full">
                 <Button className="w-full" disabled={isOwner}>
                   {isOwner ? 'Your wish' : t('wishes.list.donate')}
                 </Button>

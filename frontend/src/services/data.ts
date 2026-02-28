@@ -134,6 +134,7 @@ const mapApiHitToListing = (hit: any): ServiceListing => {
     const createdAt = hit.createdAt || hit.postedDate;
     return {
         id: hit.objectID || hit.id || `${Math.random()}`,
+        publicId: hit.publicId ? String(hit.publicId) : undefined,
         offeredByUserId: hit.userId || hit.offeredByUserId || 'unknown',
         offeredService: { title, description, category, imageUrl },
         requestedService: { title: requestedTitle, description: requestedDescription, category: requestedCategory },
@@ -185,6 +186,7 @@ function docToServiceListing(doc: DocumentData): ServiceListing {
     const posted = ts instanceof Timestamp ? ts.toDate().toISOString() : toIsoOrNow(ts);
     return {
         id: doc.id,
+        publicId: data.publicId ? String(data.publicId) : undefined,
         offeredByUserId: data.userId ?? data.offeredByUserId ?? 'unknown',
         offeredService: offered,
         requestedService: requested,
@@ -324,39 +326,16 @@ export async function getUserById(id: string): Promise<User | null> {
         console.warn(`Public profile read failed for user ${uid}.`, error);
     }
 
-    // 2) Fallback to users/{uid} (always for self; best-effort for others).
-    // This covers users created before publicProfiles sync existed.
-    try {
-        const userDocRef = doc(db!, 'users', uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-            if (isSelf) {
+    // 2) Private users/{uid} fallback is only valid for the signed-in user.
+    if (isSelf) {
+        try {
+            const userDocRef = doc(db!, 'users', uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
                 return mapUserFromDoc(userDoc.id, userDoc.data());
             }
-            // For non-self, return a safe subset if direct read succeeded.
-            const data: any = userDoc.data() || {};
-            return mapUserFromDoc(userDoc.id, {
-                username: data?.profile?.username || data?.username,
-                name: data?.name || data?.fullName || data?.displayName,
-                avatarUrl: data?.avatarUrl,
-                bio: data?.bio,
-                rating: data?.rating,
-                reviewsCount: data?.reviewsCount,
-                location: data?.location || data?.city,
-                country: data?.country,
-                membershipPlan: data?.membershipPlan || data?.membership?.plan,
-                membershipActive: data?.membershipActive ?? data?.membership?.active,
-                servicesOffered: data?.servicesOffered || [],
-                servicesRequested: data?.servicesRequested || [],
-                businessProfile: data?.businessProfile,
-                kyc: data?.kyc,
-            });
-        }
-    } catch (error) {
-        if (isSelf) {
+        } catch (error) {
             console.error(`Error fetching self user with id ${uid}.`, error);
-        } else {
-            console.warn(`User document read failed for user ${uid}.`, error);
         }
     }
 
@@ -399,32 +378,8 @@ async function getUserByUsername(username: string): Promise<User | null> {
         console.warn(`Username lookup failed on publicProfiles.username for "${candidate}".`, error);
     }
 
-    // 3) Last resort fallback to users collection.
-    try {
-        const snap = await getDocs(
-            query(collection(db!, 'users'), where('profile.usernameLower', '==', usernameLower), limit(1))
-        );
-        if (!snap.empty) {
-            const hit = snap.docs[0];
-            return mapUserFromDoc(hit.id, hit.data());
-        }
-    } catch (error) {
-        console.warn(`Username lookup failed on users.profile.usernameLower for "${candidate}".`, error);
-    }
-
-    try {
-        const snap = await getDocs(
-            query(collection(db!, 'users'), where('profile.username', '==', candidate), limit(1))
-        );
-        if (!snap.empty) {
-            const hit = snap.docs[0];
-            return mapUserFromDoc(hit.id, hit.data());
-        }
-    } catch (error) {
-        console.warn(`Username lookup failed on users.profile.username for "${candidate}".`, error);
-    }
-
-    return null;
+    // 3) Final fallback to backend public resolver to avoid relying on private users rules.
+    return await getUserByIdentifierFromApi(candidate);
 }
 
 export async function getUserByIdentifier(identifier: string): Promise<User | null> {
@@ -493,6 +448,8 @@ export async function getListingsByUserId(userId: string): Promise<ServiceListin
 
 export type WishSummary = {
     id: string;
+    publicId?: string | null;
+    userId?: string;
     title?: string;
     description?: string;
     totalDonated?: number;
@@ -514,6 +471,8 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
             const data: any = d.data() || {};
             return {
                 id: d.id,
+                publicId: data.publicId || null,
+                userId: data.userId || undefined,
                 title: data.title,
                 description: data.description,
                 totalDonated: data.totalDonated,

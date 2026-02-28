@@ -26,9 +26,11 @@ import { formatDate, formatTime } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
 import { getUserById } from "@/services/data";
 import { getProfilePath } from "@/lib/profile";
+import { getBookingPath } from "@/lib/public-ids";
 
 type RequestItem = {
   id: string;
+  publicId?: string | null;
   listingId: string;
   ownerId: string;
   requesterId: string;
@@ -71,6 +73,7 @@ export default function BookingsPage() {
           }
           return {
             id: d.id,
+            publicId: data.publicId || null,
             listingId: data.listingId,
             ownerId: data.ownerId,
             requesterId: data.requesterId,
@@ -359,7 +362,7 @@ export default function BookingsPage() {
             )}
 
             <Button asChild variant="default" size="sm" className="bg-primary hover:bg-primary/90">
-              <Link href={`/bookings/${booking.id}`}>{t('bookings.viewDetails')}</Link>
+              <Link href={getBookingPath(booking)}>{t('bookings.viewDetails')}</Link>
             </Button>
           </CardFooter>
         </Card>

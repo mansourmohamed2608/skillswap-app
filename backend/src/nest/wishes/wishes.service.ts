@@ -4,6 +4,7 @@ import { getUserDocument } from '../../core/membership';
 import { createGeideaDonationSession } from '../../core/payments';
 import { saveDonationRecord } from '../../core/postgres';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
+import { createWishPublicId } from '../../core/public-ids';
 
 @Injectable()
 export class WishesService {
@@ -30,7 +31,9 @@ export class WishesService {
       ? (admin.firestore.FieldValue as any).serverTimestamp()
       : new Date();
     const parsedDeadline = deadline ? new Date(deadline) : undefined;
-    const docRef = await admin.firestore().collection('wishes').add({
+    const docRef = admin.firestore().collection('wishes').doc();
+    const publicId = createWishPublicId({ id: docRef.id, title: String(title || '') });
+    await docRef.set({
       userId,
       title,
       description,
@@ -44,9 +47,10 @@ export class WishesService {
       deadline: parsedDeadline && !Number.isNaN(parsedDeadline.getTime()) ? parsedDeadline : null,
       imageUrl: imageUrl || null,
       videoUrl: videoUrl || null,
+      publicId,
       createdAt: ts,
     });
-    return { id: docRef.id };
+    return { id: docRef.id, publicId };
   }
 
   async donate(wishId: string, body: any, donorUserId?: string | null) {
@@ -107,6 +111,34 @@ export class WishesService {
     });
 
     return { paymentUrl, sessionId };
+  }
+
+  async listRecentDonors(wishId: string, limit = 5) {
+    const targetWishId = String(wishId || '').trim();
+    if (!targetWishId) throw new BadRequestException('Missing wishId');
+    const lim = Math.min(20, Math.max(1, Number(limit || 5)));
+    const snap = await admin.firestore()
+      .collection('wishDonations')
+      .where('wishId', '==', targetWishId)
+      .limit(50)
+      .get();
+    return snap.docs
+      .map((doc) => ({ id: doc.id, ...(doc.data() as any) }))
+      .filter((item: any) => ['PAID', 'SUCCESS'].includes(String(item.status || '').toUpperCase()))
+      .sort((a: any, b: any) => {
+        const left = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
+        const right = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
+        return right - left;
+      })
+      .slice(0, lim)
+      .map((item: any) => ({
+        id: item.id,
+        donorName: item.anonymous ? 'Anonymous' : String(item.donorName || '').trim() || 'Anonymous',
+        anonymous: Boolean(item.anonymous),
+        amount: Number(item.amount || 0),
+        currency: String(item.currency || 'EGP'),
+        createdAt: item.createdAt || null,
+      }));
   }
 
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {

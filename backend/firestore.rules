@@ -35,15 +35,15 @@ service cloud.firestore {
       return !changed.hasAny(['membership', 'kyc', 'role', 'rating', 'ratingSum', 'reviewsCount']);
     }
 
-    /** Public profile docs anyone can read, owner can write */
+    /** Public profile docs anyone can read; writes are server-only */
     match /publicProfiles/{uid} {
-      allow read: if true; // Allow public reads for SSR in development
-      allow create, update, delete: if isSignedIn() && request.auth.uid == uid;
+      allow read: if true;
+      allow create, update, delete: if false;
     }
 
     /** User profiles */
     match /users/{userId} {
-      allow get: if true; // Allow public get for SSR in development  
+      allow get: if isSignedIn() && request.auth.uid == userId;
       allow list: if false;
       allow create: if isSignedIn() && request.auth.uid == userId;
       allow update: if isSignedIn() && request.auth.uid == userId && isSafeUserUpdate();
@@ -99,15 +99,15 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    /** Wish donations (current): public readable; writes server-only */
+    /** Wish donations (current): server-only access */
     match /wishDonations/{donId} {
-      allow read: if true;
+      allow read: if false;
       allow create, update, delete: if false;
     }
 
-    /** Wish donations (legacy path): public readable; writes server-only */
+    /** Wish donations (legacy path): server-only access */
     match /wishes/{wishId}/donations/{donId} {
-      allow read: if true;
+      allow read: if false;
       allow create, update, delete: if false;
     }
 

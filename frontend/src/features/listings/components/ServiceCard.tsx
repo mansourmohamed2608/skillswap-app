@@ -18,6 +18,7 @@ import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
 import { getProfilePath } from '@/lib/profile';
+import { getListingPath } from '@/lib/public-ids';
 
 
 interface ServiceCardProps {
@@ -207,7 +208,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
             </div>
           </div>
           <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
-            <Link href={`/listings/${listing.id}`}>
+            <Link href={getListingPath(listing)}>
               {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-2 h-4 w-4" />
             </Link>
           </Button>
