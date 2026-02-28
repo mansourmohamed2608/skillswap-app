@@ -52,7 +52,7 @@ type ListingReview = {
 };
 
 export function ListingDetailContent({ listing, offeredByUser }: Props) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const [resolvedOwner, setResolvedOwner] = useState<User | null>(offeredByUser);
@@ -69,12 +69,6 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
   const [reportNote, setReportNote] = useState('');
   const [reportBusy, setReportBusy] = useState(false);
   const isOwner = Boolean(user?.uid && listing.offeredByUserId === user.uid);
-  const postedDate = new Date(listing.postedDate);
-  const postedLabel = new Intl.DateTimeFormat(i18n.language, {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(postedDate);
   const requestedHeading = listing.requestedKind === 'money'
     ? t('listings.card.paymentRequested')
     : listing.requestedKind === 'product'
@@ -240,27 +234,9 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
               <span className="ml-2">{statusInfo.text}</span>
             </Badge>
           </div>
-           <div className="text-sm text-muted-foreground mt-2 flex items-center gap-2">
-              <CalendarDaysIcon className="h-4 w-4" />
-              {t('listings.detail.postedOn', { date: postedLabel })}
-              {publicListingLocation && (
-                <>
-                  <span className="mx-1">·</span>
-                  <MapPinIcon className="h-4 w-4" />
-                  {publicListingLocation}
-                </>
-              )}
-            </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-xl border bg-muted/20 p-4">
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
-                <CalendarDaysIcon className="h-4 w-4" />
-                {t('listings.detail.postedOn', { date: postedLabel })}
-              </div>
-              <p className="text-sm text-muted-foreground">{statusInfo.text}</p>
-            </div>
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border bg-muted/20 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
                 <MapPinIcon className="h-4 w-4" />
@@ -270,7 +246,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                 {publicListingLocation || t('listings.card.locationApprox')}
               </p>
             </div>
-            <div className="rounded-xl border bg-muted/20 p-4 sm:col-span-2 lg:col-span-1">
+            <div className="rounded-xl border bg-muted/20 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
                 <RepeatIcon className="h-4 w-4" />
                 {requestedHeading}
