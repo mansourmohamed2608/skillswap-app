@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { UserProfileSummaryCard } from '@/features/profile/components/UserProfileSummaryCard';
@@ -25,7 +25,7 @@ import { fetchReviewsForUser } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { cancelKyc, getKycApiBase } from '@/services/kyc';
 
-export default function CurrentUserProfilePage() {
+function CurrentUserProfilePageContent() {
   const { user: authUser, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -457,5 +457,21 @@ export default function CurrentUserProfilePage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function ProfilePageFallback() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
+  );
+}
+
+export default function CurrentUserProfilePage() {
+  return (
+    <Suspense fallback={<ProfilePageFallback />}>
+      <CurrentUserProfilePageContent />
+    </Suspense>
   );
 }
