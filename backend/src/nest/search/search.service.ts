@@ -4,6 +4,31 @@ import { haversineDistanceKm, readGeoPoint } from '../../core/geo';
 
 @Injectable()
 export class SearchService {
+  private isVisibleListingStatus(status: unknown) {
+    const normalized = String(status || 'open').trim().toLowerCase();
+    return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+  }
+
+  private async getOwnerMetaMap(ownerIds: string[]) {
+    const ids = Array.from(new Set(ownerIds.map((id) => String(id || '').trim()).filter(Boolean)));
+    const map: Record<string, { name?: string; username?: string; location?: string; country?: string }> = {};
+    await Promise.all(ids.map(async (uid) => {
+      try {
+        const snap = await admin.firestore().collection('publicProfiles').doc(uid).get();
+        const data: any = snap.exists ? snap.data() || {} : {};
+        map[uid] = {
+          name: String(data?.name || '').trim() || undefined,
+          username: String(data?.username || '').trim() || undefined,
+          location: String(data?.location || '').trim() || undefined,
+          country: String(data?.country || '').trim() || undefined,
+        };
+      } catch {
+        map[uid] = {};
+      }
+    }));
+    return map;
+  }
+
   private isLikelyLowQualityListing(listing: any) {
     const title = String(listing?.offeredService?.title || listing?.title || '').trim();
     const description = String(listing?.offeredService?.description || listing?.description || '').trim();
@@ -61,6 +86,7 @@ export class SearchService {
           };
         });
         const refinedHits = rawHits
+          .filter((hit: any) => this.isVisibleListingStatus(hit?.status))
           .filter((hit: any) => !this.isLikelyLowQualityListing(hit))
           .filter((hit: any) => !category || String(hit.category || hit.offeredService?.category || '').toLowerCase().trim() === category.toLowerCase().trim())
           .filter((hit: any) => !location || String(hit.location || '').toLowerCase().includes(location.toLowerCase()))
@@ -117,9 +143,31 @@ export class SearchService {
     const lcq = q.toLowerCase();
     const filtered = snap.docs
       .map(d => ({ id: d.id, ...(d.data() as any) }))
-      .filter((l) => !this.isLikelyLowQualityListing(l))
+      .filter((l) => this.isVisibleListingStatus((l as any).status))
+      .filter((l) => !this.isLikelyLowQualityListing(l));
+    const ownerMetaMap = await this.getOwnerMetaMap(filtered.map((l: any) => String(l.userId || l.offeredByUserId || '').trim()));
+    const enriched = filtered.map((l: any) => {
+      const ownerId = String(l.userId || l.offeredByUserId || '').trim();
+      const ownerMeta = ownerMetaMap[ownerId] || {};
+      return {
+        ...l,
+        ownerName: ownerMeta.name,
+        ownerUsername: ownerMeta.username,
+        ownerLocation: ownerMeta.location,
+        ownerCountry: ownerMeta.country,
+      };
+    });
+    const refined = enriched
       .filter(l => !category || (l.category || l.offeredService?.category || '').toLowerCase().trim() === category.toLowerCase().trim())
-      .filter(l => !location || String(l.location || '').toLowerCase().includes(location.toLowerCase()))
+      .filter(l => {
+        if (!location) return true;
+        const locationHaystack = [
+          l.location,
+          l.ownerLocation,
+          l.ownerCountry,
+        ].map((v) => String(v || '').toLowerCase()).join(' ');
+        return locationHaystack.includes(location.toLowerCase());
+      })
       .filter((l) => {
         if (!lcq) return true;
         const haystack = [
@@ -135,12 +183,16 @@ export class SearchService {
           l.requestedService?.category,
           l.requestedProduct?.name,
           l.requestedProduct?.description,
+          l.ownerName,
+          l.ownerUsername,
+          l.ownerLocation,
+          l.ownerCountry,
         ]
           .map((v) => String(v || '').toLowerCase())
           .join(' ');
         return haystack.includes(lcq);
       });
-    const withDistance = filtered.map((l) => {
+    const withDistance = refined.map((l) => {
       const geo = readGeoPoint((l as any).geo);
       const distanceKm = center && geo ? haversineDistanceKm(center, geo) : undefined;
       return { l, distanceKm };

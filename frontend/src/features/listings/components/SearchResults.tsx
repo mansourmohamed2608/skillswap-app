@@ -21,6 +21,11 @@ type ListingWithUser = {
   user: User | null;
 };
 
+function isVisibleListingStatus(status: unknown) {
+  const normalized = String(status || 'open').trim().toLowerCase();
+  return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+}
+
 export function SearchResults({ params, fallbackItems = [] }: { params: SearchParams; fallbackItems?: ListingWithUser[] }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[] | null>(null);
@@ -46,7 +51,10 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
         const resp = await fetch(url);
         const data = await resp.json();
         if (!cancelled) {
-          setItems(data.hits || []);
+          const nextItems = Array.isArray(data?.hits)
+            ? data.hits.filter((hit: any) => isVisibleListingStatus(hit?.status))
+            : [];
+          setItems(nextItems);
         }
         // fire-and-forget analytics event
         try {
@@ -165,6 +173,7 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
       {items.map((hit: any) => {
         const listing = toServiceListing(hit);
         const user: User | null = null; // optional: fetch user by listing.offeredByUserId for richer cards
+        if (!isVisibleListingStatus(listing.status)) return null;
         return <ServiceCard key={listing.id} listing={listing} user={user} />;
       })}
     </div>

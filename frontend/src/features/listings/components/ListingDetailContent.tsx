@@ -95,6 +95,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     pending_exchange: { text: t('listings.card.status.pending'), variant: 'outline', icon: <CalendarDaysIcon className="h-4 w-4" /> },
     completed: { text: t('listings.card.status.completed'), variant: 'secondary', icon: <CheckCircle className="h-4 w-4" /> },
     cancelled: { text: t('listings.card.status.cancelled'), variant: 'destructive', icon: <XCircle className="h-4 w-4" /> },
+    removed: { text: t('listings.card.status.cancelled'), variant: 'destructive', icon: <XCircle className="h-4 w-4" /> },
   };
   const statusInfo = statusMap[listing.status];
 

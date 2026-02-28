@@ -97,6 +97,8 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
         return t('listings.card.status.completed');
       case 'cancelled':
         return t('listings.card.status.cancelled');
+      case 'removed':
+        return t('listings.card.status.cancelled');
       default:
         return status;
     }
