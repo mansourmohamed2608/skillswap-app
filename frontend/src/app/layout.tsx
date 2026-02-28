@@ -5,6 +5,7 @@ import './globals.css';
 import { LanguageController } from '@/components/i18n/LanguageController';
 import { AppHeader } from '@/components/layout/AppHeader';
 import AppFooter from '@/components/layout/AppFooter';
+import FloatingChatButton from '@/components/layout/FloatingChatButton';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { KycGate } from '@/components/auth/KycGate';
@@ -42,6 +43,7 @@ export default function RootLayout({
             <main className="flex-grow container mx-auto px-4 py-8 max-w-screen-2xl">
               {children}
             </main>
+            <FloatingChatButton />
             <Toaster />
             <AppFooter />
           </KycGate>

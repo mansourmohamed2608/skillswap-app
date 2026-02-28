@@ -15,6 +15,7 @@ import { getErrorMessage } from "@/lib/errors";
 import { getUserById, getUserByIdentifier } from "@/services/data";
 import { onValue, ref } from "firebase/database";
 import { Input } from "@/components/ui/input";
+import ConversationListPanel from "@/features/chat/components/ConversationListPanel";
 
 type Params = { chatId: string };
 type Search = { [key: string]: string | string[] | undefined };
@@ -161,8 +162,10 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
         : t('chat.detail.unavailable');
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <Card className="grid h-[calc(100dvh-9rem)] min-h-[34rem] grid-rows-[auto,1fr,auto] overflow-hidden shadow-xl">
+    <div className="mx-auto max-w-6xl">
+      <div className="grid h-[calc(100dvh-9rem)] min-h-[34rem] overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
+        <ConversationListPanel activeChatId={chatId} className="hidden min-h-0 border-r bg-background md:flex" />
+        <Card className="grid h-full min-h-0 grid-rows-[auto,1fr,auto] rounded-none border-0 shadow-none">
         <CardHeader className="border-b p-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild>
@@ -237,7 +240,8 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
             <Button className="shrink-0" onClick={onSend} disabled={!user || !resolvedOtherUserId || !text.trim()}>{t('chat.detail.send')}</Button>
           </div>
         </CardFooter>
-      </Card>
+        </Card>
+      </div>
     </div>
   );
 }
