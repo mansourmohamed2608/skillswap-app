@@ -41,6 +41,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [rating, setRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -373,25 +374,32 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
               </div>
               <div className="space-y-1">
                 <Label htmlFor="rating">{t('reviews.form.ratingLabel')}</Label>
-                <div className="flex items-center gap-1" role="radiogroup" aria-label={t('reviews.form.ratingLabel')}>
+                <div
+                  className="flex items-center gap-1"
+                  role="radiogroup"
+                  aria-label={t('reviews.form.ratingLabel')}
+                  onMouseLeave={() => setHoverRating(0)}
+                >
                   {[1, 2, 3, 4, 5].map((value) => (
                     <button
                       key={value}
                       type="button"
                       aria-label={`${value} ${value === 1 ? 'star' : 'stars'}`}
                       aria-pressed={rating === value}
-                      className={`inline-flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${
-                        rating >= value
-                          ? 'border-amber-300 bg-amber-50 text-amber-500'
-                          : 'border-border bg-background text-muted-foreground hover:border-amber-200 hover:text-amber-500'
-                      }`}
+                      className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground transition-colors hover:text-amber-500"
+                      onMouseEnter={() => setHoverRating(value)}
+                      onFocus={() => setHoverRating(value)}
+                      onBlur={() => setHoverRating(0)}
                       onClick={() => setRating(value)}
                     >
-                      <StarIcon className="h-5 w-5" fill={rating >= value ? 'currentColor' : 'none'} />
+                      <StarIcon
+                        className={`h-5 w-5 ${(hoverRating || rating) >= value ? 'text-amber-500' : 'text-amber-200'}`}
+                        fill={(hoverRating || rating) >= value ? 'currentColor' : 'none'}
+                      />
                     </button>
                   ))}
-                  <span className="ml-2 text-sm font-medium text-muted-foreground">
-                    {rating}/5
+                  <span className="ml-1 text-sm font-semibold text-amber-600">
+                    {Number(hoverRating || rating).toFixed(1)}
                   </span>
                 </div>
               </div>
