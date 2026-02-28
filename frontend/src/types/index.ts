@@ -67,9 +67,10 @@ export interface ServiceListing {
     amount: number;
     currency: string;
   };
-  postedDate: string; // ISO date string
+  postedDate: string;
   status: 'open' | 'pending_exchange' | 'completed' | 'cancelled';
-  location?: string; // Optional: general location for the service
+  location?: string;
+  distanceKm?: number;
   geo?: {
     lat: number;
     lng: number;
