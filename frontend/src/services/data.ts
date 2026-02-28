@@ -395,11 +395,58 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
     const byApi = await getUserByIdentifierFromApi(raw);
     if (byApi) return byApi;
 
+    const slugSuffixMatch = /^(.+)-([a-z0-9]{6})$/i.exec(raw);
     const memberSuffixMatch = /^member-([a-z0-9]{6})$/i.exec(raw);
-    if (memberSuffixMatch && isFirebaseConfigured() && db) {
+    const fallbackSuffix = (memberSuffixMatch?.[1] || slugSuffixMatch?.[2] || '').toLowerCase();
+    const fallbackSlug = String((slugSuffixMatch?.[1] || '')).trim().toLowerCase();
+    if (fallbackSuffix && isFirebaseConfigured() && db) {
         try {
             const snap = await getDocs(query(collection(db!, 'publicProfiles'), limit(2000)));
-            const hit = snap.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(memberSuffixMatch[1].toLowerCase()));
+            const hit = snap.docs.find((doc) => {
+                const data: any = doc.data() || {};
+                const uid = String(doc.id || '').toLowerCase();
+                const name = String(data?.name || '').trim();
+                const slug = name
+                    ? name
+                        .normalize('NFKD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .toLowerCase()
+                        .replace(/[^\p{L}\p{N}]+/gu, '-')
+                        .replace(/^-+|-+$/g, '')
+                        .replace(/-{2,}/g, '-')
+                        .split('-')
+                        .slice(0, 2)
+                        .join('-')
+                    : '';
+                if (!uid.endsWith(fallbackSuffix)) return false;
+                if (!fallbackSlug) return true;
+                return slug === fallbackSlug || fallbackSlug === 'member';
+            });
+            if (hit) return mapUserFromDoc(hit.id, hit.data());
+        } catch {}
+
+        try {
+            const snap = await getDocs(query(collection(db!, 'users'), limit(2000)));
+            const hit = snap.docs.find((doc) => {
+                const data: any = doc.data() || {};
+                const uid = String(doc.id || '').toLowerCase();
+                const name = String(data?.name || data?.fullName || data?.displayName || '').trim();
+                const slug = name
+                    ? name
+                        .normalize('NFKD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .toLowerCase()
+                        .replace(/[^\p{L}\p{N}]+/gu, '-')
+                        .replace(/^-+|-+$/g, '')
+                        .replace(/-{2,}/g, '-')
+                        .split('-')
+                        .slice(0, 2)
+                        .join('-')
+                    : '';
+                if (!uid.endsWith(fallbackSuffix)) return false;
+                if (!fallbackSlug) return true;
+                return slug === fallbackSlug || fallbackSlug === 'member';
+            });
             if (hit) return mapUserFromDoc(hit.id, hit.data());
         } catch {}
     }

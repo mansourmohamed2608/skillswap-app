@@ -57,31 +57,37 @@ export default function BookingDetailPage() {
           return;
         }
         const viewerUid = auth.currentUser.uid;
-        let snap = await getDoc(doc(db, 'requests', id));
-        let resolvedId = id;
-        let d: any = snap.exists() ? snap.data() : null;
+        const col = collection(db, 'requests');
+        const [reqSnap, ownSnap] = await Promise.all([
+          getDocs(query(col, where("requesterId", "==", viewerUid))),
+          getDocs(query(col, where("ownerId", "==", viewerUid))),
+        ]);
+        const seen = new Set<string>();
+        const combined = [...reqSnap.docs, ...ownSnap.docs].filter((docSnap) => {
+          if (seen.has(docSnap.id)) return false;
+          seen.add(docSnap.id);
+          return true;
+        });
 
-        if (!snap.exists()) {
-          const col = collection(db, 'requests');
-          const [reqSnap, ownSnap] = await Promise.all([
-            getDocs(query(col, where("requesterId", "==", viewerUid))),
-            getDocs(query(col, where("ownerId", "==", viewerUid))),
-          ]);
-          const combined = [...reqSnap.docs, ...ownSnap.docs];
-          const match = combined.find((docSnap) => matchesBookingPublicId(id, {
-            id: docSnap.id,
-            publicId: String((docSnap.data() as any)?.publicId || ''),
-            listingId: String((docSnap.data() as any)?.listingId || ''),
-            ownerId: String((docSnap.data() as any)?.ownerId || ''),
-            requesterId: String((docSnap.data() as any)?.requesterId || ''),
-          }));
-          if (!match) {
+        const match = combined.find((docSnap) => matchesBookingPublicId(id, {
+          id: docSnap.id,
+          publicId: String((docSnap.data() as any)?.publicId || ''),
+          listingId: String((docSnap.data() as any)?.listingId || ''),
+          ownerId: String((docSnap.data() as any)?.ownerId || ''),
+          requesterId: String((docSnap.data() as any)?.requesterId || ''),
+        }));
+
+        let resolvedId = match?.id || id;
+        let d: any = match?.data() || null;
+
+        if (!d) {
+          const snap = await getDoc(doc(db, 'requests', id));
+          if (!snap.exists()) {
             setError(t('bookings.notFound'));
             return;
           }
-          snap = match;
-          resolvedId = match.id;
-          d = match.data();
+          resolvedId = snap.id;
+          d = snap.data();
         }
 
         const ownerId = String((d as any)?.ownerId || '');
@@ -146,7 +152,7 @@ export default function BookingDetailPage() {
   if (loading) {
     return (
       <div className="container max-w-3xl space-y-6">
-        <Button variant="outline" asChild className="w-fit">
+        <Button variant="secondary" asChild className="w-fit bg-primary/10 text-primary hover:bg-primary/15">
           <Link href="/bookings" className="inline-flex items-center gap-2">
             <ArrowLeftIcon className="h-4 w-4" />
             {t('bookings.title')}
@@ -164,7 +170,7 @@ export default function BookingDetailPage() {
   if (error) {
     return (
       <div className="container max-w-3xl space-y-6">
-        <Button variant="outline" asChild className="w-fit">
+        <Button variant="secondary" asChild className="w-fit bg-primary/10 text-primary hover:bg-primary/15">
           <Link href="/bookings" className="inline-flex items-center gap-2">
             <ArrowLeftIcon className="h-4 w-4" />
             {t('bookings.title')}
@@ -198,7 +204,7 @@ export default function BookingDetailPage() {
 
   return (
     <div className="container max-w-3xl space-y-6">
-      <Button variant="outline" asChild className="w-fit">
+      <Button variant="secondary" asChild className="w-fit bg-primary/10 text-primary hover:bg-primary/15">
         <Link href="/bookings" className="inline-flex items-center gap-2">
           <ArrowLeftIcon className="h-4 w-4" />
           {t('bookings.title')}
@@ -283,7 +289,8 @@ export default function BookingDetailPage() {
                   {t('bookings.accept')}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="secondary"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                   onClick={async () => {
                     try {
                       await declineRequest(data.id);
@@ -301,7 +308,8 @@ export default function BookingDetailPage() {
 
             {status === 'pending' && isRequester && (
               <Button
-                variant="outline"
+                variant="secondary"
+                className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                 onClick={async () => {
                   try {
                     await cancelRequest(data.id);
@@ -332,7 +340,8 @@ export default function BookingDetailPage() {
                   {t('bookings.complete')}
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="secondary"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                   onClick={async () => {
                   try {
                     await cancelRequest(data.id);

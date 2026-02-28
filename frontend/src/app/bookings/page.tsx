@@ -293,7 +293,8 @@ export default function BookingsPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="secondary"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                   onClick={async () => {
                     try {
                       await declineRequest(booking.id);
@@ -312,7 +313,8 @@ export default function BookingsPage() {
             {status === 'pending' && isRequester && (
               <Button
                 size="sm"
-                variant="outline"
+                variant="secondary"
+                className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                 onClick={async () => {
                   try {
                     await cancelRequest(booking.id);
@@ -345,7 +347,8 @@ export default function BookingsPage() {
                 </Button>
                 <Button
                   size="sm"
-                  variant="outline"
+                  variant="secondary"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/15"
                   onClick={async () => {
                     try {
                       await cancelRequest(booking.id);
