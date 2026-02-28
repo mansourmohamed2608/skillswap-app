@@ -424,12 +424,12 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       if (listingId) {
         await updateListing(listingId, listing);
         toast({ title: t('listings.form.updatedTitle'), description: t('listings.form.updatedDescription') });
-        router.push(getListingPath({ id: listingId, publicId: initialListing?.publicId, offeredService: { title: offeredServiceTitle } }));
+        router.push(getListingPath({ id: listingId, publicId: initialListing?.publicId, offeredService: listing.offeredService }));
       } else {
         // Call backend endpoint which enforces membership and bypasses Firestore rules
         const created = await createListing(listing);
         toast({ title: t('listings.form.successTitle'), description: t('listings.form.successDescription') });
-        router.push(getListingPath({ id: created.id, publicId: created.publicId, offeredService: { title: offeredServiceTitle } }));
+        router.push(getListingPath({ id: created.id, publicId: created.publicId, offeredService: listing.offeredService }));
         // Reset form
         setOfferedServiceTitle('');
         setOfferedServiceCategory(undefined);
