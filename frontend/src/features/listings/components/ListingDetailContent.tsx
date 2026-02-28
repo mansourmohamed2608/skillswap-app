@@ -40,7 +40,6 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
   const [resolvedOwner, setResolvedOwner] = useState<User | null>(offeredByUser);
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
-  const [reviewerName, setReviewerName] = useState('');
   const [rating, setRating] = useState<number>(5);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +67,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     : t('listings.card.generalCategory');
   const publicListingLocation = getPublicLocationLabel(listing.location, t('listings.card.locationApprox'));
   const publicOwnerLocation = getPublicLocationLabel(resolvedOwner?.location, t('listings.card.locationApprox'));
+  const canReview = Boolean(user && !isOwner);
 
   const statusMap: Record<ServiceListing['status'], { text: string; variant: "default" | "secondary" | "destructive" | "outline"; icon: ReactNode }> = {
     open: { text: t('listings.card.status.open'), variant: 'default', icon: <InfoIcon className="h-4 w-4" /> },
@@ -290,7 +290,12 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           {reviewsLoading ? (
             <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.loading')}</div>
           ) : reviews.length === 0 ? (
-            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.empty')}</div>
+            <div className="rounded-xl border border-dashed bg-muted/10 px-4 py-6">
+              <p className="font-medium text-foreground">{t('reviews.empty')}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {canReview ? t('reviews.form.title') : t('reviews.form.signInHint', { defaultValue: 'Sign in to leave the first review.' })}
+              </p>
+            </div>
           ) : (
             <div className="space-y-4">
               {reviews.map((review) => (
@@ -308,12 +313,28 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           <Separator />
 
           {isOwner ? (
-            <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            <div className="rounded-xl border border-dashed bg-muted/10 p-4 text-sm text-muted-foreground">
               {t('reviews.form.ownerBlocked')}
+            </div>
+          ) : !user ? (
+            <div className="rounded-xl border bg-muted/20 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">{t('reviews.form.title')}</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {t('reviews.form.signInHint', { defaultValue: 'You need to sign in before leaving a review.' })}
+                  </p>
+                </div>
+                <Button asChild className="w-full sm:w-auto">
+                  <Link href="/auth/signin">
+                    {t('auth.signIn.title', { defaultValue: 'Sign In' })}
+                  </Link>
+                </Button>
+              </div>
             </div>
           ) : (
             <form
-              className="space-y-4 rounded-xl border bg-muted/20 p-4 sm:p-5"
+              className="space-y-5 rounded-xl border bg-muted/20 p-5 sm:p-6"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!comment.trim()) {
@@ -324,20 +345,14 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                   toast({ title: t('reviews.form.invalidRating'), variant: 'destructive' });
                   return;
                 }
-                if (!user && !reviewerName.trim()) {
-                  toast({ title: t('reviews.form.missingName'), variant: 'destructive' });
-                  return;
-                }
                 setSubmitting(true);
                 try {
                   const result = await createReview({
                     listingId: listing.id,
                     rating,
                     comment: comment.trim(),
-                    reviewerName: user ? undefined : reviewerName.trim(),
                   });
                   setComment('');
-                  setReviewerName('');
                   setRating(5);
                   const messageKey = result.flagged ? 'reviews.form.pending' : 'reviews.form.success';
                   toast({ title: t(messageKey) });
@@ -350,18 +365,12 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                 }
               }}
             >
-              <h3 className="text-lg font-semibold">{t('reviews.form.title')}</h3>
-              {!user && (
-                <div className="space-y-1">
-                  <Label htmlFor="reviewerName">{t('reviews.form.nameLabel')}</Label>
-                  <Input
-                    id="reviewerName"
-                    value={reviewerName}
-                    onChange={(e) => setReviewerName(e.target.value)}
-                    placeholder={t('reviews.form.namePlaceholder')}
-                  />
-                </div>
-              )}
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold">{t('reviews.form.title')}</h3>
+                <p className="text-sm text-muted-foreground">
+                  {t('reviews.form.helper', { defaultValue: 'Share what went well and keep it specific.' })}
+                </p>
+              </div>
               <div className="space-y-1">
                 <Label htmlFor="rating">{t('reviews.form.ratingLabel')}</Label>
                 <div className="flex flex-wrap gap-2">
