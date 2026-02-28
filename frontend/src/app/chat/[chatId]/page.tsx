@@ -6,7 +6,7 @@ import { ArrowLeftIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useMessagesRTDB, conversationIdWith } from "@/services/chatRTDB";
-import { useEffect, useMemo, useState, use } from "react";
+import { useEffect, useMemo, useRef, useState, use } from "react";
 import { rtdb } from "@/services/firebase";
 import { useTranslation } from "react-i18next";
 import { markConversationRead, sendChatMessage } from "@/services/api";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { getUserById, getUserByIdentifier } from "@/services/data";
 import { onValue, ref } from "firebase/database";
+import { Input } from "@/components/ui/input";
 
 type Params = { chatId: string };
 type Search = { [key: string]: string | string[] | undefined };
@@ -47,6 +48,7 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
   }, [parsedConversationId?.convId, resolvedOtherUserId, user?.uid]);
   const messages = useMessagesRTDB(convId);
   const [text, setText] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const initialName =
     typeof resolvedSearch?.name === "string"
       ? decodeURIComponent(resolvedSearch.name)
@@ -143,6 +145,10 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
     markConversationRead(convId).catch(() => {});
   }, [convId, user?.uid]);
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length]);
+
   const headerName = otherUserName || t('chat.detail.unavailable');
   const headerInitial = headerName.slice(0, 1).toUpperCase();
   const presenceText =
@@ -155,8 +161,8 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
         : t('chat.detail.unavailable');
 
   return (
-    <div className="flex flex-col min-h-[calc(100vh-10rem)] max-w-3xl mx-auto">
-      <Card className="flex-1 flex flex-col shadow-xl">
+    <div className="mx-auto max-w-4xl">
+      <Card className="grid h-[calc(100dvh-9rem)] min-h-[34rem] grid-rows-[auto,1fr,auto] overflow-hidden shadow-xl">
         <CardHeader className="border-b p-4">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild>
@@ -176,7 +182,7 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-muted/20">
+        <CardContent className="min-h-0 overflow-y-auto bg-muted/20 p-3 sm:p-4">
           {!user && (
             <div className="text-sm text-muted-foreground">{t('chat.detail.signInPrompt')}</div>
           )}
@@ -191,28 +197,37 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
               </Button>
             </div>
           )}
-          {user && messages.map(message => (
-            <div key={message.id} className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"}`}>
-              <div className={`flex items-end gap-2 max-w-[88%] sm:max-w-[75%] ${message.senderId === user?.uid ? "flex-row-reverse" : ""}`}>
-                {message.senderId !== user?.uid && (
-                   <Avatar className="h-8 w-8 self-end">
-                  <AvatarFallback>{headerInitial}</AvatarFallback>
-                  </Avatar>
-                )}
-                <div className={`p-3 rounded-xl ${message.senderId === user?.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card text-card-foreground border rounded-bl-none"}`}>
-                  <p className="text-sm">{message.text}</p>
-                  <p className={`text-xs mt-1 ${message.senderId === user?.uid ? "text-primary-foreground/70" : "text-muted-foreground"} text-right`}>
-                    {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
-                  </p>
+          <div className="space-y-4">
+            {user && messages.length === 0 && resolvedOtherUserId ? (
+              <div className="flex min-h-[14rem] flex-col items-center justify-center rounded-xl border border-dashed bg-background/70 px-6 py-10 text-center">
+                <p className="text-base font-semibold">{headerName}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{t('chat.list.emptyBody')}</p>
+              </div>
+            ) : null}
+            {user && messages.map(message => (
+              <div key={message.id} className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"}`}>
+                <div className={`flex items-end gap-2 max-w-[88%] sm:max-w-[75%] ${message.senderId === user?.uid ? "flex-row-reverse" : ""}`}>
+                  {message.senderId !== user?.uid && (
+                    <Avatar className="h-8 w-8 self-end">
+                      <AvatarFallback>{headerInitial}</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className={`p-3 rounded-2xl ${message.senderId === user?.uid ? "bg-primary text-primary-foreground rounded-br-md" : "bg-card text-card-foreground border rounded-bl-md"}`}>
+                    <p className="text-sm leading-relaxed">{message.text}</p>
+                    <p className={`mt-1 text-right text-xs ${message.senderId === user?.uid ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                      {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
         </CardContent>
-        <CardFooter className="p-3 sm:p-4 border-t">
+        <CardFooter className="border-t bg-background p-3 sm:p-4">
           <div className="flex w-full gap-2">
-            <input
-              className="flex-1 border rounded px-3 py-2"
+            <Input
+              className="flex-1"
               placeholder={t('chat.detail.messagePlaceholder')}
               value={text}
               onChange={(e) => setText(e.target.value)}

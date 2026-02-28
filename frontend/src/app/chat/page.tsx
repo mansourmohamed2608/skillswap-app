@@ -95,8 +95,8 @@ export default function ChatPage() {
   }, [convs, user?.uid, userMetaById, t, searchText]);
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <Card className="shadow-xl">
+    <div className="mx-auto max-w-4xl">
+      <Card className="flex h-[calc(100dvh-9rem)] min-h-[32rem] flex-col overflow-hidden shadow-xl">
         <CardHeader className="border-b">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-2xl flex items-center">
@@ -115,7 +115,7 @@ export default function ChatPage() {
             <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className="min-h-0 flex-1 overflow-y-auto p-0">
           {loadingUsers ? (
             <div className="p-4 text-sm text-muted-foreground">{t('chat.newChat.searching')}</div>
           ) : null}
@@ -171,7 +171,7 @@ export default function ChatPage() {
               ))}
             </ul>
           ) : (
-            <div className="p-10 text-center">
+            <div className="flex h-full min-h-[18rem] flex-col items-center justify-center p-10 text-center">
               <MessageCircleIcon className="mx-auto h-12 w-12 text-muted-foreground" />
               <h3 className="mt-2 text-xl font-semibold">{t('chat.list.emptyTitle')}</h3>
               <p className="mt-1 text-muted-foreground">{t('chat.list.emptyBody')}</p>
