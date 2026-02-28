@@ -7,7 +7,7 @@ import { sendEmail, sendEmailNotification, sendInAppNotification, sendPushNotifi
 
 // SECURITY: Strict environment detection - never trust emulator flags in production
 const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
-  process.env.GCLOUD_PROJECT === 'backdup-333cf' || // your prod project ID
+  process.env.GCLOUD_PROJECT === 'skillswap-69yxi' ||
   process.env.K_SERVICE !== undefined; // Cloud Run/Functions indicator
 
 const IS_EMULATOR = !IS_PRODUCTION && Boolean(

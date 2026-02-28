@@ -2,18 +2,18 @@
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { ArrowLeftIcon } from "lucide-react";
+import { ArrowLeftIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useMessagesRTDB, conversationIdWith } from "@/services/chatRTDB";
 import { useEffect, useMemo, useState, use } from "react";
-import { db } from "@/services/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { rtdb } from "@/services/firebase";
 import { useTranslation } from "react-i18next";
 import { markConversationRead, sendChatMessage } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
-import { getUserByIdentifier } from "@/services/data";
+import { getUserById, getUserByIdentifier } from "@/services/data";
+import { onValue, ref } from "firebase/database";
 
 type Params = { chatId: string };
 type Search = { [key: string]: string | string[] | undefined };
@@ -54,6 +54,8 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
         ? decodeURIComponent(resolvedSearch?.name[0] || "")
         : "";
   const [otherUserName, setOtherUserName] = useState<string>(initialName);
+  const [otherUsername, setOtherUsername] = useState<string>("");
+  const [presence, setPresence] = useState<'online' | 'offline' | 'unknown'>('unknown');
 
   async function onSend() {
     if (!user?.uid || !resolvedOtherUserId || !text.trim()) return;
@@ -85,41 +87,55 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
         if (active) setResolvedOtherUserId("");
         return;
       }
-      if (/^[A-Za-z0-9]{20,}$/.test(raw)) {
-        if (active) setResolvedOtherUserId(raw);
-        return;
-      }
       const resolved = await getUserByIdentifier(raw);
       if (!active) return;
-      setResolvedOtherUserId(String(resolved?.id || '').trim());
+      const nextUid = String(resolved?.id || '').trim();
+      setResolvedOtherUserId(nextUid);
       if (resolved?.name) setOtherUserName(resolved.name);
+      setOtherUsername(String(resolved?.username || '').trim());
+      if (!nextUid) {
+        setOtherUserName(t('chat.detail.unavailable'));
+        setOtherUsername('');
+      }
     })();
     return () => {
       active = false;
     };
-  }, [chatId, parsedConversationId?.otherUserId, user?.uid]);
+  }, [chatId, parsedConversationId?.otherUserId, user?.uid, t]);
 
   useEffect(() => {
     let active = true;
     async function loadUser() {
-      if (!db || !resolvedOtherUserId) return;
+      if (!resolvedOtherUserId) return;
       try {
-        const snap = await getDoc(doc(db, "users", resolvedOtherUserId));
+        const profile = await getUserById(resolvedOtherUserId);
         if (!active) return;
-        if (snap.exists()) {
-          const d = snap.data() as any;
-          setOtherUserName(d.name || d.fullName || d.displayName || resolvedOtherUserId);
-        } else {
-          setOtherUserName((prev) => prev || resolvedOtherUserId);
-        }
+        if (profile?.name) setOtherUserName(profile.name);
+        setOtherUsername(String(profile?.username || '').trim());
+        if (!profile?.name) setOtherUserName((prev) => prev || t('chat.detail.unavailable'));
       } catch {
-        if (active) setOtherUserName((prev) => prev || resolvedOtherUserId);
+        if (active) setOtherUserName((prev) => prev || t('chat.detail.unavailable'));
       }
     }
     loadUser();
     return () => {
       active = false;
     };
+  }, [resolvedOtherUserId, t]);
+
+  useEffect(() => {
+    if (!rtdb || !resolvedOtherUserId) {
+      setPresence('unknown');
+      return;
+    }
+    const pRef = ref(rtdb, `presence/${resolvedOtherUserId}`);
+    const unsub = onValue(pRef, (snap) => {
+      const state = String(snap.val()?.state || '').toLowerCase();
+      if (state === 'online') setPresence('online');
+      else if (state === 'offline') setPresence('offline');
+      else setPresence('unknown');
+    });
+    return () => unsub();
   }, [resolvedOtherUserId]);
 
   useEffect(() => {
@@ -127,14 +143,22 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
     markConversationRead(convId).catch(() => {});
   }, [convId, user?.uid]);
 
-  const headerName = otherUserName || chatId;
+  const headerName = otherUserName || t('chat.detail.unavailable');
   const headerInitial = headerName.slice(0, 1).toUpperCase();
+  const presenceText =
+    !resolvedOtherUserId
+      ? t('chat.detail.unavailable')
+      : presence === 'online'
+      ? t('chat.detail.online')
+      : presence === 'offline'
+        ? t('chat.detail.offline')
+        : t('chat.detail.unavailable');
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] max-w-3xl mx-auto"> {/* Adjust height as needed */}
+    <div className="flex flex-col min-h-[calc(100vh-10rem)] max-w-3xl mx-auto">
       <Card className="flex-1 flex flex-col shadow-xl">
         <CardHeader className="border-b p-4">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <Button variant="ghost" size="icon" asChild>
               <Link href="/chat">
                 <ArrowLeftIcon className="h-5 w-5" />
@@ -146,31 +170,46 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
             </Avatar>
             <div>
               <CardTitle className="text-lg">{headerName}</CardTitle>
-              <p className="text-xs text-muted-foreground">{t('chat.detail.online')}</p>
+              <p className="text-xs text-muted-foreground">
+                {otherUsername ? `@${otherUsername} • ` : ''}{presenceText}
+              </p>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto p-4 space-y-4 bg-muted/20">
+        <CardContent className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 bg-muted/20">
           {!user && (
             <div className="text-sm text-muted-foreground">{t('chat.detail.signInPrompt')}</div>
           )}
+          {user && !resolvedOtherUserId && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 space-y-3">
+              <p>{t('chat.detail.unavailable')}</p>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/chat">
+                  <SearchIcon className="mr-2 h-4 w-4" />
+                  Find a valid user
+                </Link>
+              </Button>
+            </div>
+          )}
           {user && messages.map(message => (
             <div key={message.id} className={`flex ${message.senderId === user?.uid ? "justify-end" : "justify-start"}`}>
-              <div className={`flex items-end gap-2 max-w-[75%] ${message.senderId === user?.uid ? "flex-row-reverse" : ""}`}>
+              <div className={`flex items-end gap-2 max-w-[88%] sm:max-w-[75%] ${message.senderId === user?.uid ? "flex-row-reverse" : ""}`}>
                 {message.senderId !== user?.uid && (
                    <Avatar className="h-8 w-8 self-end">
-                  <AvatarFallback>{(resolvedOtherUserId || chatId).slice(0,1).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{headerInitial}</AvatarFallback>
                   </Avatar>
                 )}
                 <div className={`p-3 rounded-xl ${message.senderId === user?.uid ? "bg-primary text-primary-foreground rounded-br-none" : "bg-card text-card-foreground border rounded-bl-none"}`}>
                   <p className="text-sm">{message.text}</p>
-                  <p className={`text-xs mt-1 ${message.senderId === user?.uid ? "text-primary-foreground/70" : "text-muted-foreground"} text-right`}>{message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : ''}</p>
+                  <p className={`text-xs mt-1 ${message.senderId === user?.uid ? "text-primary-foreground/70" : "text-muted-foreground"} text-right`}>
+                    {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}
+                  </p>
                 </div>
               </div>
             </div>
           ))}
         </CardContent>
-        <CardFooter className="p-4 border-t">
+        <CardFooter className="p-3 sm:p-4 border-t">
           <div className="flex w-full gap-2">
             <input
               className="flex-1 border rounded px-3 py-2"
@@ -178,9 +217,9 @@ export default function ChatDetailPage({ params, searchParams }: { params: Param
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); onSend(); } }}
-              disabled={!user}
+              disabled={!user || !resolvedOtherUserId}
             />
-            <Button onClick={onSend} disabled={!user || !resolvedOtherUserId || !text.trim()}>{t('chat.detail.send')}</Button>
+            <Button className="shrink-0" onClick={onSend} disabled={!user || !resolvedOtherUserId || !text.trim()}>{t('chat.detail.send')}</Button>
           </div>
         </CardFooter>
       </Card>

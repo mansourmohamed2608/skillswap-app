@@ -8,6 +8,8 @@ import { RequestExchangeButton } from "@/features/listings/components/RequestExc
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { getUserById } from "@/services/data";
+import { getProfileIdentifier } from "@/lib/profile";
 
 type Props = {
   listingId: string;
@@ -45,14 +47,21 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
         <Button
           size="lg"
           className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
-          onClick={(e) => {
+          onClick={async (e) => {
             e.preventDefault();
             if (loading) return;
             if (!user || !active || !canCreateBooking) {
               router.push("/pricing?alert=sub-required");
               return;
             }
-            router.push(`/chat/${ownerId}?name=${encodeURIComponent(safeOwnerName)}`);
+            let chatTarget = String(ownerId || '').trim();
+            try {
+              const owner = ownerId ? await getUserById(ownerId) : null;
+              if (owner) {
+                chatTarget = getProfileIdentifier(owner);
+              }
+            } catch {}
+            router.push(`/chat/${encodeURIComponent(chatTarget)}?name=${encodeURIComponent(safeOwnerName)}`);
           }}
         >
           <MessageCircleIcon className="mr-2 h-5 w-5" />

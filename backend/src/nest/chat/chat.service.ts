@@ -14,6 +14,36 @@ const UID_RE = /^[A-Za-z0-9]{20,}$/;
 
 @Injectable()
 export class ChatService {
+  private async resolvePublicIdentifier(uid: string): Promise<string> {
+    const rawUid = String(uid || '').trim();
+    if (!rawUid) return '';
+    try {
+      const publicSnap = await admin.firestore().collection('publicProfiles').doc(rawUid).get();
+      const publicData: any = publicSnap.exists ? publicSnap.data() || {} : {};
+      const username = String(publicData?.username || '').trim();
+      if (username) return username;
+      const name = String(publicData?.name || '').trim();
+      const suffix = rawUid.slice(-6).toLowerCase();
+      if (name) {
+        const slug = name
+          .normalize('NFKD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/[^\p{L}\p{N}]+/gu, '-')
+          .replace(/^-+|-+$/g, '')
+          .replace(/-{2,}/g, '-')
+          .split('-')
+          .slice(0, 4)
+          .join('-')
+          .slice(0, 64);
+        if (slug) return `${slug}-${suffix}`;
+      }
+      return suffix ? `member-${suffix}` : rawUid;
+    } catch {
+      return rawUid;
+    }
+  }
+
   async sendMessage(uid: string, payload: SendMessagePayload) {
     try {
       if (!uid) throw new UnauthorizedException('Authentication required');
@@ -63,13 +93,14 @@ export class ChatService {
       }
 
       try {
+        const senderIdentifier = await this.resolvePublicIdentifier(uid);
         await sendInAppNotification({
           userId: recipientId,
           type: 'message',
           content: 'New message received',
-          link: `/chat/${uid}`,
+          link: `/chat/${senderIdentifier || uid}`,
         });
-        await sendPushNotification(recipientId, 'New message', 'You have a new message.', `/chat/${uid}`);
+        await sendPushNotification(recipientId, 'New message', 'You have a new message.', `/chat/${senderIdentifier || uid}`);
         await sendEmailNotification(recipientId, 'New message', 'You have a new message on SkillSwap.');
       } catch (e) {
         console.warn('Failed to send message notifications', e);
@@ -144,6 +175,24 @@ export class ChatService {
       if (!byUsername.empty) return byUsername.docs[0].id;
     } catch {}
 
+    try {
+      const byUserUsernameLower = await admin.firestore()
+        .collection('users')
+        .where('profile.usernameLower', '==', usernameLower)
+        .limit(1)
+        .get();
+      if (!byUserUsernameLower.empty) return byUserUsernameLower.docs[0].id;
+    } catch {}
+
+    try {
+      const byUserUsername = await admin.firestore()
+        .collection('users')
+        .where('profile.username', '==', raw)
+        .limit(1)
+        .get();
+      if (!byUserUsername.empty) return byUserUsername.docs[0].id;
+    } catch {}
+
     // Fallback slug path: first-last-<uidSuffix>
     const fallbackSlugMatch = /^(.+)-([a-z0-9]{6})$/.exec(usernameLower);
     if (fallbackSlugMatch) {
@@ -164,7 +213,7 @@ export class ChatService {
       // Last-resort compatibility for synthetic identifiers like member-<suffix>.
       if (fallbackNameSlug === 'member') {
         try {
-          const sample = await admin.firestore().collection('users').limit(500).get();
+          const sample = await admin.firestore().collection('users').limit(2000).get();
           if (!sample.empty) {
             const hit = sample.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(fallbackUidSuffix));
             if (hit) return hit.id;

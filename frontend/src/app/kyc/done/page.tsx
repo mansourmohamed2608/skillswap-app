@@ -9,6 +9,7 @@ import { CheckCircle2, Clock3, AlertCircle } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
+import { getKycApiBase } from "@/services/kyc";
 
 type StatusKey = "approved" | "declined" | "inReview" | "pending";
 
@@ -88,9 +89,7 @@ function KycDonePageContent() {
       if (!user) return;
       try {
         const token = await user.getIdToken();
-        const base =
-          process.env.NEXT_PUBLIC_FUNCTIONS_ORIGIN ||
-          "http://127.0.0.1:5001/backdup-333cf/us-central1/api";
+        const base = getKycApiBase();
         await fetch(
           `${base}/kyc/sync?sessionId=${encodeURIComponent(sessionId)}&uid=${encodeURIComponent(user.uid)}`,
           {
@@ -113,9 +112,7 @@ function KycDonePageContent() {
       const user = auth.currentUser;
       if (!user) throw new Error(t('kyc.done.errors.signInFirst'));
       const token = await user.getIdToken();
-      const base =
-        process.env.NEXT_PUBLIC_FUNCTIONS_ORIGIN ||
-        "http://127.0.0.1:5001/backdup-333cf/us-central1/api";
+      const base = getKycApiBase();
       const resp = await fetch(`${base}/kyc/dev-verify`, {
         method: "POST",
         headers: {
@@ -143,9 +140,7 @@ function KycDonePageContent() {
       const user = auth.currentUser;
       if (!user) throw new Error(t('kyc.done.errors.signInFirst'));
       const token = await user.getIdToken();
-      const base =
-        process.env.NEXT_PUBLIC_FUNCTIONS_ORIGIN ||
-        "http://127.0.0.1:5001/backdup-333cf/us-central1/api";
+      const base = getKycApiBase();
       const resp = await fetch(`${base}/didit/session`, {
         method: "POST",
         headers: {

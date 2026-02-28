@@ -26,6 +26,18 @@ export function useConversationsRTDB() {
   return items;
 }
 
+export function getUnreadConversationCount(items: any[], userId?: string | null) {
+  const uid = String(userId || '').trim();
+  if (!uid) return 0;
+  return items.reduce((count, item) => {
+    const lastMessageAt = Number(item?.lastMessageAt || 0);
+    const lastReadAt = Number(item?.perUserLastReadAt?.[uid] || 0);
+    if (!lastMessageAt) return count;
+    if (lastMessageAt > lastReadAt) return count + 1;
+    return count;
+  }, 0);
+}
+
 export function useMessagesRTDB(conversationId: string | undefined) {
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {

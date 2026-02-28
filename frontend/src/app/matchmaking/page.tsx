@@ -17,6 +17,9 @@ export default function MatchmakingPage() {
         <p className="mt-2 text-lg text-muted-foreground">
           {t('matchmaking.page.subtitle')}
         </p>
+        <p className="mx-auto mt-3 max-w-2xl text-sm text-muted-foreground">
+          {t('matchmaking.page.noteBody')}
+        </p>
       </header>
       
       <MatchmakingForm />

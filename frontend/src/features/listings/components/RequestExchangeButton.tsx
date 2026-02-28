@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { createServiceRequest } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export function RequestExchangeButton({ listingId }: { listingId: string }) {
   const { active, canCreateBooking, loading } = useMembership();
@@ -59,17 +61,15 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
         <div className="space-y-3">
           <div>
             <label className="text-sm text-muted-foreground">{t('request.when')}</label>
-            <input
+            <Input
               type="datetime-local"
-              className="w-full rounded-md border px-3 py-2"
               value={when}
               onChange={(e) => setWhen(e.target.value)}
             />
           </div>
           <div>
             <label className="text-sm text-muted-foreground">{t('request.message')}</label>
-            <textarea
-              className="w-full rounded-md border px-3 py-2"
+            <Textarea
               rows={3}
               value={message}
               onChange={(e) => setMessage(e.target.value)}

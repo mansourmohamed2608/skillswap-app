@@ -152,7 +152,7 @@ const mapApiHitToListing = (hit: any): ServiceListing => {
 async function fetchListingsFromApi(options?: { count?: number }): Promise<ServiceListing[]> {
     try {
         const base = process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '/api';
-        const pageSize = Math.min(100, Math.max(1, options?.count ?? 50));
+        const pageSize = Math.min(200, Math.max(1, options?.count ?? 200));
         const resp = await fetch(`${base}/search/listings?pageSize=${pageSize}`, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`api ${resp.status}`);
         const data = await resp.json();
@@ -430,6 +430,15 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
     // Prefer backend resolver to avoid client Firestore-rule related misses.
     const byApi = await getUserByIdentifierFromApi(raw);
     if (byApi) return byApi;
+
+    const memberSuffixMatch = /^member-([a-z0-9]{6})$/i.exec(raw);
+    if (memberSuffixMatch && isFirebaseConfigured() && db) {
+        try {
+            const snap = await getDocs(query(collection(db!, 'publicProfiles'), limit(2000)));
+            const hit = snap.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(memberSuffixMatch[1].toLowerCase()));
+            if (hit) return mapUserFromDoc(hit.id, hit.data());
+        } catch {}
+    }
 
     // Keep old UID links working.
     const looksLikeUid = /^[A-Za-z0-9]{20,}$/.test(raw);

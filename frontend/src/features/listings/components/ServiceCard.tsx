@@ -43,7 +43,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
 
   useEffect(() => {
     let mounted = true;
-    if (user || !authUser?.uid) return () => { mounted = false; };
+    if (user) return () => { mounted = false; };
     (async () => {
       try {
         const fetched = await getUserById(listing.offeredByUserId);
@@ -53,7 +53,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
       }
     })();
     return () => { mounted = false; };
-  }, [user, authUser?.uid, listing.offeredByUserId]);
+  }, [user, listing.offeredByUserId]);
 
   const getStatusBadgeVariant = (status: ServiceListing['status']) => {
     switch (status) {
@@ -144,10 +144,10 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
         <div className="mb-2">
           <CategoryPill category={offeredCategory} />
         </div>
-        <CardTitle className="text-lg mb-1 line-clamp-2 min-h-[3.25rem]">
+        <CardTitle className="mb-1 min-h-[3.25rem] text-lg line-clamp-2 break-words">
           {listing.offeredService?.title || t('listings.card.untitled')}
         </CardTitle>
-        <CardDescription className="text-sm text-muted-foreground mb-2 line-clamp-2">
+        <CardDescription className="mb-2 text-sm text-muted-foreground line-clamp-2 break-words min-h-[2.5rem]">
           {listing.offeredService?.description ?? ''}
         </CardDescription>
         
@@ -156,9 +156,9 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
         </div>
 
         <h4 className="font-semibold text-md mb-1">{exchangeLabel}</h4>
-        <p className="text-sm font-medium text-primary mb-1">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
+        <p className="mb-1 text-sm font-medium text-primary break-words line-clamp-2 min-h-[2.5rem]">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
         <CategoryPill category={requestedCategory} className="mb-1"/>
-        <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+        <CardDescription className="text-xs text-muted-foreground line-clamp-2 break-words min-h-[2rem]">
           {listing.requestedService?.description ?? ''}
         </CardDescription>
       </CardContent>

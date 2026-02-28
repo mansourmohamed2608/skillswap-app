@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDaysIcon, MapPinIcon, RepeatIcon, CheckCircle, XCircle, InfoIcon } from 'lucide-react';
+import { CalendarDaysIcon, MapPinIcon, RepeatIcon, CheckCircle, XCircle, InfoIcon, StarIcon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { CategoryPill } from '@/features/listings/components/CategoryPill';
 import { RatingDisplay } from '@/components/RatingDisplay';
@@ -102,7 +102,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
 
   useEffect(() => {
     let mounted = true;
-    if (offeredByUser || !user?.uid) return () => { mounted = false; };
+    if (offeredByUser) return () => { mounted = false; };
     (async () => {
       try {
         const fetched = await getUserById(listing.offeredByUserId);
@@ -112,7 +112,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
       }
     })();
     return () => { mounted = false; };
-  }, [offeredByUser, user?.uid, listing.offeredByUserId]);
+  }, [offeredByUser, listing.offeredByUserId]);
 
   async function onSubmitReport() {
     if (isOwner) {
@@ -165,7 +165,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           <div className="flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               <CategoryPill category={offeredCategory} className="mb-2" />
-              <CardTitle className="text-3xl font-bold">{listing.offeredService?.title || t('listings.card.untitled')}</CardTitle>
+              <CardTitle className="text-2xl sm:text-3xl font-bold break-words">{listing.offeredService?.title || t('listings.card.untitled')}</CardTitle>
             </div>
             <Badge variant={statusInfo.variant} className="text-md px-3 py-1.5 self-start md:self-center">
               {statusInfo.icon}
@@ -185,9 +185,39 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
             </div>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
+                <CalendarDaysIcon className="h-4 w-4" />
+                {t('listings.detail.postedOn', { date: postedLabel })}
+              </div>
+              <p className="text-sm text-muted-foreground">{statusInfo.text}</p>
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
+                <MapPinIcon className="h-4 w-4" />
+                {t('listings.form.locationLabel')}
+              </div>
+              <p className="text-sm text-muted-foreground break-words">
+                {publicListingLocation || t('listings.card.locationApprox')}
+              </p>
+            </div>
+            <div className="rounded-xl border bg-muted/20 p-4 sm:col-span-2 lg:col-span-1">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-primary">
+                <RepeatIcon className="h-4 w-4" />
+                {requestedHeading}
+              </div>
+              <p className="text-sm text-muted-foreground break-words">
+                {listing.requestedService?.title || t('listings.card.openToOffers')}
+              </p>
+            </div>
+          </div>
+
           <div>
             <h3 className="text-xl font-semibold mb-2 text-primary">{t('listings.detail.offeredTitle')}</h3>
-            <p className="text-foreground/90 leading-relaxed">{listing.offeredService.description}</p>
+            <div className="rounded-xl border bg-background p-4">
+              <p className="text-foreground/90 leading-relaxed break-words">{listing.offeredService.description}</p>
+            </div>
           </div>
           
           <div className="my-6 text-center">
@@ -197,9 +227,11 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
 
           <div>
             <h3 className="text-xl font-semibold mb-2 text-accent">{requestedHeading}</h3>
-            <p className="font-medium text-lg text-accent/90">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
+            <p className="font-medium text-lg text-accent/90 break-words">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
             <CategoryPill category={requestedCategory} className="my-2"/>
-            <p className="text-foreground/90 leading-relaxed">{listing.requestedService.description}</p>
+            <div className="rounded-xl border bg-background p-4">
+              <p className="text-foreground/90 leading-relaxed break-words">{listing.requestedService.description}</p>
+            </div>
           </div>
 
           <Separator className="my-6" />
@@ -208,21 +240,21 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
             <div>
               <h3 className="text-xl font-semibold mb-4 text-primary">{t('listings.detail.offeredBy')}</h3>
               <Link href={getProfilePath(resolvedOwner)} className="block hover:bg-card/50 p-4 rounded-lg border transition-colors">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={resolvedOwner.avatarUrl} alt={resolvedOwner.name} data-ai-hint="person photo" />
                     <AvatarFallback>{resolvedOwner.name.charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="text-lg font-semibold">{resolvedOwner.name}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-lg font-semibold break-words">{resolvedOwner.name}</p>
                     {publicOwnerLocation && (
                       <div className="flex items-center text-sm text-muted-foreground">
                         <MapPinIcon className="h-4 w-4 mr-1" />
-                        {publicOwnerLocation}
+                        <span className="break-words">{publicOwnerLocation}</span>
                       </div>
                     )}
                     <RatingDisplay rating={resolvedOwner.rating} reviewCount={resolvedOwner.reviewsCount} className="mt-1" />
-                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{resolvedOwner.bio}</p>
+                    <p className="text-sm text-muted-foreground mt-1 line-clamp-2 break-words">{resolvedOwner.bio}</p>
                   </div>
                 </div>
               </Link>
@@ -256,18 +288,18 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
         </CardHeader>
         <CardContent className="space-y-6">
           {reviewsLoading ? (
-            <p className="text-muted-foreground">{t('reviews.loading')}</p>
+            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.loading')}</div>
           ) : reviews.length === 0 ? (
-            <p className="text-muted-foreground">{t('reviews.empty')}</p>
+            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.empty')}</div>
           ) : (
             <div className="space-y-4">
               {reviews.map((review) => (
-                <div key={review.id} className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="font-semibold">{review.reviewerName || t('reviews.reviewerFallback')}</div>
+                <div key={review.id} className="rounded-xl border border-border bg-card p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="font-semibold break-words">{review.reviewerName || t('reviews.reviewerFallback')}</div>
                     <RatingDisplay rating={review.rating} showReviewCount={false} />
                   </div>
-                  <p className="mt-2 text-sm text-muted-foreground">{review.comment}</p>
+                  <p className="mt-2 text-sm text-muted-foreground break-words">{review.comment}</p>
                 </div>
               ))}
             </div>
@@ -281,7 +313,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
             </div>
           ) : (
             <form
-              className="space-y-4"
+              className="space-y-4 rounded-xl border bg-muted/20 p-4 sm:p-5"
               onSubmit={async (e) => {
                 e.preventDefault();
                 if (!comment.trim()) {
@@ -332,15 +364,20 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
               )}
               <div className="space-y-1">
                 <Label htmlFor="rating">{t('reviews.form.ratingLabel')}</Label>
-                <Input
-                  id="rating"
-                  type="number"
-                  min={1}
-                  max={5}
-                  step={1}
-                  value={rating}
-                  onChange={(e) => setRating(Number(e.target.value))}
-                />
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <Button
+                      key={value}
+                      type="button"
+                      variant={rating === value ? 'default' : 'outline'}
+                      className="min-w-[3rem]"
+                      onClick={() => setRating(value)}
+                    >
+                      <StarIcon className="mr-1 h-4 w-4" />
+                      {value}
+                    </Button>
+                  ))}
+                </div>
               </div>
               <div className="space-y-1">
                 <Label htmlFor="comment">{t('reviews.form.commentLabel')}</Label>
@@ -352,7 +389,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                   placeholder={t('reviews.form.commentPlaceholder')}
                 />
               </div>
-              <Button type="submit" disabled={submitting} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button type="submit" disabled={submitting} className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground">
                 {submitting ? t('reviews.form.submitting') : t('reviews.form.submit')}
               </Button>
             </form>
@@ -362,12 +399,28 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('listings.detail.moreFrom', { name: offeredByUser?.name || t('listings.actions.ownerFallback') })}</CardTitle>
+          <CardTitle>{t('listings.detail.moreFrom', { name: resolvedOwner?.name || t('listings.actions.ownerFallback') })}</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            {t('listings.detail.morePlaceholder')}
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-muted-foreground">
+            {resolvedOwner
+              ? t('listings.detail.morePlaceholder')
+              : t('listings.actions.ownerFallback')}
           </p>
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+            {resolvedOwner ? (
+              <Button asChild variant="outline" className="w-full sm:w-auto">
+                <Link href={getProfilePath(resolvedOwner)}>
+                  {t('profile.public.viewProfile')}
+                </Link>
+              </Button>
+            ) : null}
+            <Button asChild className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+              <Link href="/listings">
+                {t('home.featuredListings.viewAll')}
+              </Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -375,11 +428,11 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
         <CardHeader>
           <CardTitle>{t('reports.reportListing')}</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-between gap-4">
+        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             {isOwner ? t('reports.ownerBlocked') : t('reports.reportHelp')}
           </p>
-          <Button variant="outline" onClick={() => setReportOpen(true)} disabled={isOwner}>
+          <Button className="w-full sm:w-auto" variant="outline" onClick={() => setReportOpen(true)} disabled={isOwner}>
             {t('reports.open')}
           </Button>
         </CardContent>
@@ -412,11 +465,11 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setReportOpen(false)}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => setReportOpen(false)}>
               {t('reports.cancel')}
             </Button>
-            <Button onClick={onSubmitReport} disabled={reportBusy}>
+            <Button className="w-full sm:w-auto" onClick={onSubmitReport} disabled={reportBusy}>
               {reportBusy ? t('reports.submitting') : t('reports.submit')}
             </Button>
           </DialogFooter>

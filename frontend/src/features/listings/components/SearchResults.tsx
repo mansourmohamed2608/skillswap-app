@@ -5,6 +5,7 @@ import type { ServiceListing, User } from '@/types';
 import { track } from '@/services/analytics';
 import { useTranslation } from 'react-i18next';
 import { getFunctionsBase } from '@/services/api';
+import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
 
 export type SearchParams = {
   q?: string;
@@ -15,13 +16,20 @@ export type SearchParams = {
   radiusKm?: number;
 };
 
-export function SearchResults({ params }: { params: SearchParams }) {
+type ListingWithUser = {
+  listing: ServiceListing;
+  user: User | null;
+};
+
+export function SearchResults({ params, fallbackItems = [] }: { params: SearchParams; fallbackItems?: ListingWithUser[] }) {
   const { t } = useTranslation();
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     let cancelled = false;
     async function run() {
+      setItems(null);
       setLoading(true);
       try {
         const usp = new URLSearchParams();
@@ -68,19 +76,23 @@ export function SearchResults({ params }: { params: SearchParams }) {
     };
   }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm]);
 
-  if (loading && !items) return <div className="text-muted-foreground">{t('listings.search.loading')}</div>;
-  if (loading && items && items.length > 0) {
+  const hasRemoteItems = Array.isArray(items) && items.length > 0;
+  const hasFallbackItems = fallbackItems.length > 0;
+
+  if (loading && !hasRemoteItems && !hasFallbackItems) {
+    return <div className="text-muted-foreground">{t('listings.search.loading')}</div>;
+  }
+
+  if (loading && hasFallbackItems) {
     return (
       <div className="space-y-3">
         <div className="text-xs text-muted-foreground">{t('listings.search.loading')}</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((hit: any) => {
-            const listing = toServiceListing(hit);
-            return <ServiceCard key={listing.id} listing={listing} user={null} />;
-          })}
-        </div>
+        <ListingsGrid items={fallbackItems} />
       </div>
     );
+  }
+  if (!hasRemoteItems && hasFallbackItems) {
+    return <ListingsGrid items={fallbackItems} />;
   }
   if (!items || items.length === 0) return <div className="text-muted-foreground">{t('listings.search.empty')}</div>;
 

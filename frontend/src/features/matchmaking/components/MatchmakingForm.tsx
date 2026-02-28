@@ -133,6 +133,9 @@ export function MatchmakingForm() {
               className="resize-none"
               disabled={isGuest}
             />
+            <p className="text-xs text-muted-foreground">
+              Example: "I design logos, brand kits, and simple social media visuals for small businesses."
+            </p>
             {state?.errors?.userProfile && (
               <p className="text-sm text-destructive">{state.errors.userProfile.join(', ')}</p>
             )}
@@ -148,13 +151,24 @@ export function MatchmakingForm() {
               className="resize-none"
               disabled={isGuest}
             />
+            <p className="text-xs text-muted-foreground">
+              Example: "I need a frontend developer, Arabic copywriter, or product photographer."
+            </p>
             {state?.errors?.serviceRequests && (
               <p className="text-sm text-destructive">{state.errors.serviceRequests.join(', ')}</p>
             )}
           </div>
+          <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
+            Use clear service names, not single words. Better input gives better matches.
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col items-stretch">
           <SubmitButton disabled={isGuest} />
+          {!isGuest ? (
+            <Button type="reset" variant="ghost" className="mt-2">
+              Clear form
+            </Button>
+          ) : null}
            {resultAlert && (
             <div className="mt-4 w-full">
               {resultAlert}
@@ -166,10 +180,14 @@ export function MatchmakingForm() {
       {user && state?.matches && state.matches.length > 0 && (
         <div className="p-6 mt-0 border-t">
           <h3 className="text-xl font-semibold mb-4 text-primary">{t('matchmaking.form.potentialTitle')}</h3>
-          <ul className="space-y-3 list-disc list-inside bg-background p-4 rounded-md">
+          <p className="mb-4 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
+          <ul className="space-y-3">
             {state.matches.map((match, index) => (
-              <li key={index} className="text-foreground/90 leading-relaxed p-2 border-b last:border-b-0">
-                {match}
+              <li key={index} className="rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm">
+                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  Possible match {index + 1}
+                </div>
+                <div>{match}</div>
               </li>
             ))}
           </ul>

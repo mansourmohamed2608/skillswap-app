@@ -12,6 +12,11 @@ type ReviewInput = {
 
 @Injectable()
 export class ReviewsService {
+  private safeNumber(value: unknown, fallback = 0): number {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
   private toMillis(value: any): number {
     try {
       if (!value) return 0;
@@ -105,8 +110,8 @@ export class ReviewsService {
         tx.set(reviewRef, reviewDoc);
 
         if (!flagged) {
-          const listingSum = Number(freshListingData.ratingSum || 0);
-          const listingCount = Number(freshListingData.reviewsCount || 0);
+          const listingSum = this.safeNumber(freshListingData.ratingSum, 0);
+          const listingCount = this.safeNumber(freshListingData.reviewsCount, 0);
           const nextListingSum = listingSum + rating;
           const nextListingCount = listingCount + 1;
           const nextListingRating = Number((nextListingSum / nextListingCount).toFixed(2));
@@ -118,18 +123,28 @@ export class ReviewsService {
           });
 
           const ownerRef = admin.firestore().collection('users').doc(freshOwnerId);
+          const publicOwnerRef = admin.firestore().collection('publicProfiles').doc(freshOwnerId);
           const ownerSnap = await tx.get(ownerRef);
+          const publicOwnerSnap = await tx.get(publicOwnerRef);
+          const currentOwnerData: any = ownerSnap.exists ? (ownerSnap.data() || {}) : (publicOwnerSnap.exists ? (publicOwnerSnap.data() || {}) : {});
+          const ownerSum = this.safeNumber(currentOwnerData.ratingSum, 0);
+          const ownerCount = this.safeNumber(currentOwnerData.reviewsCount, 0);
+          const nextOwnerSum = ownerSum + rating;
+          const nextOwnerCount = ownerCount + 1;
+          const nextOwnerRating = Number((nextOwnerSum / nextOwnerCount).toFixed(2));
           if (ownerSnap.exists) {
-            const ownerData: any = ownerSnap.data() || {};
-            const ownerSum = Number(ownerData.ratingSum || 0);
-            const ownerCount = Number(ownerData.reviewsCount || 0);
-            const nextOwnerSum = ownerSum + rating;
-            const nextOwnerCount = ownerCount + 1;
-            const nextOwnerRating = Number((nextOwnerSum / nextOwnerCount).toFixed(2));
             tx.update(ownerRef, {
               ratingSum: nextOwnerSum,
               reviewsCount: nextOwnerCount,
               rating: nextOwnerRating,
+            });
+          }
+          if (publicOwnerSnap.exists) {
+            tx.update(publicOwnerRef, {
+              ratingSum: nextOwnerSum,
+              reviewsCount: nextOwnerCount,
+              rating: nextOwnerRating,
+              updatedAt: nowVal,
             });
           }
         }
@@ -137,7 +152,7 @@ export class ReviewsService {
 
       return { id: reviewRef.id, flagged };
     } catch (error: any) {
-      if (error instanceof HttpException) throw error;
+      if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
       console.error('[Reviews] createReview failed', {
         reviewerId,
         listingId: String(payload?.listingId || ''),

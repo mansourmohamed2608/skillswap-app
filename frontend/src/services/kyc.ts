@@ -24,7 +24,7 @@ function inferFunctionsBase() {
     : `https://${FUNCTIONS_REGION}-${inferredProjectId}.cloudfunctions.net`;
 }
 
-function resolveApiBase() {
+export function getKycApiBase() {
   if (process.env.NEXT_PUBLIC_API_BASE) return process.env.NEXT_PUBLIC_API_BASE;
   const fnBase = inferFunctionsBase();
   return fnBase ? `${fnBase}/api` : '/api';
@@ -39,7 +39,7 @@ export async function uploadKycFile(uid: string, file: File, name: string): Prom
 }
 
 export async function submitKyc(params: { fullName: string; nationalId?: string; idFrontUrl: string; idBackUrl: string; }): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const token = await auth?.currentUser?.getIdToken();
   const resp = await fetch(`${base}/kyc/submit`, {
     method: 'POST',
@@ -51,7 +51,7 @@ export async function submitKyc(params: { fullName: string; nationalId?: string;
 }
 
 export async function submitKycPublic(params: { fullName: string; vendor: string; idFrontBase64: string; idBackBase64: string; nationalId?: string }): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const resp = await fetch(`${base}/kyc/submit-public`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -62,14 +62,14 @@ export async function submitKycPublic(params: { fullName: string; vendor: string
 }
 
 export async function fetchKycStatusByVendor(vendor: string): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const resp = await fetch(`${base}/kyc/status?vendor=${encodeURIComponent(vendor)}`);
   if (!resp.ok) throw await toApiError(resp, 'Unable to fetch verification status.');
   return await resp.json();
 }
 
 export async function fetchKycStatus(): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const token = await auth?.currentUser?.getIdToken();
   const resp = await fetch(`${base}/kyc/status`, {
     method: 'GET',
@@ -80,7 +80,7 @@ export async function fetchKycStatus(): Promise<any> {
 }
 
 export async function cancelKyc(): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const token = await auth?.currentUser?.getIdToken();
   const resp = await fetch(`${base}/kyc/cancel`, {
     method: 'POST',
@@ -92,7 +92,7 @@ export async function cancelKyc(): Promise<any> {
 }
 
 export async function verifyKycIdWithFiles(frontFile: File, backFile: File): Promise<any> {
-  const base = resolveApiBase();
+  const base = getKycApiBase();
   const token = await auth?.currentUser?.getIdToken();
   const formData = new FormData();
   formData.append('front', frontFile);

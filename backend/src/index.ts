@@ -34,9 +34,8 @@ logger.info({ event: 'server_start', isProduction: IS_PRODUCTION }, 'SkillSwap A
 
 // Production origins - add your custom domain here
 const PROD_ORIGINS = new Set([
-  'https://backdup-333cf.web.app',
-  'https://backdup-333cf.firebaseapp.com',
-  // Add your custom domain: 'https://skillswap.com',
+  'https://skillswap-69yxi.web.app',
+  'https://skillswap-69yxi.firebaseapp.com',
 ]);
 
 // Development origins

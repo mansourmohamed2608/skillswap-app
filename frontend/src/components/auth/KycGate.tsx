@@ -10,6 +10,15 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ShieldCheck } from 'lucide-react';
 
 const VERIFY_ROUTES = ['/profile/verify', '/kyc/done'];
+const KYC_PROTECTED_ROUTES = [
+  '/bookings',
+  '/chat',
+  '/matchmaking',
+  '/events/new',
+  '/listings/new',
+  '/wishes/request',
+  '/profile/edit',
+];
 
 function normalizeKycStatus(raw?: string | null) {
   const s = String(raw || '').toUpperCase();
@@ -43,6 +52,10 @@ export function KycGate({ children }: { children: React.ReactNode }) {
     [pathname]
   );
   const isAuthRoute = useMemo(() => pathname.startsWith('/auth'), [pathname]);
+  const isProtectedRoute = useMemo(
+    () => KYC_PROTECTED_ROUTES.some((p) => pathname.startsWith(p)),
+    [pathname]
+  );
 
   useEffect(() => {
     if (!user?.uid || !db) {
@@ -96,7 +109,7 @@ export function KycGate({ children }: { children: React.ReactNode }) {
 
   const verified = kycStatus === 'VERIFIED';
   const shouldGate =
-    !!user && !loading && !checking && kycStatus !== null && !verified && !isVerifyRoute;
+    !!user && !loading && !checking && kycStatus !== null && !verified && !isVerifyRoute && isProtectedRoute;
   const shouldBounceAuth =
     !!user && !loading && !checking && verified && isAuthRoute;
 

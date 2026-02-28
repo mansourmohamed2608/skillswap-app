@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarDaysIcon, CheckCircleIcon, ClockIcon, UserIcon, PlusCircleIcon } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -170,6 +170,16 @@ export default function BookingsPage() {
     const isOwner = currentUid && booking.ownerId === currentUid;
     const isRequester = currentUid && booking.requesterId === currentUid;
     const status = String(booking.status || 'pending').toLowerCase();
+    const statusLabel =
+      status === 'accepted'
+        ? t('bookings.statusAccepted')
+        : status === 'declined'
+          ? t('bookings.statusDeclined')
+          : status === 'cancelled'
+            ? t('bookings.statusCancelled')
+            : status === 'completed'
+              ? t('bookings.statusCompleted')
+              : t('bookings.statusPending');
     const [formattedDate, setFormattedDate] = useState<string | null>(null);
     const [formattedTime, setFormattedTime] = useState<string | null>(null);
 
@@ -188,17 +198,14 @@ export default function BookingsPage() {
     
     return (
         <Card className="shadow-lg hover:shadow-xl transition-shadow">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <CardTitle className="text-lg">{listingTitles[booking.listingId] || t('bookings.listingFallback')}</CardTitle>
-              <Badge variant={booking.status === 'completed' ? "secondary" : "outline"}>
-                {booking.status === 'completed' ? t('bookings.past') : t('bookings.upcoming')}
-              </Badge>
-            </div>
-            <CardDescription className="text-sm">
-              {`${t('bookings.requestId')}: ${shortId(booking.id)}`}
-            </CardDescription>
-          </CardHeader>
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <CardTitle className="text-lg">{listingTitles[booking.listingId] || t('bookings.listingFallback')}</CardTitle>
+            <Badge variant={booking.status === 'completed' ? "secondary" : "outline"}>
+              {statusLabel}
+            </Badge>
+          </div>
+        </CardHeader>
           <CardContent>
             <div className="flex items-center text-sm text-muted-foreground mb-2">
               <CalendarDaysIcon className="h-4 w-4 mr-2" />
@@ -213,7 +220,7 @@ export default function BookingsPage() {
               {(() => {
                 const uid = auth?.currentUser?.uid;
                 const partnerId = uid === booking.requesterId ? booking.ownerId : booking.requesterId;
-                const name = partnerNames[partnerId] || partnerId;
+                const name = partnerNames[partnerId] || t('listings.actions.ownerFallback');
                 const profilePath = partnerProfilePaths[partnerId] || '';
                 return (
                   <span>
@@ -382,7 +389,12 @@ export default function BookingsPage() {
         </TabsList>
         
         <TabsContent value="upcoming" className="mt-6">
-          {upcomingBookings.length > 0 ? (
+          {loadingRequests ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <ClockIcon className="mr-2 h-5 w-5 animate-spin" />
+              {t('bookings.loadingDate')}
+            </div>
+          ) : upcomingBookings.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {upcomingBookings.map((booking) => (
                 <BookingCard key={booking.id} booking={booking} />
@@ -398,7 +410,12 @@ export default function BookingsPage() {
         </TabsContent>
         
         <TabsContent value="past" className="mt-6">
-          {pastBookings.length > 0 ? (
+          {loadingRequests ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              <ClockIcon className="mr-2 h-5 w-5 animate-spin" />
+              {t('bookings.loadingDate')}
+            </div>
+          ) : pastBookings.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pastBookings.map((booking) => (
                 <BookingCard key={booking.id} booking={booking} />

@@ -1,17 +1,19 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon } from 'lucide-react';
+import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon, BellIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
 
 // Public links, always visible
 const publicNavItems = [
@@ -83,6 +85,26 @@ export function AppHeader() {
   const { t, i18n } = useTranslation();
   const isAuthenticated = !!user;
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const conversations = useConversationsRTDB();
+  const unreadChats = getUnreadConversationCount(conversations, user?.uid);
+
+  useEffect(() => {
+    if (!db || !user?.uid) {
+      setUnreadNotifications(0);
+      return;
+    }
+    const qy = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc')
+    );
+    const unsub = onSnapshot(qy, (snap) => {
+      const count = snap.docs.reduce((acc, d) => acc + (d.data()?.isRead ? 0 : 1), 0);
+      setUnreadNotifications(count);
+    }, () => setUnreadNotifications(0));
+    return () => unsub();
+  }, [user?.uid]);
 
   const labelFor = (href: string, fallback: string) => {
     const map: Record<string, string> = {
@@ -105,7 +127,7 @@ export function AppHeader() {
       <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
           <AppLogo />
-          <span className="font-bold text-xl">{t('common.appName')}</span>
+          <span className="hidden font-bold text-xl sm:inline">{t('common.appName')}</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -120,11 +142,27 @@ export function AppHeader() {
           ))}
           {isAuthenticated ? (
             <>
+              <Button variant="ghost" asChild className="relative">
+                <Link href="/profile?tab=notifications" className="flex items-center gap-2">
+                  <BellIcon className="h-4 w-4" />
+                  {t('header.notifications')}
+                  {unreadNotifications > 0 ? (
+                    <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  ) : null}
+                </Link>
+              </Button>
               {privateNavItems.map((item) => (
-                <Button key={item.label} variant="ghost" asChild>
+                <Button key={item.label} variant="ghost" asChild className={item.href === '/chat' ? 'relative' : undefined}>
                   <Link href={item.href} className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
                     {labelFor(item.href, item.label)}
+                    {item.href === '/chat' && unreadChats > 0 ? (
+                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                        {unreadChats > 99 ? '99+' : unreadChats}
+                      </span>
+                    ) : null}
                   </Link>
                 </Button>
               ))}
@@ -144,15 +182,80 @@ export function AppHeader() {
         </nav>
 
         <div className="flex items-center gap-2 md:hidden">
-          <LanguageSwitcher compact />
+          {isAuthenticated ? (
+            <Button variant="ghost" size="icon" asChild className="relative">
+              <Link href="/chat">
+                <MessageCircle className="h-5 w-5" />
+                <span className="sr-only">{t('header.chat')}</span>
+                {unreadChats > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
+                    {unreadChats > 9 ? '9+' : unreadChats}
+                  </span>
+                ) : null}
+              </Link>
+            </Button>
+          ) : null}
+          {isAuthenticated ? (
+            <Button variant="ghost" size="icon" asChild className="relative">
+              <Link href="/profile?tab=notifications">
+                <BellIcon className="h-5 w-5" />
+                <span className="sr-only">{t('header.notifications')}</span>
+                {unreadNotifications > 0 ? (
+                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                ) : null}
+              </Link>
+            </Button>
+          ) : null}
+          <div className="shrink-0">
+            <LanguageSwitcher compact />
+          </div>
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" aria-label="Open menu">
                 <MenuIcon className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side={i18n.dir() === 'rtl' ? 'left' : 'right'}>
-              <div className="mt-8 flex flex-col gap-1">
+            <SheetContent side={i18n.dir() === 'rtl' ? 'left' : 'right'} className="w-[88vw] max-w-sm overflow-y-auto">
+              <div className="mt-6 flex items-center justify-between border-b pb-4">
+                <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 text-primary">
+                  <AppLogo />
+                  <span className="font-bold text-lg">{t('common.appName')}</span>
+                </Link>
+                <LanguageSwitcher compact />
+              </div>
+              {isAuthenticated ? (
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <Button variant="outline" asChild className="justify-between">
+                    <Link href="/chat" onClick={() => setMobileOpen(false)}>
+                      <span className="inline-flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        {t('header.chat')}
+                      </span>
+                      {unreadChats > 0 ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                          {unreadChats > 99 ? '99+' : unreadChats}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild className="justify-between">
+                    <Link href="/profile?tab=notifications" onClick={() => setMobileOpen(false)}>
+                      <span className="inline-flex items-center gap-2">
+                        <BellIcon className="h-4 w-4" />
+                        {t('header.notifications')}
+                      </span>
+                      {unreadNotifications > 0 ? (
+                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </Button>
+                </div>
+              ) : null}
+              <div className="mt-6 flex flex-col gap-1">
                 {publicNavItems.map((item) => (
                   <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
                     <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
@@ -165,9 +268,16 @@ export function AppHeader() {
                   <>
                     {privateNavItems.map((item) => (
                       <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
-                        <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                        <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center justify-between gap-2">
+                          <span className="inline-flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
-                          {labelFor(item.href, item.label)}
+                            {labelFor(item.href, item.label)}
+                          </span>
+                          {item.href === '/chat' && unreadChats > 0 ? (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                              {unreadChats > 99 ? '99+' : unreadChats}
+                            </span>
+                          ) : null}
                         </Link>
                       </Button>
                     ))}

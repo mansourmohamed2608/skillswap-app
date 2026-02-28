@@ -24,10 +24,10 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   return (
     <Button
       variant="outline"
-      size={compact ? "icon" : "sm"}
+      size={compact ? "sm" : "sm"}
       onClick={toggle}
       title={nextLabel}
-      className={compact ? "h-9 min-w-10 px-0 font-semibold tracking-wide" : "font-medium"}
+      className={compact ? "h-9 min-w-[3rem] rounded-md px-2 font-semibold leading-none tracking-wide shrink-0 uppercase" : "font-medium"}
     >
       {compact ? (lang.startsWith("ar") ? "EN" : "AR") : nextLabel}
     </Button>

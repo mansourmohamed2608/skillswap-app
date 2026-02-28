@@ -12,11 +12,13 @@ import { useToast } from "@/hooks/use-toast";
 import { getFunctionsBase } from "@/services/api";
 import { getUserByIdentifier } from "@/services/data";
 import { getProfileIdentifier } from "@/lib/profile";
+import { useAuth } from "@/context/AuthContext";
 
 type UserMatch = { uid: string; username?: string; name: string };
 
 export function NewChatButton() {
   const { active, canSendMessage, loading } = useMembership();
+  const { user } = useAuth();
   const router = useRouter();
   const { t } = useTranslation();
   const { toast } = useToast();
@@ -79,6 +81,7 @@ export function NewChatButton() {
       toast({ title: t('chat.newChat.missing'), variant: 'destructive' });
       return;
     }
+    if (searching) return;
 
     const toChatIdentifier = (item: UserMatch) =>
       item.username || getProfileIdentifier({ id: item.uid, name: item.name, username: item.username });
@@ -93,9 +96,17 @@ export function NewChatButton() {
         nextIdentifier = toChatIdentifier(exact);
       }
     }
+    if (!nextIdentifier && matches.length > 1) {
+      toast({ title: t('chat.newChat.notFound'), description: t('chat.newChat.searching'), variant: 'destructive' });
+      return;
+    }
     if (!nextIdentifier) {
       const resolved = await getUserByIdentifier(query);
       if (resolved) {
+        if (resolved.id && user?.uid && resolved.id === user.uid) {
+          toast({ title: t('chat.newChat.notFound'), variant: 'destructive' });
+          return;
+        }
         nextIdentifier = getProfileIdentifier(resolved);
       }
     }
@@ -138,6 +149,9 @@ export function NewChatButton() {
             {searching ? (
               <p className="text-xs text-muted-foreground">{t('chat.newChat.searching')}</p>
             ) : null}
+            {!searching && normalizedQuery.length >= 2 && matches.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No matching users found.</p>
+            ) : null}
             {!searching && matches.length > 0 ? (
               <div className="max-h-56 overflow-auto rounded-md border">
                 {matches.map((item) => (
@@ -158,12 +172,15 @@ export function NewChatButton() {
                 ))}
               </div>
             ) : null}
+            <p className="text-xs text-muted-foreground">
+              Choose a real user from the list, or type an exact `@username`.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
               {t('chat.newChat.cancel')}
             </Button>
-            <Button onClick={startChat}>
+            <Button onClick={startChat} disabled={!normalizedQuery || searching}>
               {t('chat.newChat.start')}
             </Button>
           </DialogFooter>

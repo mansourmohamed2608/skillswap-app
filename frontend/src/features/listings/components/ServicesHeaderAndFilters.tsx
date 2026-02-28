@@ -13,6 +13,7 @@ import { ServicesEmptyState } from '@/features/listings/components/ServicesEmpty
 import type { ServiceListing, User } from '@/types';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { useMemo } from 'react';
 
 type ListingWithUser = {
   listing: ServiceListing;
@@ -48,6 +49,109 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     submitted.location ||
     hasNearSubmitted
   );
+  const submittedKey = JSON.stringify(submitted);
+
+  function toSearchableText(item: ListingWithUser) {
+    return [
+      item.listing.offeredService?.title,
+      item.listing.offeredService?.description,
+      item.listing.offeredService?.category,
+      item.listing.requestedService?.title,
+      item.listing.requestedService?.description,
+      item.listing.requestedService?.category,
+      item.listing.requestedProduct?.name,
+      item.listing.requestedProduct?.description,
+      item.user?.name,
+      item.user?.username,
+      item.listing.location,
+      item.user?.location,
+      item.user?.country,
+    ]
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number) {
+    const toRad = (value: number) => value * Math.PI / 180;
+    const dLat = toRad(bLat - aLat);
+    const dLng = toRad(bLng - aLng);
+    const lat1 = toRad(aLat);
+    const lat2 = toRad(bLat);
+    const x = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+    return 6371 * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+  }
+
+  function withDistanceSort(items: ListingWithUser[], origin?: { lat: number; lng: number } | null) {
+    if (!origin) return items;
+    return [...items].sort((a, b) => {
+      const aGeo = a.listing.geo;
+      const bGeo = b.listing.geo;
+      const aHasGeo = Boolean(aGeo && Number.isFinite(aGeo.lat) && Number.isFinite(aGeo.lng));
+      const bHasGeo = Boolean(bGeo && Number.isFinite(bGeo.lat) && Number.isFinite(bGeo.lng));
+      if (!aHasGeo && !bHasGeo) return 0;
+      if (!aHasGeo) return 1;
+      if (!bHasGeo) return -1;
+      const aDistance = haversineKm(origin.lat, origin.lng, Number(aGeo!.lat), Number(aGeo!.lng));
+      const bDistance = haversineKm(origin.lat, origin.lng, Number(bGeo!.lat), Number(bGeo!.lng));
+      return aDistance - bDistance;
+    });
+  }
+
+  const submittedFallbackItems = useMemo(() => {
+    if (!hasSubmittedFilters) return initialItems;
+    const q = String(submitted.q || '').trim().toLowerCase();
+    const categoryFilter = String(submitted.category || '').trim().toLowerCase();
+    const locationFilter = String(submitted.location || '').trim().toLowerCase();
+    const hasRadius = Number.isFinite(submitted.radiusKm);
+
+    const filtered = initialItems.filter((item) => {
+      if (q && !toSearchableText(item).includes(q)) return false;
+
+      if (categoryFilter) {
+        const offeredCategory = String(item.listing.offeredService?.category || '').trim().toLowerCase();
+        const requestedCategory = String(item.listing.requestedService?.category || '').trim().toLowerCase();
+        if (offeredCategory !== categoryFilter && requestedCategory !== categoryFilter) return false;
+      }
+
+      if (locationFilter) {
+        const locationText = [
+          item.listing.location,
+          item.user?.location,
+          item.user?.country,
+        ]
+          .map((value) => String(value || '').trim().toLowerCase())
+          .filter(Boolean)
+          .join(' ');
+        if (!locationText && !hasRadius) return false;
+        if (locationText && !locationText.includes(locationFilter) && !hasRadius) return false;
+      }
+
+      if (
+        Number.isFinite(submitted.nearLat) &&
+        Number.isFinite(submitted.nearLng) &&
+        hasRadius &&
+        item.listing.geo &&
+        Number.isFinite(item.listing.geo.lat) &&
+        Number.isFinite(item.listing.geo.lng)
+      ) {
+        const distance = haversineKm(
+          Number(submitted.nearLat),
+          Number(submitted.nearLng),
+          Number(item.listing.geo.lat),
+          Number(item.listing.geo.lng),
+        );
+        if (distance > Number(submitted.radiusKm)) return false;
+      }
+
+      return true;
+    });
+    return withDistanceSort(filtered, Number.isFinite(submitted.nearLat) && Number.isFinite(submitted.nearLng)
+      ? { lat: Number(submitted.nearLat), lng: Number(submitted.nearLng) }
+      : null);
+  }, [hasSubmittedFilters, initialItems, submitted]);
+
+  const initialItemsSorted = useMemo(() => withDistanceSort(initialItems, nearCoords), [initialItems, nearCoords]);
 
   function buildSubmitted(nextNear: { lat: number; lng: number } | null, nextLocation?: string): SubmittedFilters {
     const trimmedQuery = search.trim();
@@ -229,7 +333,20 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
           <div>
             <label htmlFor="search" className="block text-sm font-medium mb-1">{t('services.searchLabel')}</label>
             <div className="relative">
-              <Input id="search" type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t('services.searchPlaceholder')} className="pl-10" />
+              <Input
+                id="search"
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    void applyFilters();
+                  }
+                }}
+                placeholder={t('services.searchPlaceholder')}
+                className="pl-10"
+              />
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             </div>
           </div>
@@ -270,6 +387,12 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
                 setManualLocation(e.target.value);
                 setNearCoords(null);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void applyFilters();
+                }
+              }}
               placeholder={t('services.locationPlaceholder')}
             />
           </div>
@@ -303,19 +426,24 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
             {locationHint}
           </p>
         ) : null}
+        {!hasSubmittedFilters && nearCoords ? (
+          <p className="mt-2 text-xs text-muted-foreground">
+            Listings are currently sorted by nearest location first.
+          </p>
+        ) : null}
       </div>
       <div className="mt-6">
         {hasSubmittedFilters ? (
-          <SearchResults params={{
+          <SearchResults key={submittedKey} params={{
             q: submitted.q,
             category: submitted.category,
             location: submitted.location,
             nearLat: submitted.nearLat,
             nearLng: submitted.nearLng,
             radiusKm: submitted.radiusKm,
-          }} />
-        ) : initialItems.length > 0 ? (
-          <ListingsGrid items={initialItems} />
+          }} fallbackItems={submittedFallbackItems} />
+        ) : initialItemsSorted.length > 0 ? (
+          <ListingsGrid items={initialItemsSorted} />
         ) : (
           <ServicesEmptyState />
         )}

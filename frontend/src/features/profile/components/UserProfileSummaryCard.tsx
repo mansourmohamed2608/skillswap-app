@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getProfileIdentifier } from '@/lib/profile';
 
 interface UserProfileSummaryCardProps {
   user: User;
@@ -49,11 +50,11 @@ export function UserProfileSummaryCard({ user }: UserProfileSummaryCardProps) {
           </Avatar>
         </div>
       </CardHeader>
-      <CardContent className="pt-20 px-6 pb-6"> {/* Increased pt to make space for overlapping avatar */}
-        <div className="flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-3">
-              <CardTitle className="text-3xl font-bold">{user.name}</CardTitle>
+      <CardContent className="px-6 pb-6 pt-20">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <CardTitle className="break-words text-2xl font-bold sm:text-3xl">{user.name}</CardTitle>
               <span className="px-2 py-0.5 text-xs rounded-full border bg-muted/30">
                 {user.membershipActive && user.membershipPlan
                   ? t('profile.public.membershipPlan', { plan: user.membershipPlan })
@@ -61,32 +62,30 @@ export function UserProfileSummaryCard({ user }: UserProfileSummaryCardProps) {
               </span>
             </div>
             {fullLocation && (
-              <div className="flex items-center text-muted-foreground mt-1">
+              <div className="mt-1 flex items-center text-muted-foreground">
                 <MapPinIcon className="h-4 w-4 mr-1" />
-                {fullLocation}
+                <span className="break-words">{fullLocation}</span>
               </div>
             )}
           </div>
           {isCurrentUser ? (
-            <Link href="/profile/edit" className="inline-block">
-            <Button variant="outline">
+            <Link href="/profile/edit" className="inline-block w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto">
               <EditIcon className="mr-2 h-4 w-4" /> {t('profile.public.editProfile')}
-            </Button> 
+            </Button>
             </Link>
           ) : (
-            <Button variant="default" className="bg-accent hover:bg-accent/90" asChild>
-              <Link href={`/chat?chatId=${user.id}`}>
+            <Button variant="default" className="w-full bg-accent hover:bg-accent/90 sm:w-auto" asChild>
+              <Link href={`/chat/${encodeURIComponent(getProfileIdentifier(user))}?name=${encodeURIComponent(user.name)}`}>
                 <MailIcon className="mr-2 h-4 w-4" /> {t('profile.public.messageUser', { name: user.name.split(' ')[0] })}
               </Link>
             </Button>
           )}
-
-          
         </div>
 
         <RatingDisplay rating={user.rating} reviewCount={user.reviewsCount} className="mt-2 mb-4" />
         
-        <CardDescription className="text-md leading-relaxed mt-1 mb-6">
+        <CardDescription className="text-md mt-1 mb-6 leading-relaxed break-words">
           {user.bio}
         </CardDescription>
 

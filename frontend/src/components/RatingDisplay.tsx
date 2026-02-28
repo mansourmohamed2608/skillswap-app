@@ -1,4 +1,4 @@
- 'use client';
+'use client';
 
 import { StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,8 +25,8 @@ export function RatingDisplay({
   const emptyStars = maxStars - fullStars - (hasHalfStar ? 1 : 0);
 
   return (
-    <div className={cn("flex items-center gap-1", className)}>
-      <div className="flex">
+    <div className={cn("flex flex-wrap items-center gap-1", className)}>
+      <div className="flex shrink-0">
         {[...Array(fullStars)].map((_, i) => (
           <StarIcon key={`full-${i}`} className="h-4 w-4 text-accent fill-accent" />
         ))}
@@ -43,9 +43,9 @@ export function RatingDisplay({
           <StarIcon key={`empty-${i}`} className="h-4 w-4 text-accent/30 fill-accent/30" />
         ))}
       </div>
-      <span className="text-sm font-medium text-accent">{rating.toFixed(1)}</span>
+      <span className="shrink-0 text-sm font-medium text-accent">{rating.toFixed(1)}</span>
       {showReviewCount && reviewCount !== undefined && (
-        <span className="text-sm text-muted-foreground">{t('profile.reviewsLabel', { count: reviewCount })}</span>
+        <span className="text-sm text-muted-foreground break-words">{t('profile.reviewsLabel', { count: reviewCount })}</span>
       )}
     </div>
   );

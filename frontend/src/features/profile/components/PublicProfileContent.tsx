@@ -41,7 +41,7 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
 
   return (
     <Tabs defaultValue="active-listings" className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-0 h-auto">
         <TabsTrigger value="active-listings">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
         <TabsTrigger value="past-exchanges">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
         <TabsTrigger value="reviews">{t('profile.tabs.reviews')} ({user.reviewsCount})</TabsTrigger>
@@ -56,7 +56,9 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">{t('profile.public.noActiveListings', { name })}</p>
+          <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+            {t('profile.public.noActiveListings', { name })}
+          </div>
         )}
       </TabsContent>
       <TabsContent value="past-exchanges">
@@ -68,29 +70,31 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground">{t('profile.public.noPastExchanges', { name })}</p>
+          <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">
+            {t('profile.public.noPastExchanges', { name })}
+          </div>
         )}
       </TabsContent>
       <TabsContent value="reviews">
         <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.public.reviewsTitle', { name })}</h2>
         <div className="space-y-4">
           {reviewsLoading ? (
-            <p className="text-muted-foreground">{t('reviews.loading')}</p>
+            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.loading')}</div>
           ) : reviews.length === 0 ? (
-            <p className="text-muted-foreground">{t('reviews.empty')}</p>
+            <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.empty')}</div>
           ) : (
             reviews.map((review) => (
-              <div key={review.id} className="p-4 border rounded-lg bg-card">
-                <div className="flex items-center mb-2">
-                  <Avatar className="h-10 w-10 mr-3">
+              <div key={review.id} className="rounded-lg border bg-card p-4">
+                <div className="mb-2 flex items-center gap-3">
+                  <Avatar className="h-10 w-10">
                     <AvatarFallback>{(review.reviewerName || t('reviews.reviewerFallback')).charAt(0)}</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-semibold">{review.reviewerName || t('reviews.reviewerFallback')}</p>
+                  <div className="min-w-0">
+                    <p className="font-semibold break-words">{review.reviewerName || t('reviews.reviewerFallback')}</p>
                     <RatingDisplay rating={review.rating} showReviewCount={false} />
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground">{review.comment}</p>
+                <p className="text-sm text-muted-foreground break-words">{review.comment}</p>
               </div>
             ))
           )}

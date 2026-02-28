@@ -39,6 +39,18 @@ export function MatchesPanel() {
   const [accepting, setAccepting] = useState<string | null>(null);
   const [acceptedKeys, setAcceptedKeys] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, { accepted: number; total: number; conversationId?: string; title?: string }>>({});
+  const me = user?.uid || '';
+
+  const displayParticipantNames = (participants?: Participant[], fallbackUsers?: string[]) => {
+    const names = (participants || []).map((p) => {
+      const uid = String(p?.uid || '').trim();
+      const name = String(p?.name || '').trim();
+      if (uid && uid === me) return t('listings.card.you');
+      return name || uid;
+    }).filter(Boolean);
+    if (names.length > 0) return names.join(', ');
+    return (fallbackUsers || []).map((uid) => uid === me ? t('listings.card.you') : uid).join(', ');
+  };
 
   const sanitizeError = (raw: string) => {
     const normalized = String(raw || '').trim().toLowerCase();
@@ -173,11 +185,19 @@ export function MatchesPanel() {
   };
 
   const canLoad = !!user;
+  const totalMatches = triads.length + pairs.length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="text-lg text-muted-foreground">{t('matchmaking.panel.subtitle')}</div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-lg text-muted-foreground">{t('matchmaking.panel.subtitle')}</div>
+          {user && !loading && totalMatches > 0 ? (
+            <div className="mt-1 text-sm text-muted-foreground">
+              {totalMatches} match{totalMatches === 1 ? '' : 'es'} ready to review
+            </div>
+          ) : null}
+        </div>
         <Button variant="outline" size="sm" onClick={load} disabled={loading || !canLoad}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           <span className="ml-2">{t('matchmaking.panel.refresh')}</span>
@@ -206,10 +226,20 @@ export function MatchesPanel() {
         </Alert>
       )}
 
+      {loading && user ? (
+        <Card className="border-dashed">
+          <CardContent className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Checking your latest matches...
+          </CardContent>
+        </Card>
+      ) : null}
+
       {!loading && !error && user && triads.length === 0 && pairs.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="p-4 text-sm text-muted-foreground">
-            {t('matchmaking.form.noMatchesTitle')}
+          <CardContent className="space-y-2 p-5 text-sm text-muted-foreground">
+            <p>{t('matchmaking.form.noMatchesTitle')}</p>
+            <p>Try broader service descriptions and refresh after more listings are added.</p>
           </CardContent>
         </Card>
       ) : null}
@@ -220,11 +250,11 @@ export function MatchesPanel() {
           <div className="text-sm text-muted-foreground">{t('matchmaking.panel.triadTitle')}</div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {triads.map((triad, idx) => (
-              <Card key={`tri-${idx}`} className="overflow-hidden">
+              <Card key={`tri-${idx}`} className="overflow-hidden border-border/70">
                 <CardContent className="p-4 space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">{t('matchmaking.panel.triadBadge')}</Badge>
-                    <span className="text-xs text-muted-foreground">{t('matchmaking.panel.triadDesc')}</span>
+                    <span className="text-xs text-muted-foreground">3 people complete this exchange loop.</span>
                   </div>
                   <div className="text-sm">
                     <div>
@@ -238,16 +268,17 @@ export function MatchesPanel() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {t('matchmaking.panel.participants')}{' '}
-                    {(triad.participants && triad.participants.length > 0)
-                      ? triad.participants.map(p => p.name || p.uid).join(', ')
-                      : triad.users.join(', ')}
+                    {displayParticipantNames(triad.participants, triad.users as unknown as string[])}
+                  </div>
+                  <div className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                    You give one service, receive another, and the third person completes the chain.
                   </div>
                   {(() => { const key = triadKey(triad.users as unknown as string[]); const pr = progress[key]; return pr ? (
                     <div className="text-xs flex items-center gap-2">
                       <span className="text-muted-foreground">{t('matchmaking.panel.acceptedCount', { accepted: pr.accepted, total: pr.total })}</span>
                       {pr.conversationId && (
                         <Button variant="outline" size="sm" asChild>
-                          <a href={`/chat/${pr.conversationId}`}>{t('matchmaking.panel.openChat')}</a>
+                          <Link href={`/chat/${pr.conversationId}`}>{t('matchmaking.panel.openChat')}</Link>
                         </Button>
                       )}
                     </div>
@@ -256,7 +287,7 @@ export function MatchesPanel() {
                       {acceptedKeys.has(triadKey(triad.users as unknown as string[])) ? (
                         <Badge variant="secondary">{t('matchmaking.panel.acceptedBadge')}</Badge>
                       ) : (
-                        <Button size="sm" onClick={() => onAcceptTriad(idx)} disabled={accepting === triadKey(triad.users as unknown as string[])}>
+                        <Button className="w-full sm:w-auto" size="sm" onClick={() => onAcceptTriad(idx)} disabled={accepting === triadKey(triad.users as unknown as string[])}>
                           {accepting === triadKey(triad.users as unknown as string[]) ? (
                             <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('matchmaking.panel.accepting')}</>
                           ) : t('matchmaking.panel.accept')}
@@ -276,11 +307,11 @@ export function MatchesPanel() {
           <div className="text-sm text-muted-foreground">{t('matchmaking.panel.pairTitle')}</div>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {pairs.map((p, idx) => (
-              <Card key={`pair-${idx}`} className="overflow-hidden">
+              <Card key={`pair-${idx}`} className="overflow-hidden border-border/70">
                 <CardContent className="p-4 space-y-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary">{t('matchmaking.panel.pairBadge')}</Badge>
-                    <span className="text-xs text-muted-foreground">{t('matchmaking.panel.pairDesc')}</span>
+                    <span className="text-xs text-muted-foreground">2 people want what the other offers.</span>
                   </div>
                   <div className="text-sm">
                     <div>
@@ -294,16 +325,17 @@ export function MatchesPanel() {
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {t('matchmaking.panel.participants')}{' '}
-                    {(p.participants && p.participants.length > 0)
-                      ? p.participants.map(pp => pp.name || pp.uid).join(', ')
-                      : p.users.join(', ')}
+                    {displayParticipantNames(p.participants, p.users as unknown as string[])}
+                  </div>
+                  <div className="rounded-md bg-muted/40 p-2 text-xs text-muted-foreground">
+                    Both sides can accept to open a direct shared chat.
                   </div>
                   {(() => { const key = pairKey(p.users as unknown as string[]); const pr = progress[key]; return pr ? (
                     <div className="text-xs flex items-center gap-2">
                       <span className="text-muted-foreground">{t('matchmaking.panel.acceptedCount', { accepted: pr.accepted, total: pr.total })}</span>
                       {pr.conversationId && (
                         <Button variant="outline" size="sm" asChild>
-                          <a href={`/chat/${pr.conversationId}`}>{t('matchmaking.panel.openChat')}</a>
+                          <Link href={`/chat/${pr.conversationId}`}>{t('matchmaking.panel.openChat')}</Link>
                         </Button>
                       )}
                     </div>
@@ -312,7 +344,7 @@ export function MatchesPanel() {
                       {acceptedKeys.has(pairKey(p.users as unknown as string[])) ? (
                         <Badge variant="secondary">{t('matchmaking.panel.acceptedBadge')}</Badge>
                       ) : (
-                        <Button size="sm" onClick={() => onAcceptPair(idx)} disabled={accepting === pairKey(p.users as unknown as string[])}>
+                        <Button className="w-full sm:w-auto" size="sm" onClick={() => onAcceptPair(idx)} disabled={accepting === pairKey(p.users as unknown as string[])}>
                           {accepting === pairKey(p.users as unknown as string[]) ? (
                             <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('matchmaking.panel.accepting')}</>
                           ) : t('matchmaking.panel.accept')}
@@ -328,3 +360,4 @@ export function MatchesPanel() {
     </div>
   );
 }
+  

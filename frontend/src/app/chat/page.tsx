@@ -1,5 +1,5 @@
 "use client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageCircleIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,61 +17,80 @@ export default function ChatPage() {
   const { t } = useTranslation();
   const convs = useConversationsRTDB();
   const [searchText, setSearchText] = useState('');
-  const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; identifier: string }>>({});
+  const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; username?: string; identifier: string }>>({});
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
+      setLoadingUsers(true);
       const otherIds = Array.from(new Set(
         convs.map((c) => Object.keys(c.participants || {}).find((p) => p !== user?.uid) || '')
           .filter(Boolean)
       ));
       if (!otherIds.length) {
-        if (mounted) setUserMetaById({});
+        if (mounted) {
+          setUserMetaById({});
+          setLoadingUsers(false);
+        }
         return;
       }
-      const entries: Record<string, { name: string; identifier: string }> = {};
-      for (const uid of otherIds) {
+      const entries: Record<string, { name: string; username?: string; identifier: string }> = {};
+      await Promise.all(otherIds.map(async (uid) => {
         try {
           const profile = await getUserById(uid);
           if (profile) {
             entries[uid] = {
               name: profile.name,
+              username: profile.username,
               identifier: getProfileIdentifier(profile),
             };
           }
         } catch {}
+      }));
+      if (mounted) {
+        setUserMetaById(entries);
+        setLoadingUsers(false);
       }
-      if (mounted) setUserMetaById(entries);
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [convs, user?.uid]);
 
   const chats = useMemo(() => {
-    const looksLikeUid = (value: string) => /^[A-Za-z0-9]{20,}$/.test(value);
+    const formatTimestamp = (value?: number) => {
+      if (!value) return '';
+      const date = new Date(value);
+      const now = new Date();
+      const sameDay = date.toDateString() === now.toDateString();
+      return sameDay
+        ? date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+        : date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
     const rows = convs.map((c) => {
       const otherId = Object.keys(c.participants || {}).find((p) => p !== user?.uid) || '';
       const profileMeta = userMetaById[otherId];
-      const rawTitle = String((c.title as string) || '').trim();
-      const resolvedTitle = profileMeta?.name || (looksLikeUid(rawTitle) ? '' : rawTitle);
-      const fallbackTitle = otherId ? `${t('chat.list.conversationFallback')} ${otherId.slice(0, 6)}` : t('chat.list.conversationFallback');
-      const title = resolvedTitle || fallbackTitle;
+      const title = profileMeta?.name || t('chat.detail.unavailable');
+      const subtitle = profileMeta?.username ? `@${profileMeta.username}` : '';
       return {
         id: c.id as string,
         otherId,
         title,
+        subtitle,
         targetIdentifier: profileMeta?.identifier || otherId,
         lastMessage: (c.lastMessage as string) || '',
-        unread: (c.lastMessageAt && user?.uid && c.perUserLastReadAt?.[user.uid] && c.lastMessageAt > c.perUserLastReadAt[user.uid]) ? 1 : 0,
-        timestamp: c.lastMessageAt
-          ? new Date(c.lastMessageAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-          : '',
+        unread: (c.lastMessageAt && user?.uid && c.lastMessageAt > Number(c.perUserLastReadAt?.[user.uid] || 0)) ? 1 : 0,
+        timestamp: formatTimestamp(c.lastMessageAt),
+        available: Boolean(profileMeta?.identifier),
       };
     });
     const q = searchText.trim().toLowerCase();
     if (!q) return rows;
     return rows.filter((item) =>
-      item.title.toLowerCase().includes(q) || item.lastMessage.toLowerCase().includes(q)
+      item.title.toLowerCase().includes(q) ||
+      item.subtitle.toLowerCase().includes(q) ||
+      item.lastMessage.toLowerCase().includes(q)
     );
   }, [convs, user?.uid, userMetaById, t, searchText]);
 
@@ -79,7 +98,7 @@ export default function ChatPage() {
     <div className="max-w-3xl mx-auto">
       <Card className="shadow-xl">
         <CardHeader className="border-b">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-2xl flex items-center">
               <MessageCircleIcon className="mr-3 h-7 w-7 text-primary" />
               {t('chat.list.title')}
@@ -97,29 +116,57 @@ export default function ChatPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
+          {loadingUsers ? (
+            <div className="p-4 text-sm text-muted-foreground">{t('chat.newChat.searching')}</div>
+          ) : null}
           {chats.length > 0 ? (
             <ul className="divide-y">
               {chats.map(chat => (
                 <li key={chat.id}>
-                  <Link href={`/chat/${chat.targetIdentifier || chat.id}`} className="block hover:bg-muted/50 transition-colors">
-                    <div className="p-4 flex items-center space-x-4">
+                  {chat.available ? (
+                    <Link href={`/chat/${chat.targetIdentifier}`} className="block hover:bg-muted/50 transition-colors">
+                      <div className="p-4 flex items-center space-x-4">
+                        <Avatar className="h-12 w-12"><AvatarFallback>{chat.title.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1 gap-3">
+                            <div className="min-w-0">
+                              <p className="text-md font-semibold truncate">{chat.title}</p>
+                              {chat.subtitle ? (
+                                <p className="text-xs text-muted-foreground truncate">{chat.subtitle}</p>
+                              ) : null}
+                            </div>
+                            <p className="text-xs text-muted-foreground shrink-0">{chat.timestamp}</p>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
+                            {chat.unread > 0 && (
+                              <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-accent-foreground bg-accent rounded-full">
+                                {chat.unread}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="p-4 flex items-center space-x-4 opacity-70">
                       <Avatar className="h-12 w-12"><AvatarFallback>{chat.title.slice(0,1).toUpperCase()}</AvatarFallback></Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-center mb-1">
-                          <p className="text-md font-semibold truncate">{chat.title}</p>
-                          <p className="text-xs text-muted-foreground">{chat.timestamp}</p>
+                        <div className="flex justify-between items-center mb-1 gap-3">
+                          <div className="min-w-0">
+                            <p className="text-md font-semibold truncate">{chat.title}</p>
+                            {chat.subtitle ? (
+                              <p className="text-xs text-muted-foreground truncate">{chat.subtitle}</p>
+                            ) : null}
+                          </div>
+                          <p className="text-xs text-muted-foreground shrink-0">{chat.timestamp}</p>
                         </div>
                         <div className="flex justify-between items-center">
                           <p className="text-sm text-muted-foreground truncate">{chat.lastMessage}</p>
-                          {chat.unread > 0 && (
-                            <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-accent-foreground bg-accent rounded-full">
-                              {chat.unread}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
-                  </Link>
+                  )}
                 </li>
               ))}
             </ul>

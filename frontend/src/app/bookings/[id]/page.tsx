@@ -7,6 +7,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ArrowLeftIcon, CalendarDaysIcon, ClockIcon, Loader2, UserIcon } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { formatDate, formatTime } from "@/lib/utils";
@@ -34,6 +35,14 @@ export default function BookingDetailPage() {
     if (!raw) return '';
     if (raw.length <= 12) return raw;
     return `${raw.slice(0, 6)}...${raw.slice(-4)}`;
+  };
+
+  const getActorLabel = (role: 'owner' | 'requester') => {
+    if (!data) return '';
+    const uid = role === 'owner' ? String(data.ownerId || '') : String(data.requesterId || '');
+    const profile = role === 'owner' ? ownerProfile : requesterProfile;
+    if (uid && currentUid && uid === currentUid) return t('listings.card.you');
+    return profile?.name || formatShortUid(uid);
   };
 
   useEffect(() => {
@@ -101,64 +110,123 @@ export default function BookingDetailPage() {
     return () => { mounted = false; };
   }, [data?.ownerId, data?.requesterId, data?.listingId]);
 
-  if (loading) return null;
-  if (error) return <div className="container">{error}</div>;
+  if (loading) {
+    return (
+      <div className="container max-w-3xl space-y-6">
+        <Button variant="outline" asChild className="w-fit">
+          <Link href="/bookings" className="inline-flex items-center gap-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+            {t('bookings.title')}
+          </Link>
+        </Button>
+        <Card>
+          <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            {t('bookings.loadingDate')}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="container max-w-3xl space-y-6">
+        <Button variant="outline" asChild className="w-fit">
+          <Link href="/bookings" className="inline-flex items-center gap-2">
+            <ArrowLeftIcon className="h-4 w-4" />
+            {t('bookings.title')}
+          </Link>
+        </Button>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            {error}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
   if (!data) return null;
 
   const currentUid = auth?.currentUser?.uid;
   const isOwner = currentUid && data.ownerId === currentUid;
   const isRequester = currentUid && data.requesterId === currentUid;
   const status = String(data.status || 'pending').toLowerCase();
+  const statusLabel =
+    status === 'accepted'
+      ? t('bookings.statusAccepted')
+      : status === 'declined'
+        ? t('bookings.statusDeclined')
+        : status === 'cancelled'
+          ? t('bookings.statusCancelled')
+          : status === 'completed'
+            ? t('bookings.statusCompleted')
+            : t('bookings.statusPending');
   const createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : (data.createdAt ? new Date(data.createdAt) : null);
   const proposed = data.proposedTime?.toDate ? data.proposedTime.toDate() : (data.proposedTime ? new Date(data.proposedTime) : null);
 
   return (
     <div className="container max-w-3xl space-y-6">
-      <Button variant="ghost" asChild>
-        <Link href="/bookings">← {t('bookings.title')}</Link>
+      <Button variant="outline" asChild className="w-fit">
+        <Link href="/bookings" className="inline-flex items-center gap-2">
+          <ArrowLeftIcon className="h-4 w-4" />
+          {t('bookings.title')}
+        </Link>
       </Button>
 
       <Card>
         <CardHeader>
-          <CardTitle>
-            {t('bookings.requestId')}: {data.id}
-            <span className="ml-3"><Badge variant={data.status === 'completed' ? 'secondary' : 'outline'}>{String(data.status || 'pending')}</Badge></span>
+          <CardTitle className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>{listingTitle || t('bookings.listingFallback')}</span>
+            <Badge variant={data.status === 'completed' ? 'secondary' : 'outline'}>{statusLabel}</Badge>
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {listingTitle ? (
-            <div>
-              <strong>{t('bookings.listingFallback')}:</strong> {listingTitle}
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 text-sm">
+            <div className="flex items-start gap-2">
+              <UserIcon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <div>
+                <strong>{t('bookings.owner')}:</strong>{' '}
+                {isOwner ? (
+                  t('listings.card.you')
+                ) : ownerProfile ? (
+                  <Link href={ownerProfile.path} className="text-primary hover:underline">
+                    {getActorLabel('owner')}
+                  </Link>
+                ) : getActorLabel('owner')}
+              </div>
             </div>
-          ) : null}
-          <div>
-            <strong>{t('bookings.owner')}:</strong>{' '}
-            {ownerProfile ? (
-              <Link href={ownerProfile.path} className="text-primary hover:underline">
-                {ownerProfile.name}
-              </Link>
-            ) : formatShortUid(String(data.ownerId))}
-          </div>
-          <div>
-            <strong>{t('bookings.requester')}:</strong>{' '}
-            {requesterProfile ? (
-              <Link href={requesterProfile.path} className="text-primary hover:underline">
-                {requesterProfile.name}
-              </Link>
-            ) : formatShortUid(String(data.requesterId))}
+            <div className="flex items-start gap-2">
+              <UserIcon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <div>
+                <strong>{t('bookings.requester')}:</strong>{' '}
+                {isRequester ? (
+                  t('listings.card.you')
+                ) : requesterProfile ? (
+                  <Link href={requesterProfile.path} className="text-primary hover:underline">
+                    {getActorLabel('requester')}
+                  </Link>
+                ) : getActorLabel('requester')}
+              </div>
+            </div>
           </div>
           {createdAt && (
-            <div>
-              <strong>{t('bookings.created')}:</strong> {formatDate(createdAt, { dateStyle: 'full' }, i18n.language)} {formatTime(createdAt, { hour: '2-digit', minute: '2-digit' }, i18n.language)}
+            <div className="flex items-start gap-2">
+              <CalendarDaysIcon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <div>
+                <strong>{t('bookings.created')}:</strong> {formatDate(createdAt, { dateStyle: 'full' }, i18n.language)} {formatTime(createdAt, { hour: '2-digit', minute: '2-digit' }, i18n.language)}
+              </div>
             </div>
           )}
           {proposed && (
-            <div>
-              <strong>{t('bookings.proposed')}:</strong> {formatDate(proposed, { dateStyle: 'full' }, i18n.language)} {formatTime(proposed, { hour: '2-digit', minute: '2-digit' }, i18n.language)}
+            <div className="flex items-start gap-2">
+              <ClockIcon className="mt-0.5 h-4 w-4 text-muted-foreground" />
+              <div>
+                <strong>{t('bookings.proposed')}:</strong> {formatDate(proposed, { dateStyle: 'full' }, i18n.language)} {formatTime(proposed, { hour: '2-digit', minute: '2-digit' }, i18n.language)}
+              </div>
             </div>
           )}
           {data.message && (
-            <div>
+            <div className="rounded-md bg-muted/40 p-3">
               <strong>{t('bookings.message')}:</strong> {data.message}
             </div>
           )}

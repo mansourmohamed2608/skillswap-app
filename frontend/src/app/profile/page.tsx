@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { UserProfileSummaryCard } from '@/features/profile/components/UserProfileSummaryCard';
 import { ServiceCard } from '@/features/listings/components/ServiceCard';
 import { Button } from '@/components/ui/button';
-import { PlusCircleIcon, Loader2, BellIcon, InfoIcon } from 'lucide-react';
+import { PlusCircleIcon, Loader2, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from '@/components/ui/separator';
@@ -23,11 +23,13 @@ import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/utils';
 import { fetchReviewsForUser } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
-import { cancelKyc } from '@/services/kyc';
+import { cancelKyc, getKycApiBase } from '@/services/kyc';
 
 export default function CurrentUserProfilePage() {
   const { user: authUser, loading: authLoading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [userListings, setUserListings] = useState<ServiceListing[]>([]);
@@ -51,7 +53,6 @@ export default function CurrentUserProfilePage() {
     bookingCount,
     messageLimit,
     messageCount,
-    loading: mLoading,
   } = useMembership();
   const businessProfile = userProfile?.businessProfile;
 
@@ -63,6 +64,21 @@ export default function CurrentUserProfilePage() {
     if (s.includes('REVIEW')) return 'IN_REVIEW';
     return 'PENDING';
   };
+
+  useEffect(() => {
+    const nextTab = String(searchParams.get('tab') || '').trim();
+    if (['active-listings', 'past-exchanges', 'reviews', 'notifications'].includes(nextTab)) {
+      setActiveTab(nextTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const current = String(searchParams.get('tab') || '').trim();
+    if (activeTab === current || !pathname) return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('tab', activeTab);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
+  }, [activeTab, pathname, router, searchParams]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -179,9 +195,7 @@ export default function CurrentUserProfilePage() {
     setRetryError(null);
     try {
       const token = await authUser.getIdToken();
-      const base =
-        process.env.NEXT_PUBLIC_FUNCTIONS_ORIGIN ||
-        "http://127.0.0.1:5001/backdup-333cf/us-central1/api";
+      const base = getKycApiBase();
       const resp = await fetch(`${base}/didit/session`, {
         method: "POST",
         headers: {
@@ -244,8 +258,8 @@ export default function CurrentUserProfilePage() {
       <UserProfileSummaryCard user={userProfile} />
 
       {/* Membership usage banner */}
-      <div className="flex items-center justify-between gap-4 px-4 py-3 rounded-md border bg-muted/30">
-        <div className="flex items-center gap-2 text-sm">
+      <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-start gap-2 text-sm">
           <InfoIcon className="h-4 w-4 text-primary" />
           <span>
             {t('profile.membership.planLabel')} <strong>{membership?.plan ?? t('profile.free')}</strong>
@@ -258,7 +272,7 @@ export default function CurrentUserProfilePage() {
             )}
           </span>
         </div>
-        <div className="text-sm flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-muted-foreground">
+        <div className="grid grid-cols-1 gap-1 text-sm text-muted-foreground sm:grid-cols-3 sm:gap-4">
           <span>
             {t('profile.membership.listingsUsed')} <strong>{usedListings}</strong> / <strong>{listingLimitLabel}</strong>
           </span>
@@ -321,8 +335,8 @@ export default function CurrentUserProfilePage() {
       )}
 
       {/* KYC status and retry */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 py-3 rounded-md border bg-muted/30">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 px-4 py-4 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <span className="text-sm font-medium text-primary">{t('profile.kyc.title')}</span>
           <span className={`text-xs px-2 py-1 rounded ${
             kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' :
@@ -342,26 +356,29 @@ export default function CurrentUserProfilePage() {
           </span>
         </div>
         {(canRetry || canCancel) && (
-          <div className="flex flex-col md:flex-row md:items-center gap-2">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
             {canRetry && (
-              <Button variant="secondary" onClick={handleRetry} disabled={retryBusy}>
+              <Button className="w-full md:w-auto" variant="secondary" onClick={handleRetry} disabled={retryBusy}>
                 {retryBusy ? t('profile.kyc.retryLoading') : t('profile.kyc.retry')}
               </Button>
             )}
             {canCancel && (
-              <Button variant="outline" onClick={handleCancel} disabled={cancelBusy}>
+              <Button className="w-full md:w-auto" variant="outline" onClick={handleCancel} disabled={cancelBusy}>
                 {cancelBusy ? t('profile.kyc.cancelLoading') : t('profile.kyc.cancel')}
               </Button>
             )}
             <Link href="/kyc/done" className="text-sm text-primary hover:underline">{t('profile.kyc.viewStatus')}</Link>
-            {retryError ? <span className="text-xs text-rose-600">{retryError}</span> : null}
-            {cancelError ? <span className="text-xs text-rose-600">{cancelError}</span> : null}
           </div>
         )}
       </div>
+      {(retryError || cancelError) && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {retryError || cancelError}
+        </div>
+      )}
 
-      <div className="flex justify-end">
-        <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
+      <div className="flex justify-stretch sm:justify-end">
+        <Button asChild className="w-full bg-accent hover:bg-accent/90 text-accent-foreground sm:w-auto">
           <Link href="/listings/new">
             <PlusCircleIcon className="mr-2 h-4 w-4" /> {t('profile.createNewListing')}
           </Link>
@@ -369,7 +386,7 @@ export default function CurrentUserProfilePage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 h-auto">
           <TabsTrigger value="active-listings">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
           <TabsTrigger value="past-exchanges">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
           <TabsTrigger value="reviews">{t('profile.tabs.reviews')} ({userProfile.reviewsCount})</TabsTrigger>
@@ -413,22 +430,22 @@ export default function CurrentUserProfilePage() {
           <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.reviewsAboutYou')}</h2>
           <div className="space-y-4">
             {reviewsLoading ? (
-              <p className="text-muted-foreground">{t('reviews.loading')}</p>
+              <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.loading')}</div>
             ) : reviews.length === 0 ? (
-              <p className="text-muted-foreground">{t('reviews.empty')}</p>
+              <div className="rounded-lg border border-dashed px-4 py-6 text-sm text-muted-foreground">{t('reviews.empty')}</div>
             ) : (
               reviews.map((review) => (
-                <div key={review.id} className="p-4 border rounded-lg bg-card">
-                  <div className="flex items-center mb-2">
+                <div key={review.id} className="rounded-lg border bg-card p-4">
+                  <div className="mb-2 flex items-center gap-3">
                     <Avatar className="h-10 w-10 mr-3">
                       <AvatarFallback>{(review.reviewerName || t('reviews.reviewerFallback')).charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold">{review.reviewerName || t('reviews.reviewerFallback')}</p>
                       <RatingDisplay rating={review.rating} showReviewCount={false}/>
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground">{review.comment}</p>
+                  <p className="text-sm text-muted-foreground break-words">{review.comment}</p>
                 </div>
               ))
             )}
@@ -436,7 +453,7 @@ export default function CurrentUserProfilePage() {
         </TabsContent>
          <TabsContent value="notifications">
           <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.yourNotifications')}</h2>
-            <NotificationList notifications={notifications} />
+          <NotificationList notifications={notifications} />
         </TabsContent>
       </Tabs>
     </div>
