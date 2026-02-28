@@ -156,8 +156,9 @@ async function fetchListingsFromApi(options?: { count?: number }): Promise<Servi
         const resp = await fetch(`${base}/search/listings?pageSize=${pageSize}`, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`api ${resp.status}`);
         const data = await resp.json();
-        const hits = Array.isArray(data?.hits) ? data.hits : [];
-        return hits.map(mapApiHitToListing).filter((listing) => !isLowQualityListing(listing));
+        const hits: any[] = Array.isArray(data?.hits) ? data.hits : [];
+        const listings: ServiceListing[] = hits.map(mapApiHitToListing);
+        return listings.filter((listing: ServiceListing) => !isLowQualityListing(listing));
     } catch (e) {
         console.warn('fetchListingsFromApi failed, falling back to Firestore', e);
         return [];
@@ -219,7 +220,8 @@ export async function getListings(): Promise<ServiceListing[]> {
         const listingsCol = collection(db!, 'listings');
         const listingsSnapshot = await getDocs(listingsCol);
         if (listingsSnapshot.empty) return [];
-        return listingsSnapshot.docs.map(docToServiceListing).filter((listing) => !isLowQualityListing(listing));
+        const listings: ServiceListing[] = listingsSnapshot.docs.map(docToServiceListing);
+        return listings.filter((listing: ServiceListing) => !isLowQualityListing(listing));
     } catch (error) {
         console.error("Error fetching listings: ", error);
         return [];
@@ -255,7 +257,9 @@ export async function getListingsWithUsers(options?: { count?: number }): Promis
 
         if (listingsSnapshot.empty) return [];
         
-        const listings = listingsSnapshot.docs.map(docToServiceListing).filter((listing) => !isLowQualityListing(listing));
+        const listings: ServiceListing[] = listingsSnapshot.docs
+            .map(docToServiceListing)
+            .filter((listing: ServiceListing) => !isLowQualityListing(listing));
         if (!canLoadUsers) {
             return listings.map((listing) => ({ listing, user: null }));
         }
@@ -474,10 +478,10 @@ export async function getListingsByUserId(userId: string): Promise<ServiceListin
         const allDocs = [...snapOffered.docs, ...snapUser.docs];
         // De-duplicate by doc id
         const seen = new Set<string>();
-        const listings = allDocs
+        const listings: ServiceListing[] = allDocs
             .filter(d => (seen.has(d.id) ? false : (seen.add(d.id), true)))
             .map(docToServiceListing)
-            .filter((listing) => !isLowQualityListing(listing));
+            .filter((listing: ServiceListing) => !isLowQualityListing(listing));
         // Note: We are now allowing an empty array to be returned from Firestore
         // If a user has no real listings, it should show that, not sample data.
         return listings;
