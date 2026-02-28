@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { MessageCircleIcon, PencilIcon } from "lucide-react";
+import { MessageCircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
 import { RequestExchangeButton } from "@/features/listings/components/RequestExchangeButton";
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { getUserById } from "@/services/data";
 import { getProfileIdentifier } from "@/lib/profile";
+import { deleteListing } from "@/services/api";
+import { useToast } from "@/hooks/use-toast";
 
 type Props = {
   listingId: string;
@@ -20,6 +22,7 @@ type Props = {
 export function ListingActions({ listingId, ownerId, ownerName }: Props) {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const isOwner = user?.uid && ownerId && user.uid === ownerId;
   const safeOwnerName = ownerName || t('listings.actions.ownerFallback');
    const { active, canCreateBooking, loading } = useMembership();
@@ -34,8 +37,25 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
             {t('listings.actions.edit')}
           </Link>
         </Button>
-        <Button variant="outline" className="flex-1" disabled>
-          {t('listings.actions.viewingOwn')}
+        <Button
+          variant="destructive"
+          className="flex-1"
+          onClick={async () => {
+            const ok = typeof window !== 'undefined'
+              ? window.confirm(t('listings.actions.deleteConfirm', { defaultValue: 'Delete this listing?' }))
+              : true;
+            if (!ok) return;
+            try {
+              await deleteListing(listingId);
+              toast({ title: t('listings.actions.deleteSuccess', { defaultValue: 'Listing deleted.' }) });
+              router.push('/profile?tab=active-listings');
+            } catch (err: any) {
+              toast({ title: t('listings.actions.deleteFailed', { defaultValue: 'Could not delete listing.' }), variant: 'destructive' });
+            }
+          }}
+        >
+          <Trash2Icon className="mr-2 h-5 w-5" />
+          {t('listings.actions.delete', { defaultValue: 'Delete listing' })}
         </Button>
       </div>
     );

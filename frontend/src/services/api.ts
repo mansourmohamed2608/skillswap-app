@@ -630,3 +630,19 @@ export async function createReview(args: { listingId: string; rating: number; co
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { id: string; flagged: boolean };
 }
+
+export async function updateReview(reviewId: string, args: { rating: number; comment: string }) {
+  const res = await authedFetch(`/api/reviews/${encodeURIComponent(reviewId)}/update`, {
+    body: JSON.stringify(args),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { success: boolean };
+}
+
+export async function deleteReview(reviewId: string) {
+  const res = await authedFetch(`/api/reviews/${encodeURIComponent(reviewId)}/delete`, {
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { success: boolean };
+}

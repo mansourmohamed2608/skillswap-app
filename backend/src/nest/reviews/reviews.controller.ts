@@ -15,6 +15,22 @@ export class ReviewsController {
     return this.reviewsService.createReview(reviewerId, body);
   }
 
+  @UseGuards(FirebaseAuthGuard)
+  @Post(':reviewId/update')
+  async update(@Param('reviewId') reviewId: string, @Body() body: { rating?: number; comment?: string }, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.updateReview(reviewerId, reviewId, body);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post(':reviewId/delete')
+  async remove(@Param('reviewId') reviewId: string, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.deleteReview(reviewerId, reviewId);
+  }
+
   @Get('listing/:listingId')
   async listForListing(@Param('listingId') listingId: string, @Query('limit') limit?: string) {
     const lim = limit ? Number(limit) : 50;

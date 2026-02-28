@@ -31,6 +31,37 @@ export class ReviewsService {
     }
   }
 
+  private applyCounts(tx: FirebaseFirestore.Transaction, refs: { listingRef: FirebaseFirestore.DocumentReference; ownerRef: FirebaseFirestore.DocumentReference; publicOwnerRef: FirebaseFirestore.DocumentReference }, currentOwnerData: any, currentListingData: any, deltaRating: number, deltaCount: number, nowVal: any) {
+    const listingSum = this.safeNumber(currentListingData.ratingSum, 0);
+    const listingCount = this.safeNumber(currentListingData.reviewsCount, 0);
+    const nextListingSum = Math.max(0, listingSum + deltaRating);
+    const nextListingCount = Math.max(0, listingCount + deltaCount);
+    const nextListingRating = nextListingCount > 0 ? Number((nextListingSum / nextListingCount).toFixed(2)) : 0;
+    tx.update(refs.listingRef, {
+      ratingSum: nextListingSum,
+      reviewsCount: nextListingCount,
+      rating: nextListingRating,
+      updatedAt: nowVal,
+    });
+
+    const ownerSum = this.safeNumber(currentOwnerData.ratingSum, 0);
+    const ownerCount = this.safeNumber(currentOwnerData.reviewsCount, 0);
+    const nextOwnerSum = Math.max(0, ownerSum + deltaRating);
+    const nextOwnerCount = Math.max(0, ownerCount + deltaCount);
+    const nextOwnerRating = nextOwnerCount > 0 ? Number((nextOwnerSum / nextOwnerCount).toFixed(2)) : 0;
+    tx.set(refs.ownerRef, {
+      ratingSum: nextOwnerSum,
+      reviewsCount: nextOwnerCount,
+      rating: nextOwnerRating,
+    }, { merge: true });
+    tx.set(refs.publicOwnerRef, {
+      ratingSum: nextOwnerSum,
+      reviewsCount: nextOwnerCount,
+      rating: nextOwnerRating,
+      updatedAt: nowVal,
+    }, { merge: true });
+  }
+
   async createReview(reviewerId: string | null, payload: ReviewInput) {
     try {
       const listingId = String(payload.listingId || '').trim();
@@ -160,6 +191,130 @@ export class ReviewsService {
         message: String(error?.message || error),
       });
       throw new ServiceUnavailableException('Unable to create review right now');
+    }
+  }
+
+  async updateReview(reviewerId: string | null, reviewId: string, payload: { rating?: number; comment?: string }) {
+    try {
+      if (!reviewerId) throw new ForbiddenException('Please sign in to continue');
+      const comment = String(payload.comment || '').trim();
+      if (!comment) throw new BadRequestException('Missing comment');
+      const ratingRaw = Number(payload.rating);
+      if (!Number.isFinite(ratingRaw)) throw new BadRequestException('Invalid rating');
+      const rating = Math.min(5, Math.max(1, ratingRaw));
+
+      const found = await findBannedKeyword(comment);
+      if (found) {
+        throw new BadRequestException({ code: 'content/banned', field: 'comment', keyword: found });
+      }
+
+      const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
+      const nowVal =
+        (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+          ? (admin.firestore.FieldValue as any).serverTimestamp()
+          : new Date();
+
+      await admin.firestore().runTransaction(async (tx) => {
+        const reviewSnap = await tx.get(reviewRef);
+        if (!reviewSnap.exists) throw new NotFoundException('Review not found');
+        const reviewData: any = reviewSnap.data() || {};
+        if (String(reviewData.reviewerId || '') !== reviewerId) {
+          throw new ForbiddenException('Not authorized to update this review');
+        }
+        if (String(reviewData.status || '').toLowerCase() !== 'approved') {
+          throw new BadRequestException('Review cannot be edited right now');
+        }
+
+        const listingId = String(reviewData.listingId || '');
+        const ownerId = String(reviewData.ownerId || '');
+        if (!listingId || !ownerId) throw new BadRequestException('Review is missing owner data');
+
+        const listingRef = admin.firestore().collection('listings').doc(listingId);
+        const ownerRef = admin.firestore().collection('users').doc(ownerId);
+        const publicOwnerRef = admin.firestore().collection('publicProfiles').doc(ownerId);
+        const [listingSnap, ownerSnap, publicOwnerSnap] = await Promise.all([
+          tx.get(listingRef),
+          tx.get(ownerRef),
+          tx.get(publicOwnerRef),
+        ]);
+        if (!listingSnap.exists) throw new NotFoundException('Listing not found');
+
+        const oldRating = this.safeNumber(reviewData.rating, 0);
+        const deltaRating = rating - oldRating;
+        const currentOwnerData: any = ownerSnap.exists ? (ownerSnap.data() || {}) : (publicOwnerSnap.exists ? (publicOwnerSnap.data() || {}) : {});
+
+        tx.update(reviewRef, {
+          rating,
+          comment,
+          updatedAt: nowVal,
+        });
+
+        if (deltaRating !== 0) {
+          this.applyCounts(tx, { listingRef, ownerRef, publicOwnerRef }, currentOwnerData, listingSnap.data() || {}, deltaRating, 0, nowVal);
+        }
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
+      console.error('[Reviews] updateReview failed', {
+        reviewerId,
+        reviewId,
+        message: String(error?.message || error),
+      });
+      throw new ServiceUnavailableException('Unable to update review right now');
+    }
+  }
+
+  async deleteReview(reviewerId: string | null, reviewId: string) {
+    try {
+      if (!reviewerId) throw new ForbiddenException('Please sign in to continue');
+      const reviewRef = admin.firestore().collection('reviews').doc(reviewId);
+      const nowVal =
+        (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
+          ? (admin.firestore.FieldValue as any).serverTimestamp()
+          : new Date();
+
+      await admin.firestore().runTransaction(async (tx) => {
+        const reviewSnap = await tx.get(reviewRef);
+        if (!reviewSnap.exists) throw new NotFoundException('Review not found');
+        const reviewData: any = reviewSnap.data() || {};
+        if (String(reviewData.reviewerId || '') !== reviewerId) {
+          throw new ForbiddenException('Not authorized to delete this review');
+        }
+        if (String(reviewData.status || '').toLowerCase() !== 'approved') {
+          throw new BadRequestException('Review cannot be deleted right now');
+        }
+
+        const listingId = String(reviewData.listingId || '');
+        const ownerId = String(reviewData.ownerId || '');
+        const rating = this.safeNumber(reviewData.rating, 0);
+        if (!listingId || !ownerId) throw new BadRequestException('Review is missing owner data');
+
+        const listingRef = admin.firestore().collection('listings').doc(listingId);
+        const ownerRef = admin.firestore().collection('users').doc(ownerId);
+        const publicOwnerRef = admin.firestore().collection('publicProfiles').doc(ownerId);
+        const [listingSnap, ownerSnap, publicOwnerSnap] = await Promise.all([
+          tx.get(listingRef),
+          tx.get(ownerRef),
+          tx.get(publicOwnerRef),
+        ]);
+        if (!listingSnap.exists) throw new NotFoundException('Listing not found');
+        const currentOwnerData: any = ownerSnap.exists ? (ownerSnap.data() || {}) : (publicOwnerSnap.exists ? (publicOwnerSnap.data() || {}) : {});
+
+        tx.delete(reviewRef);
+        this.applyCounts(tx, { listingRef, ownerRef, publicOwnerRef }, currentOwnerData, listingSnap.data() || {}, -rating, -1, nowVal);
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
+      console.error('[Reviews] deleteReview failed', {
+        reviewerId,
+        reviewId,
+        message: String(error?.message || error),
+      });
+      throw new ServiceUnavailableException('Unable to delete review right now');
     }
   }
 

@@ -21,7 +21,7 @@ import { ListingActions } from '@/features/listings/components/ListingActions';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { createReview, fetchReviewsForListing, submitReport } from '@/services/api';
+import { createReview, deleteReview, fetchReviewsForListing, submitReport, updateReview } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { getUserById } from '@/services/data';
 import { getPublicLocationLabel } from '@/lib/location';
@@ -43,6 +43,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState('');
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -78,13 +79,37 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
   };
   const statusInfo = statusMap[listing.status];
 
+  async function refreshReviewsAndOwner() {
+    const [nextReviews, nextOwner] = await Promise.all([
+      fetchReviewsForListing(listing.id, 20),
+      getUserById(listing.offeredByUserId),
+    ]);
+    setReviews(nextReviews);
+    if (nextOwner) {
+      setResolvedOwner(nextOwner);
+    }
+  }
+
+  function startEditingReview(review: { id: string; rating: number; comment: string }) {
+    setEditingReviewId(review.id);
+    setRating(review.rating);
+    setHoverRating(0);
+    setComment(review.comment);
+  }
+
   useEffect(() => {
     let mounted = true;
     const loadReviews = async () => {
       setReviewsLoading(true);
       try {
-        const data = await fetchReviewsForListing(listing.id, 20);
-        if (mounted) setReviews(data);
+        const [nextReviews, nextOwner] = await Promise.all([
+          fetchReviewsForListing(listing.id, 20),
+          getUserById(listing.offeredByUserId),
+        ]);
+        if (mounted) {
+          setReviews(nextReviews);
+          if (nextOwner) setResolvedOwner(nextOwner);
+        }
       } catch (e: any) {
         if (mounted) {
           toast({ title: t('reviews.loadFailed'), description: getErrorMessage(e, t('reviews.loadFailed')), variant: 'destructive' });
@@ -95,7 +120,7 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     };
     loadReviews();
     return () => { mounted = false; };
-  }, [listing.id, toast, t]);
+  }, [listing.id, listing.offeredByUserId, toast, t]);
 
   useEffect(() => {
     setResolvedOwner(offeredByUser);
@@ -306,6 +331,39 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                     <RatingDisplay rating={review.rating} showReviewCount={false} />
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground break-words">{review.comment}</p>
+                  {user?.uid && (review as any).reviewerId === user.uid ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Button type="button" size="sm" variant="outline" onClick={() => startEditingReview(review as any)}>
+                        {t('reviews.form.edit', { defaultValue: 'Edit' })}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={async () => {
+                          const ok = typeof window !== 'undefined'
+                            ? window.confirm(t('reviews.form.deleteConfirm', { defaultValue: 'Delete this review?' }))
+                            : true;
+                          if (!ok) return;
+                          try {
+                            await deleteReview(review.id);
+                            toast({ title: t('reviews.form.deleteSuccess', { defaultValue: 'Review deleted.' }) });
+                            if (editingReviewId === review.id) {
+                              setEditingReviewId(null);
+                              setComment('');
+                              setRating(5);
+                              setHoverRating(0);
+                            }
+                            await refreshReviewsAndOwner();
+                          } catch (err: any) {
+                            toast({ title: t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' }), description: getErrorMessage(err, t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' })), variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        {t('reviews.form.delete', { defaultValue: 'Delete' })}
+                      </Button>
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -348,17 +406,27 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                 }
                 setSubmitting(true);
                 try {
-                  const result = await createReview({
-                    listingId: listing.id,
-                    rating,
-                    comment: comment.trim(),
-                  });
+                  const trimmedComment = comment.trim();
+                  if (editingReviewId) {
+                    await updateReview(editingReviewId, {
+                      rating,
+                      comment: trimmedComment,
+                    });
+                    toast({ title: t('reviews.form.updateSuccess', { defaultValue: 'Review updated.' }) });
+                  } else {
+                    const result = await createReview({
+                      listingId: listing.id,
+                      rating,
+                      comment: trimmedComment,
+                    });
+                    const messageKey = result.flagged ? 'reviews.form.pending' : 'reviews.form.success';
+                    toast({ title: t(messageKey) });
+                  }
                   setComment('');
                   setRating(5);
-                  const messageKey = result.flagged ? 'reviews.form.pending' : 'reviews.form.success';
-                  toast({ title: t(messageKey) });
-                  const data = await fetchReviewsForListing(listing.id, 20);
-                  setReviews(data);
+                  setHoverRating(0);
+                  setEditingReviewId(null);
+                  await refreshReviewsAndOwner();
                 } catch (err: any) {
                   toast({ title: t('reviews.form.failed'), description: getErrorMessage(err, t('reviews.form.failed')), variant: 'destructive' });
                 } finally {
@@ -369,7 +437,9 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
               <div className="space-y-1">
                 <h3 className="text-lg font-semibold">{t('reviews.form.title')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('reviews.form.helper', { defaultValue: 'Share what went well and keep it specific.' })}
+                  {editingReviewId
+                    ? t('reviews.form.editHelper', { defaultValue: 'Update your rating or comment.' })
+                    : t('reviews.form.helper', { defaultValue: 'Share what went well and keep it specific.' })}
                 </p>
               </div>
               <div className="space-y-1">
@@ -413,9 +483,30 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
                   placeholder={t('reviews.form.commentPlaceholder')}
                 />
               </div>
-              <Button type="submit" disabled={submitting} className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground">
-                {submitting ? t('reviews.form.submitting') : t('reviews.form.submit')}
-              </Button>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button type="submit" disabled={submitting} className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground">
+                  {submitting
+                    ? t('reviews.form.submitting')
+                    : editingReviewId
+                      ? t('reviews.form.save', { defaultValue: 'Save changes' })
+                      : t('reviews.form.submit')}
+                </Button>
+                {editingReviewId ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={() => {
+                      setEditingReviewId(null);
+                      setComment('');
+                      setRating(5);
+                      setHoverRating(0);
+                    }}
+                  >
+                    {t('reviews.form.cancel', { defaultValue: 'Cancel' })}
+                  </Button>
+                ) : null}
+              </div>
             </form>
           )}
         </CardContent>
