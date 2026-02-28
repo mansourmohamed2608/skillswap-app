@@ -143,8 +143,9 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
     const distanceKm = Number(hit.distanceKm);
     return {
       id,
+      publicId: hit.publicId ? String(hit.publicId) : undefined,
       offeredByUserId: hit.userId || hit.offeredByUserId || 'unknown',
-      offeredService: { title, description, category },
+      offeredService: { title, description, category, imageUrl: hit.imageUrl || hit.offeredService?.imageUrl || undefined },
       requestedService: { title: requestedTitle, description: requestedDescription, category: requestedCategory },
       requestedKind,
       requestedProduct,

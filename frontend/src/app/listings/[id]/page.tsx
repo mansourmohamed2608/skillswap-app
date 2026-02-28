@@ -6,10 +6,15 @@ import { getListingPath, matchesListingPublicId } from '@/lib/public-ids';
 
 export default async function ServiceDetailPage({ params }: { params: Promise<{ id:string }> }) {
   const { id } = await params;
-  let listing = await getListingById(id);
+  let decodedId = id;
+  try {
+    decodedId = decodeURIComponent(id);
+  } catch {}
+
+  let listing = await getListingById(decodedId);
   if (!listing) {
     const listings = await getListings();
-    listing = listings.find((item) => matchesListingPublicId(id, item)) || null;
+    listing = listings.find((item) => matchesListingPublicId(decodedId, item) || matchesListingPublicId(id, item)) || null;
   }
 
   if (!listing) {
@@ -17,7 +22,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
   }
 
   const canonicalPath = getListingPath(listing);
-  if (id !== listing.publicId && canonicalPath !== `/listings/${encodeURIComponent(id)}`) {
+  if (!matchesListingPublicId(decodedId, listing)) {
     redirect(canonicalPath);
   }
 

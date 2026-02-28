@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRightIcon, RepeatIcon, CalendarIcon, MapPinIcon } from 'lucide-react';
+import { ArrowRightIcon, RepeatIcon, CalendarIcon, MapPinIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import type { ServiceListing, User } from '@/types';
 import { CategoryPill } from './CategoryPill';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,19 @@ import { getPublicLocationLabel } from '@/lib/location';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
 import { getProfilePath } from '@/lib/profile';
 import { getListingPath } from '@/lib/public-ids';
+import { deleteListing } from '@/services/api';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 interface ServiceCardProps {
@@ -29,8 +42,13 @@ interface ServiceCardProps {
 export function ServiceCard({ listing, user }: ServiceCardProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
   const [resolvedUser, setResolvedUser] = useState<User | null>(user);
   const [postedAt, setPostedAt] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleted, setDeleted] = useState(false);
 
   useEffect(() => {
     // This will only run on the client, after hydration, preventing a mismatch.
@@ -107,6 +125,23 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
   const isOwner = Boolean(authUser?.uid && listing.offeredByUserId === authUser.uid);
   const ownerName = resolvedUser?.name || t('listings.actions.ownerFallback');
   const displayName = isOwner ? t('listings.card.you') : ownerName;
+
+  async function handleDeleteListing() {
+    try {
+      setDeleting(true);
+      await deleteListing(listing.id);
+      setDeleted(true);
+      setDeleteOpen(false);
+      toast({ title: t('listings.actions.deleteSuccess', { defaultValue: 'Listing deleted.' }) });
+      router.refresh();
+    } catch {
+      toast({ title: t('listings.actions.deleteFailed', { defaultValue: 'Could not delete listing.' }), variant: 'destructive' });
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  if (deleted) return null;
 
   const ownerContent = (
     <>
@@ -187,9 +222,31 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                 )}
               </div>
             )}
-            <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0">
-              {getStatusText(listing.status)}
-            </Badge>
+            <div className="flex items-center gap-2 shrink-0">
+              {isOwner ? (
+                <>
+                  <Button asChild type="button" size="icon" variant="ghost" className="h-8 w-8">
+                    <Link href={`/listings/${listing.id}/edit`} aria-label={t('listings.actions.edit', { defaultValue: 'Edit listing' })}>
+                      <PencilIcon className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    aria-label={t('listings.actions.delete', { defaultValue: 'Delete listing' })}
+                    onClick={() => setDeleteOpen(true)}
+                    disabled={deleting}
+                  >
+                    <Trash2Icon className="h-4 w-4" />
+                  </Button>
+                </>
+              ) : null}
+              <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0">
+                {getStatusText(listing.status)}
+              </Badge>
+            </div>
           </div>
           <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground mb-3">
             <div className="flex items-center gap-1 min-w-0">
@@ -214,6 +271,25 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
           </Button>
         </div>
       </CardFooter>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('listings.actions.delete', { defaultValue: 'Delete listing' })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('listings.actions.deleteConfirm', { defaultValue: 'Delete this listing?' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('reports.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteListing} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting
+                ? t('listings.actions.deleting', { defaultValue: 'Deleting...' })
+                : t('listings.actions.delete', { defaultValue: 'Delete listing' })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

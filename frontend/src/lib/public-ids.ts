@@ -12,6 +12,16 @@ function slugify(value: string): string {
     .slice(0, 80);
 }
 
+function normalizeIdentifier(value: string): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  try {
+    return decodeURIComponent(raw).trim().normalize('NFKC');
+  } catch {
+    return raw.normalize('NFKC');
+  }
+}
+
 function shortHash(input: string): string {
   let hash = 5381;
   const text = String(input || '');
@@ -33,9 +43,9 @@ export function getListingPath(listing: Pick<ServiceListing, 'id' | 'offeredServ
 }
 
 export function matchesListingPublicId(identifier: string, listing: Pick<ServiceListing, 'id' | 'offeredService'> & Partial<Pick<ServiceListing, 'publicId'>>): boolean {
-  const raw = String(identifier || '').trim();
+  const raw = normalizeIdentifier(identifier);
   if (!raw) return false;
-  return raw === String(listing.id || '') || raw === getListingPublicId(listing);
+  return raw === normalizeIdentifier(String(listing.id || '')) || raw === normalizeIdentifier(getListingPublicId(listing));
 }
 
 export function getWishPublicId(wish: { id: string; title?: string; publicId?: string | null }): string {
@@ -50,9 +60,9 @@ export function getWishPath(wish: { id: string; title?: string; publicId?: strin
 }
 
 export function matchesWishPublicId(identifier: string, wish: { id: string; title?: string; publicId?: string | null }): boolean {
-  const raw = String(identifier || '').trim();
+  const raw = normalizeIdentifier(identifier);
   if (!raw) return false;
-  return raw === String(wish.id || '') || raw === getWishPublicId(wish);
+  return raw === normalizeIdentifier(String(wish.id || '')) || raw === normalizeIdentifier(getWishPublicId(wish));
 }
 
 export function getBookingPublicId(booking: { id: string; listingId?: string; ownerId?: string; requesterId?: string; publicId?: string | null }): string {
@@ -70,7 +80,7 @@ export function matchesBookingPublicId(
   identifier: string,
   booking: { id: string; listingId?: string; ownerId?: string; requesterId?: string; publicId?: string | null }
 ): boolean {
-  const raw = String(identifier || '').trim();
+  const raw = normalizeIdentifier(identifier);
   if (!raw) return false;
-  return raw === String(booking.id || '') || raw === getBookingPublicId(booking);
+  return raw === normalizeIdentifier(String(booking.id || '')) || raw === normalizeIdentifier(getBookingPublicId(booking));
 }

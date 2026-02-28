@@ -602,7 +602,7 @@ export async function fetchReviewsForListing(listingId: string, limit?: number) 
     method: 'GET',
   });
   if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as Array<{ id: string; reviewerName?: string; rating: number; comment: string; createdAt?: any }>;
+  return (await res.json()) as Array<{ id: string; reviewerId?: string; reviewerName?: string; rating: number; comment: string; createdAt?: any }>;
 }
 
 export async function fetchReviewsForUser(userId: string, limit?: number) {
@@ -613,7 +613,7 @@ export async function fetchReviewsForUser(userId: string, limit?: number) {
     method: 'GET',
   });
   if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as Array<{ id: string; reviewerName?: string; rating: number; comment: string; createdAt?: any }>;
+  return (await res.json()) as Array<{ id: string; reviewerId?: string; reviewerName?: string; rating: number; comment: string; createdAt?: any }>;
 }
 
 export async function createReview(args: { listingId: string; rating: number; comment: string; reviewerName?: string }) {

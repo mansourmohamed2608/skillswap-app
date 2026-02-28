@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { CalendarDaysIcon, MapPinIcon, RepeatIcon, CheckCircle, XCircle, InfoIcon, StarIcon } from 'lucide-react';
+import { CalendarDaysIcon, MapPinIcon, RepeatIcon, CheckCircle, XCircle, InfoIcon, PencilIcon, StarIcon, Trash2Icon } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { CategoryPill } from '@/features/listings/components/CategoryPill';
 import { RatingDisplay } from '@/components/RatingDisplay';
@@ -15,6 +15,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { ServiceListing, User } from '@/types';
 import { ListingActions } from '@/features/listings/components/ListingActions';
@@ -33,17 +43,26 @@ type Props = {
   offeredByUser: User | null;
 };
 
+type ListingReview = {
+  id: string;
+  reviewerId?: string;
+  reviewerName?: string;
+  rating: number;
+  comment: string;
+};
+
 export function ListingDetailContent({ listing, offeredByUser }: Props) {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { toast } = useToast();
   const [resolvedOwner, setResolvedOwner] = useState<User | null>(offeredByUser);
-  const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
+  const [reviews, setReviews] = useState<ListingReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [rating, setRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [reviewPendingDelete, setReviewPendingDelete] = useState<ListingReview | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
@@ -90,11 +109,33 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
     }
   }
 
-  function startEditingReview(review: { id: string; rating: number; comment: string }) {
+  function startEditingReview(review: ListingReview) {
     setEditingReviewId(review.id);
     setRating(review.rating);
     setHoverRating(0);
     setComment(review.comment);
+  }
+
+  async function handleDeleteReview() {
+    if (!reviewPendingDelete) return;
+    try {
+      await deleteReview(reviewPendingDelete.id);
+      toast({ title: t('reviews.form.deleteSuccess', { defaultValue: 'Review deleted.' }) });
+      if (editingReviewId === reviewPendingDelete.id) {
+        setEditingReviewId(null);
+        setComment('');
+        setRating(5);
+        setHoverRating(0);
+      }
+      setReviewPendingDelete(null);
+      await refreshReviewsAndOwner();
+    } catch (err: any) {
+      toast({
+        title: t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' }),
+        description: getErrorMessage(err, t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' })),
+        variant: 'destructive'
+      });
+    }
   }
 
   useEffect(() => {
@@ -326,44 +367,39 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
             <div className="space-y-4">
               {reviews.map((review) => (
                 <div key={review.id} className="rounded-xl border border-border bg-card p-4">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="font-semibold break-words">{review.reviewerName || t('reviews.reviewerFallback')}</div>
-                    <RatingDisplay rating={review.rating} showReviewCount={false} />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold break-words">{review.reviewerName || t('reviews.reviewerFallback')}</div>
+                      <div className="mt-1">
+                        <RatingDisplay rating={review.rating} showReviewCount={false} />
+                      </div>
+                    </div>
+                    {user?.uid && review.reviewerId === user.uid ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          aria-label={t('reviews.form.edit', { defaultValue: 'Edit review' })}
+                          onClick={() => startEditingReview(review)}
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          aria-label={t('reviews.form.delete', { defaultValue: 'Delete review' })}
+                          onClick={() => setReviewPendingDelete(review)}
+                        >
+                          <Trash2Icon className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground break-words">{review.comment}</p>
-                  {user?.uid && (review as any).reviewerId === user.uid ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button type="button" size="sm" variant="outline" onClick={() => startEditingReview(review as any)}>
-                        {t('reviews.form.edit', { defaultValue: 'Edit' })}
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        onClick={async () => {
-                          const ok = typeof window !== 'undefined'
-                            ? window.confirm(t('reviews.form.deleteConfirm', { defaultValue: 'Delete this review?' }))
-                            : true;
-                          if (!ok) return;
-                          try {
-                            await deleteReview(review.id);
-                            toast({ title: t('reviews.form.deleteSuccess', { defaultValue: 'Review deleted.' }) });
-                            if (editingReviewId === review.id) {
-                              setEditingReviewId(null);
-                              setComment('');
-                              setRating(5);
-                              setHoverRating(0);
-                            }
-                            await refreshReviewsAndOwner();
-                          } catch (err: any) {
-                            toast({ title: t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' }), description: getErrorMessage(err, t('reviews.form.deleteFailed', { defaultValue: 'Could not delete review.' })), variant: 'destructive' });
-                          }
-                        }}
-                      >
-                        {t('reviews.form.delete', { defaultValue: 'Delete' })}
-                      </Button>
-                    </div>
-                  ) : null}
                 </div>
               ))}
             </div>
@@ -590,6 +626,23 @@ export function ListingDetailContent({ listing, offeredByUser }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(reviewPendingDelete)} onOpenChange={(open) => { if (!open) setReviewPendingDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('reviews.form.delete', { defaultValue: 'Delete review' })}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('reviews.form.deleteConfirm', { defaultValue: 'Delete this review?' })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('reports.cancel', { defaultValue: 'Cancel' })}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteReview} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('reviews.form.delete', { defaultValue: 'Delete' })}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
