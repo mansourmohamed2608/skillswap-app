@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
@@ -17,6 +17,14 @@ export class ReviewsController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post(':reviewId/update')
+  async updateLegacy(@Param('reviewId') reviewId: string, @Body() body: { rating?: number; comment?: string }, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.updateReview(reviewerId, reviewId, body);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Patch(':reviewId')
   async update(@Param('reviewId') reviewId: string, @Body() body: { rating?: number; comment?: string }, @Req() req: Request) {
     const reviewerId = ((req as any)?.user?.uid || null) as string | null;
     if (!reviewId) throw new BadRequestException('Missing reviewId');
@@ -24,8 +32,32 @@ export class ReviewsController {
   }
 
   @UseGuards(FirebaseAuthGuard)
+  @Post('update/:reviewId')
+  async updateCompat(@Param('reviewId') reviewId: string, @Body() body: { rating?: number; comment?: string }, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.updateReview(reviewerId, reviewId, body);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
   @Post(':reviewId/delete')
+  async removeLegacy(@Param('reviewId') reviewId: string, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.deleteReview(reviewerId, reviewId);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Delete(':reviewId')
   async remove(@Param('reviewId') reviewId: string, @Req() req: Request) {
+    const reviewerId = ((req as any)?.user?.uid || null) as string | null;
+    if (!reviewId) throw new BadRequestException('Missing reviewId');
+    return this.reviewsService.deleteReview(reviewerId, reviewId);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('delete/:reviewId')
+  async removeCompat(@Param('reviewId') reviewId: string, @Req() req: Request) {
     const reviewerId = ((req as any)?.user?.uid || null) as string | null;
     if (!reviewId) throw new BadRequestException('Missing reviewId');
     return this.reviewsService.deleteReview(reviewerId, reviewId);

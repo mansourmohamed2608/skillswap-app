@@ -632,17 +632,40 @@ export async function createReview(args: { listingId: string; rating: number; co
 }
 
 export async function updateReview(reviewId: string, args: { rating: number; comment: string }) {
-  const res = await authedFetch(`/api/reviews/${encodeURIComponent(reviewId)}/update`, {
+  const encodedId = encodeURIComponent(reviewId);
+  let res = await authedFetch(`/api/reviews/${encodedId}/update`, {
     body: JSON.stringify(args),
   });
+  if (res.status === 404) {
+    res = await authedFetch(`/api/reviews/${encodedId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(args),
+    });
+  }
+  if (res.status === 404) {
+    res = await authedFetch(`/api/reviews/update/${encodedId}`, {
+      body: JSON.stringify(args),
+    });
+  }
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { success: boolean };
 }
 
 export async function deleteReview(reviewId: string) {
-  const res = await authedFetch(`/api/reviews/${encodeURIComponent(reviewId)}/delete`, {
+  const encodedId = encodeURIComponent(reviewId);
+  let res = await authedFetch(`/api/reviews/${encodedId}/delete`, {
     body: JSON.stringify({}),
   });
+  if (res.status === 404) {
+    res = await authedFetch(`/api/reviews/${encodedId}`, {
+      method: 'DELETE',
+    });
+  }
+  if (res.status === 404) {
+    res = await authedFetch(`/api/reviews/delete/${encodedId}`, {
+      body: JSON.stringify({}),
+    });
+  }
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { success: boolean };
 }
