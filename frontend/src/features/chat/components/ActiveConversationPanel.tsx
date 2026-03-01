@@ -66,6 +66,17 @@ export function ActiveConversationPanel({
 
   const messages = useMessagesRTDB(convId);
 
+  function prettyIdentifierLabel(value: string) {
+    const raw = String(value || "").trim().replace(/^@+/, "");
+    if (!raw) return "";
+    const withoutSuffix = raw.replace(/-[a-z0-9]{6}$/i, "");
+    return withoutSuffix
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+
   async function onSend() {
     if (!user?.uid || !resolvedOtherUserId || !text.trim()) return;
     try {
@@ -171,7 +182,7 @@ export function ActiveConversationPanel({
 
   const provisionalName = parsedConversationId?.otherUserId
     ? otherUserName || otherUsername || ""
-    : decodeURIComponent(String(chatId || "")).trim().replace(/^@+/, "");
+    : prettyIdentifierLabel(decodeURIComponent(String(chatId || "")).trim());
   const headerName = otherUserName || (resolvingUser ? provisionalName || t("chat.newChat.searching") : t("chat.detail.unavailable"));
   const headerInitial = headerName.slice(0, 1).toUpperCase();
   const presenceText =
@@ -226,7 +237,7 @@ export function ActiveConversationPanel({
         {!user && (
           <div className="text-sm text-muted-foreground">{t("chat.detail.signInPrompt")}</div>
         )}
-        {user && !resolvedOtherUserId && (
+        {user && !resolvedOtherUserId && !resolvingUser && (
           <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <p>{t("chat.detail.unavailable")}</p>
             <Button asChild variant="outline" size="sm">

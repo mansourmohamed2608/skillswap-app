@@ -155,7 +155,7 @@ export function AppHeader() {
 
         <div className="hidden items-center justify-end md:flex md:justify-self-end">
           {isAuthenticated ? (
-            <div className="flex items-center gap-0.5 rounded-full border border-border/60 bg-background/70 px-1.5 py-1">
+            <div className="flex items-center gap-1.5">
               <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/profile?tab=notifications" className="flex items-center justify-center">
                   <BellIcon className="h-4 w-4" />
@@ -184,7 +184,7 @@ export function AppHeader() {
                   <span className="sr-only">{t('header.profile')}</span>
                 </Link>
               </Button>
-              <div className="mx-1 h-5 w-px bg-border/70" />
+              <div className="mx-1 h-5 w-px bg-border/60" />
               <LanguageSwitcher compact />
               <SignOutButton iconOnly />
             </div>
