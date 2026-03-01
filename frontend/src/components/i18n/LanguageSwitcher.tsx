@@ -23,14 +23,16 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const nextLabel = lang.startsWith("ar") ? t("common.english") : t("common.arabic");
   if (compact) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="sm"
         onClick={toggle}
         title={nextLabel}
-        className="inline-flex h-9 min-w-0 shrink-0 items-center justify-center px-1.5 text-sm font-medium uppercase text-foreground transition-colors hover:text-primary focus:outline-none"
+        className="h-9 min-w-0 shrink-0 px-2 text-sm font-medium uppercase"
       >
         {lang.startsWith("ar") ? "EN" : "AR"}
-      </button>
+      </Button>
     );
   }
 
