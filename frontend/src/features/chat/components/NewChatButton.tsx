@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 
 type UserMatch = { uid: string; username?: string; name: string };
 
-export function NewChatButton() {
+export function NewChatButton({ onStartChat }: { onStartChat?: (identifier: string) => void }) {
   const { active, canSendMessage, loading } = useMembership();
   const { user } = useAuth();
   const router = useRouter();
@@ -119,6 +119,10 @@ export function NewChatButton() {
     setTargetIdentifier("");
     setSelectedMatch(null);
     setMatches([]);
+    if (onStartChat) {
+      onStartChat(nextIdentifier);
+      return;
+    }
     router.push(`/chat/${encodeURIComponent(nextIdentifier)}`);
   }
 

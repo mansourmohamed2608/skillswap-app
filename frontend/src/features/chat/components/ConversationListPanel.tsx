@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { MessageCircleIcon, SearchIcon } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import NewChatButton from "@/features/chat/components/NewChatButton";
 import { useConversationsRTDB } from "@/services/chatRTDB";
@@ -17,18 +18,30 @@ type ConversationListPanelProps = {
   activeChatId?: string;
   className?: string;
   showHeader?: boolean;
+  headerAction?: ReactNode;
+  onSelectChat?: (chat: {
+    id: string;
+    otherId: string;
+    title: string;
+    subtitle: string;
+    targetIdentifier: string;
+    available: boolean;
+    avatarUrl?: string;
+  }) => void;
 };
 
 export function ConversationListPanel({
   activeChatId,
   className,
   showHeader = true,
+  headerAction,
+  onSelectChat,
 }: ConversationListPanelProps) {
   const { user } = useAuth();
   const { t } = useTranslation();
   const convs = useConversationsRTDB();
   const [searchText, setSearchText] = useState("");
-  const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; username?: string; identifier: string }>>({});
+  const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; username?: string; identifier: string; avatarUrl?: string }>>({});
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
@@ -46,7 +59,7 @@ export function ConversationListPanel({
         }
         return;
       }
-      const entries: Record<string, { name: string; username?: string; identifier: string }> = {};
+      const entries: Record<string, { name: string; username?: string; identifier: string; avatarUrl?: string }> = {};
       await Promise.all(otherIds.map(async (uid) => {
         try {
           const profile = await getUserById(uid);
@@ -55,6 +68,7 @@ export function ConversationListPanel({
               name: profile.name,
               username: profile.username,
               identifier: getProfileIdentifier(profile),
+              avatarUrl: profile.avatarUrl,
             };
           }
         } catch {}
@@ -93,6 +107,7 @@ export function ConversationListPanel({
         title,
         subtitle,
         targetIdentifier,
+        avatarUrl: profileMeta?.avatarUrl,
         lastMessage: (c.lastMessage as string) || "",
         unread: (c.lastMessageAt && user?.uid && c.lastMessageAt > Number(c.perUserLastReadAt?.[user.uid] || 0)) ? 1 : 0,
         timestamp: formatTimestamp(c.lastMessageAt),
@@ -121,7 +136,7 @@ export function ConversationListPanel({
               <MessageCircleIcon className="mr-3 h-7 w-7 text-primary" />
               {t("chat.list.title")}
             </h1>
-            <NewChatButton />
+            {headerAction ?? <NewChatButton />}
           </div>
           <div className="relative mt-4">
             <Input
@@ -143,41 +158,80 @@ export function ConversationListPanel({
             {chats.map((chat) => (
               <li key={chat.id}>
                 {chat.available ? (
-                  <Link
-                    href={`/chat/${encodeURIComponent(chat.targetIdentifier)}`}
-                    className={cn(
-                      "block transition-colors hover:bg-muted/50",
-                      chat.active && "bg-muted/60"
-                    )}
-                  >
-                    <div className="flex items-center space-x-4 p-4">
-                      <Avatar className="h-12 w-12">
-                        <AvatarFallback>{chat.title.slice(0, 1).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-md font-semibold">{chat.title}</p>
-                            {chat.subtitle ? (
-                              <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                  onSelectChat ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectChat(chat)}
+                      className={cn(
+                        "block w-full text-left transition-colors hover:bg-muted/50",
+                        chat.active && "bg-muted/60"
+                      )}
+                    >
+                      <div className="flex items-center space-x-4 p-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={chat.avatarUrl} alt={chat.title} />
+                          <AvatarFallback>{chat.title.slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-md font-semibold">{chat.title}</p>
+                              {chat.subtitle ? (
+                                <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                              ) : null}
+                            </div>
+                            <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
+                            {chat.unread > 0 ? (
+                              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-xs font-bold leading-none text-accent-foreground">
+                                {chat.unread}
+                              </span>
                             ) : null}
                           </div>
-                          <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
-                          {chat.unread > 0 ? (
-                            <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-xs font-bold leading-none text-accent-foreground">
-                              {chat.unread}
-                            </span>
-                          ) : null}
                         </div>
                       </div>
-                    </div>
-                  </Link>
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/chat/${encodeURIComponent(chat.targetIdentifier)}`}
+                      className={cn(
+                        "block transition-colors hover:bg-muted/50",
+                        chat.active && "bg-muted/60"
+                      )}
+                    >
+                      <div className="flex items-center space-x-4 p-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={chat.avatarUrl} alt={chat.title} />
+                          <AvatarFallback>{chat.title.slice(0, 1).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate text-md font-semibold">{chat.title}</p>
+                              {chat.subtitle ? (
+                                <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                              ) : null}
+                            </div>
+                            <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
+                            {chat.unread > 0 ? (
+                              <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-xs font-bold leading-none text-accent-foreground">
+                                {chat.unread}
+                              </span>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  )
                 ) : (
                   <div className="flex items-center space-x-4 p-4 opacity-70">
                     <Avatar className="h-12 w-12">
+                      <AvatarImage src={chat.avatarUrl} alt={chat.title} />
                       <AvatarFallback>{chat.title.slice(0, 1).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
