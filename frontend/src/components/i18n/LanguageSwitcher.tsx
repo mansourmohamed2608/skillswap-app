@@ -21,15 +21,28 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   };
 
   const nextLabel = lang.startsWith("ar") ? t("common.english") : t("common.arabic");
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={toggle}
+        title={nextLabel}
+        className="inline-flex h-9 min-w-0 shrink-0 items-center justify-center px-1.5 text-sm font-medium uppercase text-foreground transition-colors hover:text-primary focus:outline-none"
+      >
+        {lang.startsWith("ar") ? "EN" : "AR"}
+      </button>
+    );
+  }
+
   return (
     <Button
-      variant={compact ? "ghost" : "outline"}
-      size={compact ? "sm" : "sm"}
+      variant="outline"
+      size="sm"
       onClick={toggle}
       title={nextLabel}
-      className={compact ? "h-9 min-w-[2.75rem] rounded-md px-2 font-semibold leading-none tracking-wide shrink-0 uppercase text-foreground hover:bg-muted/50" : "font-medium"}
+      className="font-medium"
     >
-      {compact ? (lang.startsWith("ar") ? "EN" : "AR") : nextLabel}
+      {nextLabel}
     </Button>
   );
 }
