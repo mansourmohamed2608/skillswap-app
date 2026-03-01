@@ -43,7 +43,7 @@ export function FloatingChatButton() {
 
   const listHeaderAction = (
     <div className="flex items-center gap-2">
-      <NewChatButton onStartChat={(identifier) => setActiveChatId(identifier)} />
+      <NewChatButton compact onStartChat={(identifier) => setActiveChatId(identifier)} />
       <Button
         type="button"
         size="icon"

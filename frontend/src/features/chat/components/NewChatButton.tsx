@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 
 type UserMatch = { uid: string; username?: string; name: string };
 
-export function NewChatButton({ onStartChat }: { onStartChat?: (identifier: string) => void }) {
+export function NewChatButton({ onStartChat, compact = false }: { onStartChat?: (identifier: string) => void; compact?: boolean }) {
   const { active, canSendMessage, loading } = useMembership();
   const { user } = useAuth();
   const router = useRouter();
@@ -128,8 +128,9 @@ export function NewChatButton({ onStartChat }: { onStartChat?: (identifier: stri
 
   return (
     <>
-      <Button variant="outline" onClick={onClick}>
-        <UserPlusIcon className="mr-2 h-4 w-4" /> {t('chat.list.newChat')}
+      <Button variant={compact ? "ghost" : "outline"} size={compact ? "sm" : "default"} onClick={onClick} className={compact ? "h-9 px-2.5" : undefined}>
+        <UserPlusIcon className={compact ? "h-4 w-4" : "mr-2 h-4 w-4"} />
+        <span className={compact ? "ml-1 text-sm" : undefined}>{t('chat.list.newChat')}</span>
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

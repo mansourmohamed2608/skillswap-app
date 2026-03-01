@@ -138,12 +138,14 @@ export function ConversationListPanel({
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {showHeader ? (
         <div className="border-b p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="flex items-center text-2xl font-semibold">
-              <MessageCircleIcon className="mr-3 h-7 w-7 text-primary" />
-              {t("chat.list.title")}
+          <div className="flex items-center justify-between gap-3">
+            <h1 className="flex min-w-0 items-center text-xl font-semibold leading-tight">
+              <MessageCircleIcon className="mr-3 h-6 w-6 shrink-0 text-primary" />
+              <span className="truncate">{t("chat.list.title")}</span>
             </h1>
-            {headerAction ?? <NewChatButton />}
+            <div className="shrink-0">
+              {headerAction ?? <NewChatButton compact />}
+            </div>
           </div>
           <div className="relative mt-4">
             <Input
