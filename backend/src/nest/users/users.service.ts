@@ -55,8 +55,11 @@ export class UsersService {
     const values = [
       data?.name,
       data?.fullName,
+      data?.full_name,
       data?.displayName,
       data?.profile?.name,
+      data?.profile?.fullName,
+      data?.profile?.full_name,
       data?.profile?.displayName,
     ];
     return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
@@ -519,7 +522,7 @@ export class UsersService {
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
             const data = d.data() || {};
-            const uid = String(d.id || '').toLowerCase();
+            const uid = String((data as any)?.uid || (data as any)?.userId || (data as any)?.profile?.uid || d.id || '').toLowerCase();
             const storedSlug = String((data as any)?.nameSlug || '').trim().toLowerCase();
             if (storedSlug) {
               if (fallbackUidSuffix) {
@@ -586,7 +589,8 @@ export class UsersService {
           .get();
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
-            const uid = String(d.id || '').toLowerCase();
+            const data = d.data() as Record<string, any>;
+            const uid = String(data?.uid || data?.userId || data?.profile?.uid || d.id || '').toLowerCase();
             return this.getCandidateProfileNames(d.data() as Record<string, any>).some((name) => {
               const slug = this.toNameSlug(name);
               if (!slug) return false;
