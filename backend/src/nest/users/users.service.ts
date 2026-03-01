@@ -51,6 +51,17 @@ export class UsersService {
       .slice(0, 64);
   }
 
+  private getCandidateProfileNames(data: Record<string, any>): string[] {
+    const values = [
+      data?.name,
+      data?.fullName,
+      data?.displayName,
+      data?.profile?.name,
+      data?.profile?.displayName,
+    ];
+    return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
+  }
+
   private normalizeSearchToken(value: string): string {
     const raw = String(value || '').trim().toLowerCase();
     return raw
@@ -509,13 +520,21 @@ export class UsersService {
           const matched = sample.docs.find((d) => {
             const data = d.data() || {};
             const uid = String(d.id || '').toLowerCase();
-            const name = String((data as any)?.name || '').trim();
-            const slug = this.toNameSlug(name);
-            if (!slug) return false;
-            if (fallbackUidSuffix) {
-              return slug === fallbackNameSlug && uid.endsWith(fallbackUidSuffix);
+            const storedSlug = String((data as any)?.nameSlug || '').trim().toLowerCase();
+            if (storedSlug) {
+              if (fallbackUidSuffix) {
+                return storedSlug === fallbackNameSlug && uid.endsWith(fallbackUidSuffix);
+              }
+              return storedSlug === fallbackNameSlug;
             }
-            return slug === fallbackNameSlug;
+            return this.getCandidateProfileNames(data as Record<string, any>).some((name) => {
+              const slug = this.toNameSlug(name);
+              if (!slug) return false;
+              if (fallbackUidSuffix) {
+                return slug === fallbackNameSlug && uid.endsWith(fallbackUidSuffix);
+              }
+              return slug === fallbackNameSlug;
+            });
           });
           if (matched) {
             return { uid: matched.id, ...(matched.data() || {}) };
@@ -568,15 +587,17 @@ export class UsersService {
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
             const uid = String(d.id || '').toLowerCase();
-            const name = String((d.data() as any)?.name || (d.data() as any)?.fullName || (d.data() as any)?.displayName || '').trim();
-            const slug = this.toNameSlug(name);
-            if (fallbackUidSuffix && uid.endsWith(fallbackUidSuffix)) {
-              return slug === fallbackNameSlug || fallbackNameSlug === 'member';
-            }
-            if (!fallbackUidSuffix) {
-              return Boolean(slug && slug === fallbackNameSlug);
-            }
-            return false;
+            return this.getCandidateProfileNames(d.data() as Record<string, any>).some((name) => {
+              const slug = this.toNameSlug(name);
+              if (!slug) return false;
+              if (fallbackUidSuffix && uid.endsWith(fallbackUidSuffix)) {
+                return slug === fallbackNameSlug || fallbackNameSlug === 'member';
+              }
+              if (!fallbackUidSuffix) {
+                return slug === fallbackNameSlug;
+              }
+              return false;
+            });
           });
           if (matched) {
             return this.buildPublicProfile(matched.id, matched.data() || {});

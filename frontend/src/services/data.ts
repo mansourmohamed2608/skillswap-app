@@ -45,6 +45,32 @@ const mapUserFromDoc = (id: string, data: any): User => {
 
 const hasClientAuth = () => typeof window !== 'undefined' && !!auth?.currentUser;
 
+function toNameSlug(value: string): string {
+    const source = String(value || '').trim();
+    if (!source) return '';
+    return source
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}]+/gu, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-')
+        .split('-')
+        .slice(0, 2)
+        .join('-');
+}
+
+function getCandidateProfileNames(data: any): string[] {
+    const values = [
+        data?.name,
+        data?.fullName,
+        data?.displayName,
+        data?.profile?.name,
+        data?.profile?.displayName,
+    ];
+    return Array.from(new Set(values.map((value) => String(value || '').trim()).filter(Boolean)));
+}
+
 const isLowQualityListing = (listing: ServiceListing) => {
     const title = String(listing?.offeredService?.title || '').trim();
     const description = String(listing?.offeredService?.description || '').trim();
@@ -401,26 +427,30 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
     const fallbackSlug = String((slugSuffixMatch?.[1] || '')).trim().toLowerCase();
     if (fallbackSuffix && isFirebaseConfigured() && db) {
         try {
+            const byNameSlug = await getDocs(
+                query(collection(db!, 'publicProfiles'), where('nameSlug', '==', fallbackSlug), limit(20))
+            );
+            if (!byNameSlug.empty) {
+                const hit = byNameSlug.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(fallbackSuffix)) || byNameSlug.docs[0];
+                if (hit) return mapUserFromDoc(hit.id, hit.data());
+            }
+        } catch {}
+
+        try {
             const snap = await getDocs(query(collection(db!, 'publicProfiles'), limit(2000)));
             const hit = snap.docs.find((doc) => {
                 const data: any = doc.data() || {};
                 const uid = String(doc.id || '').toLowerCase();
-                const name = String(data?.name || '').trim();
-                const slug = name
-                    ? name
-                        .normalize('NFKD')
-                        .replace(/[\u0300-\u036f]/g, '')
-                        .toLowerCase()
-                        .replace(/[^\p{L}\p{N}]+/gu, '-')
-                        .replace(/^-+|-+$/g, '')
-                        .replace(/-{2,}/g, '-')
-                        .split('-')
-                        .slice(0, 2)
-                        .join('-')
-                    : '';
                 if (!uid.endsWith(fallbackSuffix)) return false;
                 if (!fallbackSlug) return true;
-                return slug === fallbackSlug || fallbackSlug === 'member';
+                const storedSlug = String(data?.nameSlug || '').trim().toLowerCase();
+                if (storedSlug && (storedSlug === fallbackSlug || fallbackSlug === 'member')) {
+                    return true;
+                }
+                return getCandidateProfileNames(data).some((name) => {
+                    const slug = toNameSlug(name);
+                    return slug === fallbackSlug || fallbackSlug === 'member';
+                });
             });
             if (hit) return mapUserFromDoc(hit.id, hit.data());
         } catch {}
