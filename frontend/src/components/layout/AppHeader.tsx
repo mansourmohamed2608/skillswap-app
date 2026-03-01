@@ -57,7 +57,7 @@ const AppLogo = () => (
   </svg>
 );
 
-function SignOutButton({ isMobile = false, onDone }: { isMobile?: boolean; onDone?: () => void }) {
+function SignOutButton({ isMobile = false, onDone, iconOnly = false }: { isMobile?: boolean; onDone?: () => void; iconOnly?: boolean }) {
     const router = useRouter();
     const { t } = useTranslation();
     const handleSignOut = async () => {
@@ -71,11 +71,13 @@ function SignOutButton({ isMobile = false, onDone }: { isMobile?: boolean; onDon
   return (
     <Button
       variant="ghost"
+      size={iconOnly ? "icon" : "default"}
       onClick={handleSignOut}
-      className={isMobile ? "justify-start text-lg py-3 w-full" : "w-auto"}
+      className={isMobile ? "justify-start text-lg py-3 w-full" : iconOnly ? "relative" : "w-auto"}
+      aria-label={iconOnly ? t('header.signOut') : undefined}
     >
       <LogOutIcon className={isMobile ? "h-5 w-5 mr-3" : "h-4 w-4"} />
-      {t('header.signOut')}
+      {!iconOnly ? t('header.signOut') : <span className="sr-only">{t('header.signOut')}</span>}
     </Button>
   );
 }
@@ -130,16 +132,28 @@ export function AppHeader() {
           <span className="hidden font-bold text-xl sm:inline">{t('common.appName')}</span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex gap-1 items-center">
-          {publicNavItems.map((item) => (
-            <Button key={item.label} variant="ghost" asChild>
-              <Link href={item.href} className="flex items-center gap-2">
-                <item.icon className="h-4 w-4" />
-                {labelFor(item.href, item.label)}
-              </Link>
-            </Button>
-          ))}
+        <div className="hidden flex-1 items-center justify-center md:flex">
+          <nav className="flex items-center gap-1">
+            {publicNavItems.map((item) => (
+              <Button key={item.label} variant="ghost" asChild>
+                <Link href={item.href} className="flex items-center gap-2">
+                  <item.icon className="h-4 w-4" />
+                  {labelFor(item.href, item.label)}
+                </Link>
+              </Button>
+            ))}
+            {isAuthenticated ? (
+              <Button variant="ghost" asChild>
+                <Link href="/bookings" className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  {labelFor('/bookings', 'Bookings')}
+                </Link>
+              </Button>
+            ) : null}
+          </nav>
+        </div>
+
+        <div className="hidden items-center gap-1 md:flex">
           {isAuthenticated ? (
             <>
               <Button variant="ghost" size="icon" asChild className="relative">
@@ -153,33 +167,40 @@ export function AppHeader() {
                   ) : null}
                 </Link>
               </Button>
-              {privateNavItems.map((item) => (
-                <Button key={item.label} variant="ghost" asChild className={item.href === '/chat' ? 'relative' : undefined}>
+              <Button variant="ghost" size="icon" asChild className="relative">
+                <Link href="/chat" className="flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="sr-only">{t('header.chat')}</span>
+                  {unreadChats > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                      {unreadChats > 99 ? '99+' : unreadChats}
+                    </span>
+                  ) : null}
+                </Link>
+              </Button>
+              <Button variant="ghost" size="icon" asChild>
+                <Link href="/profile" className="flex items-center justify-center">
+                  <UserIcon className="h-4 w-4" />
+                  <span className="sr-only">{t('header.profile')}</span>
+                </Link>
+              </Button>
+              <LanguageSwitcher compact />
+              <SignOutButton iconOnly />
+            </>
+          ) : (
+            <>
+              {authNavItems.map((item) => (
+                <Button key={item.label} variant="ghost" asChild>
                   <Link href={item.href} className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
                     {labelFor(item.href, item.label)}
-                    {item.href === '/chat' && unreadChats > 0 ? (
-                      <span className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
-                        {unreadChats > 99 ? '99+' : unreadChats}
-                      </span>
-                    ) : null}
                   </Link>
                 </Button>
               ))}
-              <SignOutButton />
+              <LanguageSwitcher compact />
             </>
-          ) : (
-            authNavItems.map((item) => (
-              <Button key={item.label} variant="ghost" asChild>
-                <Link href={item.href} className="flex items-center gap-2">
-                  <item.icon className="h-4 w-4" />
-                  {labelFor(item.href, item.label)}
-                </Link>
-              </Button>
-            ))
           )}
-          <LanguageSwitcher compact />
-        </nav>
+        </div>
 
         <div className="flex items-center gap-2 md:hidden">
           {isAuthenticated ? (

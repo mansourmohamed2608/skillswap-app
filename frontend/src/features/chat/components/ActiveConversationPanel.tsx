@@ -45,6 +45,7 @@ export function ActiveConversationPanel({
   const [otherAvatarUrl, setOtherAvatarUrl] = useState("");
   const [presence, setPresence] = useState<"online" | "offline" | "unknown">("unknown");
   const [profileLink, setProfileLink] = useState<string>("");
+  const [resolvingUser, setResolvingUser] = useState(true);
 
   const parsedConversationId = useMemo(() => {
     if (!user?.uid) return null;
@@ -82,17 +83,27 @@ export function ActiveConversationPanel({
   useEffect(() => {
     let active = true;
     (async () => {
+      if (active) setResolvingUser(true);
       if (!user?.uid) {
-        if (active) setResolvedOtherUserId("");
+        if (active) {
+          setResolvedOtherUserId("");
+          setResolvingUser(false);
+        }
         return;
       }
       if (parsedConversationId?.otherUserId) {
-        if (active) setResolvedOtherUserId(parsedConversationId.otherUserId);
+        if (active) {
+          setResolvedOtherUserId(parsedConversationId.otherUserId);
+          setResolvingUser(false);
+        }
         return;
       }
       const raw = String(chatId || "").trim();
       if (!raw) {
-        if (active) setResolvedOtherUserId("");
+        if (active) {
+          setResolvedOtherUserId("");
+          setResolvingUser(false);
+        }
         return;
       }
       const resolved = await getUserByIdentifier(raw);
@@ -103,6 +114,7 @@ export function ActiveConversationPanel({
       setOtherUsername(String(resolved?.username || "").trim());
       setOtherAvatarUrl(String(resolved?.avatarUrl || "").trim());
       setProfileLink(resolved ? getProfilePath(resolved) : "");
+      setResolvingUser(false);
     })();
     return () => {
       active = false;
@@ -124,6 +136,8 @@ export function ActiveConversationPanel({
         }
       } catch {
         if (active) setOtherUserName((prev) => prev || t("chat.detail.unavailable"));
+      } finally {
+        if (active) setResolvingUser(false);
       }
     }
     loadUser();
@@ -156,7 +170,10 @@ export function ActiveConversationPanel({
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages.length]);
 
-  const headerName = otherUserName || t("chat.detail.unavailable");
+  const provisionalName = parsedConversationId?.otherUserId
+    ? ""
+    : decodeURIComponent(String(chatId || "")).trim().replace(/^@+/, "");
+  const headerName = otherUserName || (resolvingUser ? provisionalName || t("chat.newChat.searching") : t("chat.detail.unavailable"));
   const headerInitial = headerName.slice(0, 1).toUpperCase();
   const presenceText =
     !resolvedOtherUserId
@@ -191,8 +208,8 @@ export function ActiveConversationPanel({
             <AvatarFallback>{headerInitial}</AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <CardTitle className="truncate text-lg">{headerName}</CardTitle>
-            <p className="truncate text-xs text-muted-foreground">
+            <CardTitle dir="auto" className="truncate text-lg text-start" title={headerName}>{headerName}</CardTitle>
+            <p dir="auto" className="truncate text-xs text-muted-foreground text-start">
               {otherUsername ? `@${otherUsername} • ` : ""}{presenceText}
             </p>
           </div>
@@ -224,7 +241,7 @@ export function ActiveConversationPanel({
         <div className="space-y-4">
           {user && messages.length === 0 && resolvedOtherUserId ? (
             <div className="flex min-h-[14rem] flex-col items-center justify-center rounded-xl border border-dashed bg-background/70 px-6 py-10 text-center">
-              <p className="text-base font-semibold">{headerName}</p>
+              <p dir="auto" className="text-base font-semibold text-center" title={headerName}>{headerName}</p>
               <p className="mt-1 text-sm text-muted-foreground">{t("chat.list.emptyBody")}</p>
             </div>
           ) : null}
@@ -238,7 +255,7 @@ export function ActiveConversationPanel({
                   </Avatar>
                 ) : null}
                 <div className={`rounded-2xl p-3 ${message.senderId === user?.uid ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border bg-card text-card-foreground"}`}>
-                  <p className="text-sm leading-relaxed">{message.text}</p>
+                  <p dir="auto" className="text-sm leading-relaxed">{message.text}</p>
                   <p className={`mt-1 text-right text-xs ${message.senderId === user?.uid ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                     {message.createdAt ? new Date(message.createdAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""}
                   </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MessageCircle, XIcon } from "lucide-react";
@@ -22,41 +22,62 @@ export function FloatingChatButton() {
   const unreadChats = getUnreadConversationCount(conversations, user?.uid);
   const [open, setOpen] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string>("");
+  const [isDesktop, setIsDesktop] = useState(false);
 
   const panelTitle = useMemo(() => {
     if (activeChatId) return t("header.chat");
     return t("chat.list.title");
   }, [activeChatId, t]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const media = window.matchMedia("(min-width: 640px)");
+    const update = () => setIsDesktop(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
   if (!user?.uid) return null;
   if (pathname?.startsWith("/chat")) return null;
 
-  const launcher = (
-    <Button
-      type="button"
-      size="lg"
-      className="relative h-14 rounded-full px-5 shadow-lg"
-      onClick={() => setOpen((value) => !value)}
-    >
-      <MessageCircle className="h-5 w-5" />
-      <span className="hidden sm:inline">{t("header.chat")}</span>
-      {unreadChats > 0 ? (
-        <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-[11px] font-bold leading-none text-accent-foreground">
-          {unreadChats > 99 ? "99+" : unreadChats}
-        </span>
-      ) : null}
-    </Button>
-  );
-
   const listHeaderAction = (
-    <NewChatButton onStartChat={(identifier) => setActiveChatId(identifier)} />
+    <div className="flex items-center gap-2">
+      <NewChatButton onStartChat={(identifier) => setActiveChatId(identifier)} />
+      <Button
+        type="button"
+        size="icon"
+        variant="ghost"
+        className="h-9 w-9 shrink-0"
+        aria-label={t("reports.cancel", { defaultValue: "Close" })}
+        onClick={() => {
+          setOpen(false);
+          setActiveChatId("");
+        }}
+      >
+        <XIcon className="h-4 w-4" />
+      </Button>
+    </div>
   );
 
   return (
     <>
       <div className="fixed bottom-5 right-5 z-40 hidden sm:block">
-        {launcher}
-        {open ? (
+        <Button
+          type="button"
+          size="lg"
+          className="relative h-14 rounded-full px-5 shadow-lg"
+          onClick={() => setOpen((value) => !value)}
+        >
+          <MessageCircle className="h-5 w-5" />
+          <span className="hidden sm:inline">{t("header.chat")}</span>
+          {unreadChats > 0 ? (
+            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-[11px] font-bold leading-none text-accent-foreground">
+              {unreadChats > 99 ? "99+" : unreadChats}
+            </span>
+          ) : null}
+        </Button>
+        {isDesktop && open ? (
           <Card className={`absolute bottom-16 right-0 overflow-hidden border shadow-2xl ${activeChatId ? "h-[38rem] w-[58rem]" : "h-[38rem] w-[24rem]"}`}>
             <div className={`grid h-full min-h-0 ${activeChatId ? "grid-cols-[22rem,1fr]" : "grid-cols-1"}`}>
               <ConversationListPanel
@@ -71,28 +92,27 @@ export function FloatingChatButton() {
                   className="grid h-full min-h-0 grid-rows-[auto,1fr,auto] rounded-none border-0 shadow-none"
                 />
               ) : null}
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="absolute right-3 top-3 z-10"
-                aria-label={t("reports.cancel", { defaultValue: "Close" })}
-                onClick={() => {
-                  setOpen(false);
-                  setActiveChatId("");
-                }}
-              >
-                <XIcon className="h-4 w-4" />
-              </Button>
             </div>
           </Card>
         ) : null}
       </div>
 
       <div className="fixed bottom-5 right-5 z-40 sm:hidden">
-        {launcher}
+        <Button
+          type="button"
+          size="lg"
+          className="relative h-14 rounded-full px-5 shadow-lg"
+          onClick={() => setOpen(true)}
+        >
+          <MessageCircle className="h-5 w-5" />
+          {unreadChats > 0 ? (
+            <span className="absolute -right-1 -top-1 inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-[11px] font-bold leading-none text-accent-foreground">
+              {unreadChats > 99 ? "99+" : unreadChats}
+            </span>
+          ) : null}
+        </Button>
       </div>
-      <Sheet open={open} onOpenChange={(next) => {
+      <Sheet open={!isDesktop && open} onOpenChange={(next) => {
         setOpen(next);
         if (!next) setActiveChatId("");
       }}>

@@ -175,15 +175,15 @@ export function ConversationListPanel({
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="truncate text-md font-semibold">{chat.title}</p>
+                              <p dir="auto" className="truncate text-md font-semibold text-start" title={chat.title}>{chat.title}</p>
                               {chat.subtitle ? (
-                                <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                                <p dir="auto" className="truncate text-xs text-muted-foreground text-start" title={chat.subtitle}>{chat.subtitle}</p>
                               ) : null}
                             </div>
                             <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
+                            <p dir="auto" className="truncate text-sm text-muted-foreground text-start">{chat.lastMessage}</p>
                             {chat.unread > 0 ? (
                               <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-xs font-bold leading-none text-accent-foreground">
                                 {chat.unread}
@@ -209,15 +209,15 @@ export function ConversationListPanel({
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                              <p className="truncate text-md font-semibold">{chat.title}</p>
+                              <p dir="auto" className="truncate text-md font-semibold text-start" title={chat.title}>{chat.title}</p>
                               {chat.subtitle ? (
-                                <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                                <p dir="auto" className="truncate text-xs text-muted-foreground text-start" title={chat.subtitle}>{chat.subtitle}</p>
                               ) : null}
                             </div>
                             <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
                           </div>
                           <div className="flex items-center justify-between gap-3">
-                            <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
+                            <p dir="auto" className="truncate text-sm text-muted-foreground text-start">{chat.lastMessage}</p>
                             {chat.unread > 0 ? (
                               <span className="inline-flex min-w-5 items-center justify-center rounded-full bg-accent px-1.5 py-1 text-xs font-bold leading-none text-accent-foreground">
                                 {chat.unread}
@@ -237,14 +237,14 @@ export function ConversationListPanel({
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex items-center justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-md font-semibold">{chat.title}</p>
+                          <p dir="auto" className="truncate text-md font-semibold text-start" title={chat.title}>{chat.title}</p>
                           {chat.subtitle ? (
-                            <p className="truncate text-xs text-muted-foreground">{chat.subtitle}</p>
+                            <p dir="auto" className="truncate text-xs text-muted-foreground text-start" title={chat.subtitle}>{chat.subtitle}</p>
                           ) : null}
                         </div>
                         <p className="shrink-0 text-xs text-muted-foreground">{chat.timestamp}</p>
                       </div>
-                      <p className="truncate text-sm text-muted-foreground">{chat.lastMessage}</p>
+                      <p dir="auto" className="truncate text-sm text-muted-foreground text-start">{chat.lastMessage}</p>
                     </div>
                   </div>
                 )}
