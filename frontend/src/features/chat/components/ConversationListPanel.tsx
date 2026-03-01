@@ -43,15 +43,14 @@ export function ConversationListPanel({
   const [searchText, setSearchText] = useState("");
   const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; username?: string; identifier: string; avatarUrl?: string }>>({});
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const otherIds = useMemo(() => Array.from(new Set(
+    convs.map((c) => Object.keys(c.participants || {}).find((p) => p !== user?.uid) || "")
+      .filter(Boolean)
+  )), [convs, user?.uid]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
-      setLoadingUsers(true);
-      const otherIds = Array.from(new Set(
-        convs.map((c) => Object.keys(c.participants || {}).find((p) => p !== user?.uid) || "")
-          .filter(Boolean)
-      ));
       if (!otherIds.length) {
         if (mounted) {
           setUserMetaById({});
@@ -59,8 +58,16 @@ export function ConversationListPanel({
         }
         return;
       }
+      const missingIds = otherIds.filter((uid) => !userMetaById[uid]);
+      if (!missingIds.length) {
+        if (mounted && loadingUsers) setLoadingUsers(false);
+        return;
+      }
+      if (mounted && Object.keys(userMetaById).length === 0) {
+        setLoadingUsers(true);
+      }
       const entries: Record<string, { name: string; username?: string; identifier: string; avatarUrl?: string }> = {};
-      await Promise.all(otherIds.map(async (uid) => {
+      await Promise.all(missingIds.map(async (uid) => {
         try {
           const profile = await getUserById(uid);
           if (profile) {
@@ -74,14 +81,14 @@ export function ConversationListPanel({
         } catch {}
       }));
       if (mounted) {
-        setUserMetaById(entries);
+        setUserMetaById((prev) => ({ ...prev, ...entries }));
         setLoadingUsers(false);
       }
     })();
     return () => {
       mounted = false;
     };
-  }, [convs, user?.uid]);
+  }, [loadingUsers, otherIds, userMetaById]);
 
   const chats = useMemo(() => {
     const formatTimestamp = (value?: number) => {

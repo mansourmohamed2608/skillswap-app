@@ -126,17 +126,17 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors">
+      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 md:grid md:grid-cols-[auto,1fr,auto] md:gap-6">
+        <Link href="/" className="flex items-center gap-2 text-primary transition-colors hover:text-primary/80">
           <AppLogo />
           <span className="hidden font-bold text-xl sm:inline">{t('common.appName')}</span>
         </Link>
 
-        <div className="hidden flex-1 items-center justify-center md:flex">
-          <nav className="flex items-center gap-1">
+        <div className="hidden min-w-0 items-center justify-center md:flex">
+          <nav className="flex items-center gap-0.5">
             {publicNavItems.map((item) => (
               <Button key={item.label} variant="ghost" asChild>
-                <Link href={item.href} className="flex items-center gap-2">
+                <Link href={item.href} className="flex items-center gap-2 px-3">
                   <item.icon className="h-4 w-4" />
                   {labelFor(item.href, item.label)}
                 </Link>
@@ -144,7 +144,7 @@ export function AppHeader() {
             ))}
             {isAuthenticated ? (
               <Button variant="ghost" asChild>
-                <Link href="/bookings" className="flex items-center gap-2">
+                <Link href="/bookings" className="flex items-center gap-2 px-3">
                   <CalendarDays className="h-4 w-4" />
                   {labelFor('/bookings', 'Bookings')}
                 </Link>
@@ -153,9 +153,9 @@ export function AppHeader() {
           </nav>
         </div>
 
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="hidden items-center justify-end md:flex">
           {isAuthenticated ? (
-            <>
+            <div className="flex items-center gap-0.5 rounded-full border border-border/60 bg-background/70 px-1.5 py-1">
               <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/profile?tab=notifications" className="flex items-center justify-center">
                   <BellIcon className="h-4 w-4" />
@@ -184,9 +184,10 @@ export function AppHeader() {
                   <span className="sr-only">{t('header.profile')}</span>
                 </Link>
               </Button>
+              <div className="mx-1 h-5 w-px bg-border/70" />
               <LanguageSwitcher compact />
               <SignOutButton iconOnly />
-            </>
+            </div>
           ) : (
             <>
               {authNavItems.map((item) => (

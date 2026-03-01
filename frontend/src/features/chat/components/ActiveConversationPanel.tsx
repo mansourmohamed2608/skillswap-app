@@ -94,7 +94,6 @@ export function ActiveConversationPanel({
       if (parsedConversationId?.otherUserId) {
         if (active) {
           setResolvedOtherUserId(parsedConversationId.otherUserId);
-          setResolvingUser(false);
         }
         return;
       }
@@ -171,7 +170,7 @@ export function ActiveConversationPanel({
   }, [messages.length]);
 
   const provisionalName = parsedConversationId?.otherUserId
-    ? ""
+    ? otherUserName || otherUsername || ""
     : decodeURIComponent(String(chatId || "")).trim().replace(/^@+/, "");
   const headerName = otherUserName || (resolvingUser ? provisionalName || t("chat.newChat.searching") : t("chat.detail.unavailable"));
   const headerInitial = headerName.slice(0, 1).toUpperCase();
