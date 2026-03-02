@@ -93,6 +93,7 @@ export function AppHeader() {
 
   useEffect(() => {
     if (!db || !user?.uid) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUnreadNotifications(0);
       return;
     }

@@ -1,6 +1,6 @@
 import { db } from "@/services/firebase";
 import { doc, onSnapshot, Timestamp } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
 export type Plan = "Basic" | "Standard" | "Pro" | "Business";
@@ -22,12 +22,16 @@ export function useMembership() {
       setLoading(false);
     });
     return () => unsub();
-  }, [db, user?.uid]);
+  }, [user]);
 
-  const active =
+  const nowRef = useRef(0);
+  // eslint-disable-next-line react-hooks/purity
+  if (!nowRef.current) nowRef.current = Date.now();
+  const active = useMemo(() =>
     !!membership?.active &&
     membership?.endDate &&
-    new Date(membership.endDate).getTime() > Date.now();
+    new Date(membership.endDate).getTime() > nowRef.current,
+  [membership]);
 
   const plan: Plan | undefined = membership?.plan;
   const listingCount: number = membership?.listingCount ?? 0;

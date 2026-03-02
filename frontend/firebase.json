@@ -6,7 +6,7 @@
     },
     "firestore": {
       "host": "127.0.0.1",
-      "port": 8080,
+      "port": 8085,
       "websocketPort": 9150
     },
     "storage": {
@@ -15,7 +15,7 @@
     },
     "database": {
       "host": "127.0.0.1",
-      "port": 9000
+      "port": 9005
     },
     "ui": {
       "enabled": true,
@@ -42,6 +42,15 @@
       "**/node_modules/**"
     ],
     "cleanUrls": true,
-    "trailingSlash": true
+    "trailingSlash": true,
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "function": {
+          "functionId": "api",
+          "region": "europe-west3"
+        }
+      }
+    ]
   }
 }

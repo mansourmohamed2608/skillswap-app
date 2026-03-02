@@ -26,6 +26,11 @@
           }
         }
       }
+    },
+
+    "$other": {
+      ".read": false,
+      ".write": false
     }
   }
 }

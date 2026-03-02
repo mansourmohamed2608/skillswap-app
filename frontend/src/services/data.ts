@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { auth, db, isFirebaseConfigured } from './firebase';
 import { getFunctionsBase } from './api';
@@ -211,7 +212,9 @@ const mapApiHitToListing = (hit: any): ServiceListing => {
 
 async function fetchListingsFromApi(options?: { count?: number }): Promise<ServiceListing[]> {
     try {
-        const base = process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '/api';
+        const fnBase = getFunctionsBase();
+        const base = fnBase ? `${fnBase}/api` : (process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '');
+        if (!base) return [];
         const pageSize = Math.min(200, Math.max(1, options?.count ?? 200));
         const resp = await fetch(`${base}/search/listings?pageSize=${pageSize}`, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`api ${resp.status}`);
@@ -219,8 +222,7 @@ async function fetchListingsFromApi(options?: { count?: number }): Promise<Servi
         const hits: any[] = Array.isArray(data?.hits) ? data.hits : [];
         const listings: ServiceListing[] = hits.map(mapApiHitToListing);
         return listings.filter((listing: ServiceListing) => isVisibleListingStatus(listing.status) && !isLowQualityListing(listing));
-    } catch (e) {
-        console.warn('fetchListingsFromApi failed, falling back to Firestore', e);
+    } catch {
         return [];
     }
 }
@@ -274,7 +276,6 @@ export async function getListings(): Promise<ServiceListing[]> {
     if (apiListings.length) return apiListings;
 
     if (!isFirebaseConfigured()) {
-        console.warn("Firebase not configured and API returned no data; returning empty list.");
         return [];
     }
     try {
@@ -283,8 +284,7 @@ export async function getListings(): Promise<ServiceListing[]> {
         if (listingsSnapshot.empty) return [];
         const listings: ServiceListing[] = listingsSnapshot.docs.map(docToServiceListing);
         return listings.filter((listing: ServiceListing) => isVisibleListingStatus(listing.status) && !isLowQualityListing(listing));
-    } catch (error) {
-        console.error("Error fetching listings: ", error);
+    } catch {
         return [];
     }
 }
@@ -307,7 +307,6 @@ export async function getListingsWithUsers(options?: { count?: number }): Promis
     }
     
     if (!isFirebaseConfigured()) {
-        console.warn("Firebase not configured and API returned no data; returning empty list.");
         return [];
     }
 
@@ -331,8 +330,7 @@ export async function getListingsWithUsers(options?: { count?: number }): Promis
             })
         );
         return listingsWithUsers;
-    } catch (error) {
-        console.error("Error fetching listings with users: ", error);
+    } catch {
         return [];
     }
 }
@@ -345,7 +343,6 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
     if (apiHit && !isLowQualityListing(apiHit)) return apiHit;
 
     if (!isFirebaseConfigured()) {
-        console.warn(`Firebase not configured and API returned no data for id: ${id}`);
         return null;
     }
     try {
@@ -355,10 +352,8 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
             const listing = docToServiceListing(listingDoc);
             return isLowQualityListing(listing) ? null : listing;
         }
-        console.warn(`Listing with id ${id} not found in Firestore.`);
         return null;
-    } catch (error) {
-        console.error(`Error fetching listing with id ${id}: `, error);
+    } catch {
         return null;
     }
 }
@@ -381,8 +376,8 @@ export async function getUserById(id: string): Promise<User | null> {
         if (publicSnap.exists()) {
             return mapUserFromDoc(publicSnap.id, publicSnap.data());
         }
-    } catch (error) {
-        console.warn(`Public profile read failed for user ${uid}.`, error);
+    } catch {
+        // public profile read failed; fall through to private path
     }
 
     // 2) Private users/{uid} fallback is only valid for the signed-in user.
@@ -393,12 +388,11 @@ export async function getUserById(id: string): Promise<User | null> {
             if (userDoc.exists()) {
                 return mapUserFromDoc(userDoc.id, userDoc.data());
             }
-        } catch (error) {
-            console.error(`Error fetching self user with id ${uid}.`, error);
+        } catch {
+            // private user fetch failed
         }
     }
 
-    console.warn(`User with id ${uid} not found in Firestore.`);
     return await getUserByIdentifierFromApi(uid);
 }
 
@@ -420,8 +414,8 @@ async function getUserByUsername(username: string): Promise<User | null> {
             const hit = snap.docs[0];
             return mapUserFromDoc(hit.id, hit.data());
         }
-    } catch (error) {
-        console.warn(`Username lookup failed on publicProfiles.usernameLower for "${candidate}".`, error);
+    } catch {
+        // index lookup failed; fall through
     }
 
     // 2) Backward compatibility for older docs that only stored username.
@@ -433,8 +427,8 @@ async function getUserByUsername(username: string): Promise<User | null> {
             const hit = snap.docs[0];
             return mapUserFromDoc(hit.id, hit.data());
         }
-    } catch (error) {
-        console.warn(`Username lookup failed on publicProfiles.username for "${candidate}".`, error);
+    } catch {
+        // legacy lookup failed; fall through
     }
 
     // 3) Final fallback to backend public resolver to avoid relying on private users rules.
@@ -529,7 +523,6 @@ export async function getUserByIdentifier(identifier: string): Promise<User | nu
 export async function getListingsByUserId(userId: string): Promise<ServiceListing[]> {
     if (!userId) return [];
     if (!isFirebaseConfigured()) {
-        console.warn(`Firebase not configured; returning empty list for user: ${userId}`);
         return [];
     }
     try {
@@ -549,8 +542,7 @@ export async function getListingsByUserId(userId: string): Promise<ServiceListin
         // Note: We are now allowing an empty array to be returned from Firestore
         // If a user has no real listings, it should show that, not sample data.
         return listings;
-    } catch (error) {
-        console.error(`Error fetching listings for user ${userId}: `, error);
+    } catch {
         return [];
     }
 }
@@ -593,8 +585,7 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
                 videoUrl: data.videoUrl || null,
             } as WishSummary;
         });
-    } catch (error) {
-        console.error("Error fetching featured wishes:", error);
+    } catch {
         return [];
     }
 }

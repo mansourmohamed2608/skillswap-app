@@ -26,11 +26,11 @@ export function Avatar({ source, fallback, size = 'md', className, style, ...pro
   };
 
   return (
-    <View style={[cn(`flex items-center justify-center rounded-full bg-gray-200 ${sizeClasses[size]} ${className || ''}`), style]} {...props}>
+    <View style={[cn(`flex items-center justify-center rounded-full overflow-hidden bg-muted ${sizeClasses[size]} ${className || ''}`), style]} {...props}>
       {source ? (
         <Image source={source} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
       ) : (
-        <Text style={cn(`font-bold text-gray-600 ${textSizeClasses[size]}`)}>
+        <Text style={cn(`font-bold text-muted-foreground ${textSizeClasses[size]}`)}>
           {fallback?.charAt(0)?.toUpperCase() || '?'}
         </Text>
       )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, NativeSyntheticEvent, NativeScrollEvent, useColorScheme } from 'react-native';
 import Constants from 'expo-constants';
 import { cn } from '@/lib/cn';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
@@ -36,11 +36,11 @@ const pricingData: Record<PlanKey, PlanDef> = {
   basic: {
     prices: { EGP: { '3mo': 30, '6mo': 50, '12mo': 80 }, SAR: { '3mo': 25, '6mo': 45, '12mo': 75 } },
     features: [
-      '9 service listings every 3 months',
-      '9 bookings every 3 months',
-      '9 chats every 3 months',
-      'Basic profile customization',
-      'Access to public swap requests',
+      'pricing.plan.basic.features.0',
+      'pricing.plan.basic.features.1',
+      'pricing.plan.basic.features.2',
+      'pricing.plan.basic.features.3',
+      'pricing.plan.basic.features.4',
     ],
     icon: Gem,
     title: 'Basic Plan',
@@ -49,12 +49,12 @@ const pricingData: Record<PlanKey, PlanDef> = {
   standard: {
     prices: { EGP: { '3mo': 50, '6mo': 80, '12mo': 100 }, SAR: { '3mo': 45, '6mo': 75, '12mo': 95 } },
     features: [
-      'Up to 12 active listings every 3 months',
-      '12 bookings every 3 months',
-      '12 messaging access every 3 months',
-      'Basic analytics (profile visits, listing views)',
-      'Featured in local results',
-      'Basic support',
+      'pricing.plan.standard.features.0',
+      'pricing.plan.standard.features.1',
+      'pricing.plan.standard.features.2',
+      'pricing.plan.standard.features.3',
+      'pricing.plan.standard.features.4',
+      'pricing.plan.standard.features.5',
     ],
     icon: Star,
     title: 'Standard Plan',
@@ -64,13 +64,13 @@ const pricingData: Record<PlanKey, PlanDef> = {
   pro: {
     prices: { EGP: { '3mo': 80, '6mo': 100, '12mo': 120 }, SAR: { '3mo': 75, '6mo': 95, '12mo': 115 } },
     features: [
-      'Unlimited listings & bookings',
-      'Advanced analytics',
-      'Priority listing in search',
-      'Verified badge',
-      'Custom profile branding',
-      'Access to Middle East swap lobby',
-      'Full support',
+      'pricing.plan.pro.features.0',
+      'pricing.plan.pro.features.1',
+      'pricing.plan.pro.features.2',
+      'pricing.plan.pro.features.3',
+      'pricing.plan.pro.features.4',
+      'pricing.plan.pro.features.5',
+      'pricing.plan.pro.features.6',
     ],
     icon: Briefcase,
     title: 'Pro Plan',
@@ -79,13 +79,13 @@ const pricingData: Record<PlanKey, PlanDef> = {
   business: {
     prices: { EGP: { '3mo': 600, '6mo': null, '12mo': null }, SAR: { '3mo': 600, '6mo': null, '12mo': null } },
     features: [
-      'Multiple team members (up to 5)',
-      'Business profile & branding',
-      'Custom service categories',
-      'Email notifications',
-      'Dedicated account manager',
-      'Event or workshop listing',
-      'Early access to new features',
+      'pricing.plan.business.features.0',
+      'pricing.plan.business.features.1',
+      'pricing.plan.business.features.2',
+      'pricing.plan.business.features.3',
+      'pricing.plan.business.features.4',
+      'pricing.plan.business.features.5',
+      'pricing.plan.business.features.6',
     ],
     icon: Briefcase,
     title: 'Business Plan',
@@ -98,6 +98,9 @@ export default function PricingScreen() {
   const [duration, setDuration] = useState<Duration>('3mo');
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
   const { setFade } = useHeaderFade();
+  const colorScheme = useColorScheme();
+  const brandIconColor = colorScheme === 'dark' ? '#86efac' : '#2b6b4f';
+  const checkIconColor = colorScheme === 'dark' ? '#4ade80' : '#16A34A';
   const useMockPayments = (Constants.expoConfig?.extra as any)?.EXPO_PUBLIC_USE_MOCK_PAYMENTS === 'true';
   const { t } = useTranslation();
 
@@ -131,7 +134,7 @@ export default function PricingScreen() {
         scrollEventThrottle={16}
       >
         <View style={cn('px-4 py-6 gap-4')}>
-          <Text style={cn('text-2xl font-bold text-foreground')}>Subscription Plans</Text>
+          <Text style={cn('text-2xl font-bold text-foreground')}>{t('pricing.title')}</Text>
 
           {/* Controls */}
           <View style={cn('flex-row items-center justify-between')}>{/* Currency */}
@@ -164,14 +167,14 @@ export default function PricingScreen() {
                 <CardHeader className="items-center">
                   {plan.popular && (
                     <View style={cn('absolute right-4 -top-3 px-3 py-1 rounded-full bg-primary')}>
-                      <Text style={cn('text-white text-xs font-semibold')}>Most Popular</Text>
+                      <Text style={cn('text-white text-xs font-semibold')}>{t('pricing.mostPopular')}</Text>
                     </View>
                   )}
                   <View style={cn('p-3 rounded-full bg-primary/10 mb-2')}>
-                    <Icon size={28} color="#2b6b4f" />
+                    <Icon size={28} color={brandIconColor} />
                   </View>
-                  <CardTitle>{plan.title}</CardTitle>
-                  <Text style={cn('text-muted-foreground')}>{plan.desc}</Text>
+                  <CardTitle>{t(`pricing.plan.${key}.title`)}</CardTitle>
+                  <Text style={cn('text-muted-foreground')}>{t(`pricing.plan.${key}.desc`)}</Text>
                 </CardHeader>
                 <CardContent>
                   <View style={cn('items-center mb-4')}>
@@ -181,8 +184,8 @@ export default function PricingScreen() {
                   </View>
                   {plan.features.map((f) => (
                     <View key={f} style={cn('flex-row items-start mb-2')}>
-                      <Check size={18} color="#16A34A" style={{ marginRight: 8 }} />
-                      <Text style={cn('text-sm text-foreground flex-1')}>{f}</Text>
+                      <Check size={18} color={checkIconColor} style={{ marginRight: 8 }} />
+                      <Text style={cn('text-sm text-foreground flex-1')}>{t(f)}</Text>
                     </View>
                   ))}
                 </CardContent>
@@ -191,7 +194,7 @@ export default function PricingScreen() {
                     {loadingPlan === key ? (
                       <ActivityIndicator color="#fff" />
                     ) : (
-                      <Text style={cn('text-accent-foreground text-base font-semibold')}>Choose Plan</Text>
+                      <Text style={cn('text-accent-foreground text-base font-semibold')}>{t('pricing.choosePlan')}</Text>
                     )}
                   </TouchableOpacity>
                 </CardFooter>

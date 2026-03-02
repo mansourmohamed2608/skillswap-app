@@ -20,6 +20,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!isFirebaseConfigured() || !auth) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- early-exit initialization path
       setErr('Auth not initialized (check .env & firebase.ts)');
       setLoading(false);
       return;
@@ -36,7 +37,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       },
       e => {
-        console.error('onAuthStateChanged failed:', e);
         setErr(getErrorMessage(e, 'Authentication failed. Please try again.'));
         setLoading(false);
       }

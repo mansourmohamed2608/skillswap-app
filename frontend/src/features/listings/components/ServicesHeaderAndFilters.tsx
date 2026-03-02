@@ -149,8 +149,10 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     return withDistanceSort(filtered, Number.isFinite(submitted.nearLat) && Number.isFinite(submitted.nearLng)
       ? { lat: Number(submitted.nearLat), lng: Number(submitted.nearLng) }
       : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSubmittedFilters, initialItems, submitted]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const initialItemsSorted = useMemo(() => withDistanceSort(initialItems, nearCoords), [initialItems, nearCoords]);
 
   function buildSubmitted(nextNear: { lat: number; lng: number } | null, nextLocation?: string): SubmittedFilters {
@@ -223,7 +225,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     }
   }
 
-  async function useCurrentLocation() {
+  async function fetchCurrentLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setLocationHintTone('warning');
       setLocationHint(t('services.locationUnsupported'));
@@ -263,6 +265,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
   }
 
   async function applyFilters() {
+    try {
     const manual = manualLocation.trim();
     let nextNear = nearCoords;
     let nextLocation = manual || undefined;
@@ -286,6 +289,10 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     }
 
     setSubmitted(buildSubmitted(nextNear, nextLocation));
+    } catch {
+      setLocationHintTone('warning');
+      setLocationHint(t('services.locationFailed'));
+    }
   }
 
   function clearFilters() {
@@ -303,7 +310,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     if (autoLocationRequestedRef.current) return;
     autoLocationRequestedRef.current = true;
     // Request location permission early for better UX, but do not auto-apply filters.
-    void useCurrentLocation();
+    void fetchCurrentLocation();
     // intentionally run once after first render
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -415,7 +422,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
         </div>
 
         <div className="mt-3 flex items-center gap-3">
-          <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+          <Button type="button" variant="outline" onClick={fetchCurrentLocation} disabled={locating}>
             {locating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixedIcon className="mr-2 h-4 w-4" />}
             {locating ? t('services.locating') : t('services.useMyLocation')}
           </Button>

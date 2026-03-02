@@ -273,6 +273,9 @@ const resources = {
           authRequiredRedirect: "Redirecting you to the sign-in page...",
           authRequiredButton: "Go to Sign In",
         },
+        edit: {
+          title: "Edit Listing",
+        },
         form: {
           create: "Create Listing",
           creating: "Creating Listing...",
@@ -850,6 +853,12 @@ const resources = {
         goHome: "Go to Homepage",
         errorPrefix: "Error:",
         loadFailed: "We encountered an issue while trying to load this page. Please try again or contact support if the problem persists.",
+      },
+      notFoundPage: {
+        title: "Page Not Found",
+        description: "Sorry, we couldn't find the page you're looking for. It may have been moved or deleted.",
+        goHome: "Go to Homepage",
+        goBack: "Go Back",
       },
       kyc: {
         done: {
@@ -1508,6 +1517,9 @@ const resources = {
           authRequiredRedirect: "جارٍ تحويلك إلى صفحة تسجيل الدخول...",
           authRequiredButton: "اذهب لتسجيل الدخول",
         },
+        edit: {
+          title: "تعديل العرض",
+        },
         form: {
           create: "إنشاء عرض",
           creating: "جارٍ إنشاء العرض...",
@@ -2085,6 +2097,12 @@ const resources = {
         goHome: "اذهب إلى الصفحة الرئيسية",
         errorPrefix: "خطأ:",
         loadFailed: "واجهنا مشكلة أثناء تحميل هذه الصفحة. يرجى المحاولة مرة أخرى أو التواصل مع الدعم إذا استمرت المشكلة.",
+      },
+      notFoundPage: {
+        title: "الصفحة غير موجودة",
+        description: "عذرًا، لم نتمكن من العثور على الصفحة التي تبحث عنها. ربما تم نقلها أو حذفها.",
+        goHome: "اذهب إلى الصفحة الرئيسية",
+        goBack: "العودة للخلف",
       },
       kyc: {
         done: {

@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ChatIndexRedirect() {
-  return <Redirect href="/(tabs)/chat" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/chat'); }, [router]);
+  return null;
 }

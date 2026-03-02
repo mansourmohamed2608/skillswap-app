@@ -124,12 +124,12 @@ export async function handleDiditWebhook(rawBody: Buffer, headers: Record<string
     });
   } catch (e: any) {
     if (e?.code === 6 || e?.code === 'already-exists' || /already exists/i.test(String(e?.message || ''))) {
-      console.info('[KYC] webhook duplicate', { eventKey, sessionId });
+      logger.info({ eventKey, sessionId }, '[KYC] webhook duplicate');
       return { ok: true, alreadyProcessed: true };
     }
     throw e;
   }
-  console.info('[KYC] webhook received', { eventKey, sessionId, status: evt?.status });
+  logger.info({ eventKey, sessionId, status: evt?.status }, '[KYC] webhook received');
   await admin.firestore().collection('kyc_webhooks').add(clean({
     provider: 'didit',
     headers: { 'x-signature': sig, 'x-timestamp': ts },
@@ -270,7 +270,7 @@ export async function handleDiditWebhook(rawBody: Buffer, headers: Record<string
               .set({ reason: 'MANUAL_REVIEW_MISMATCH' }, { merge: true });
           }
         } catch (cmpErr) {
-          console.error('[KYC] compare failed', cmpErr);
+          logger.error({ err: cmpErr }, '[KYC] compare failed');
         }
       } else if (vendorData) {
         await admin.firestore()
@@ -279,7 +279,7 @@ export async function handleDiditWebhook(rawBody: Buffer, headers: Record<string
       }
     }
   } catch (e) {
-    console.error('[KYC] decision parse/store failed', e);
+    logger.error({ err: e }, '[KYC] decision parse/store failed');
   }
 
   return { ok: true };

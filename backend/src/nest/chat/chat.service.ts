@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, HttpException, Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { canSendMessage, getUserDocument, incrementMessageCount } from '../../core/membership';
 import { sendEmailNotification, sendInAppNotification, sendPushNotification } from '../../core/notifications';
@@ -14,6 +14,7 @@ const UID_RE = /^[A-Za-z0-9]{20,}$/;
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
   private async resolvePublicIdentifier(uid: string): Promise<string> {
     const rawUid = String(uid || '').trim();
     if (!rawUid) return '';
@@ -89,7 +90,7 @@ export class ChatService {
         await incrementMessageCount(uid);
       } catch (e) {
         // Message was already persisted; do not fail the request on quota-counter write issues.
-        console.warn('[Chat] Failed to increment message count', { uid, error: (e as any)?.message || String(e) });
+        this.logger.warn(`[Chat] Failed to increment message count for uid=${uid}: ${(e as any)?.message || e}`);
       }
 
       try {
@@ -103,17 +104,13 @@ export class ChatService {
         await sendPushNotification(recipientId, 'New message', 'You have a new message.', `/chat/${senderIdentifier || uid}`);
         await sendEmailNotification(recipientId, 'New message', 'You have a new message on SkillSwap.');
       } catch (e) {
-        console.warn('Failed to send message notifications', e);
+        this.logger.warn(`Failed to send message notifications: ${(e as any)?.message || e}`);
       }
 
       return { conversationId: convId, messageId: msgRef.key };
     } catch (error: any) {
       if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
-      console.error('[Chat] sendMessage failed', {
-        uid,
-        recipientId: String(payload?.recipientId || '').trim(),
-        message: String(error?.message || error),
-      });
+      this.logger.error(`[Chat] sendMessage failed uid=${uid} recipient=${String(payload?.recipientId || '').trim()}: ${error?.message || error}`);
       throw new ServiceUnavailableException('Unable to send message right now');
     }
   }

@@ -1,9 +1,139 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // DEV-ONLY: Allow everything
-    match /{document=**} {
-      allow read, write: if true;
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function userDoc(uid) {
+      return get(/databases/$(database)/documents/users/$(uid));
+    }
+    function isAdmin(uid) {
+      return isSignedIn() && userDoc(uid).data.role == 'admin';
+    }
+    function membership(uid) {
+      return userDoc(uid).data.membership;
+    }
+    function isActiveMember(uid) {
+      let m = membership(uid);
+      return m != null && m.active == true && m.endDate > request.time;
+    }
+    function kycVerified(uid) {
+      return userDoc(uid).data.kyc.status == 'VERIFIED';
+    }
+    function listingLimit(m) {
+      return m.plan == 'Basic' ? 9 : (m.plan == 'Standard' ? 12 : 9999999);
+    }
+    function canCreateListing(uid) {
+      let m = membership(uid);
+      return m != null && m.listingCount < listingLimit(m);
+    }
+    function isClean(text) {
+      return !text.lower().matches('.*(weapon|drugs|adult|gambling).*');
+    }
+    function isSafeUserUpdate() {
+      let changed = request.resource.data.diff(resource.data).changedKeys();
+      return !changed.hasAny(['membership', 'kyc', 'role', 'rating', 'ratingSum', 'reviewsCount']);
+    }
+
+    match /publicProfiles/{uid} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && request.auth.uid == userId && isSafeUserUpdate();
+      allow delete: if false;
+    }
+
+    match /listings/{id} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /requests/{id} {
+      allow read: if isSignedIn() &&
+                  (resource.data.requesterId == request.auth.uid || resource.data.ownerId == request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /notifications/{id} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /users/{userId}/kyc/{docId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update, delete: if false;
+    }
+
+    match /kyc_temp/{vendor} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /wishes/{wishId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, update, delete: if false;
+    }
+
+    match /eventRegistrations/{id} {
+      allow read: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /wishDonations/{donId} {
+      allow read: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /wishes/{wishId}/donations/{donId} {
+      allow read: if false;
+      allow create, update, delete: if false;
+    }
+
+    match /moderationFlags/{flagId} {
+      allow read: if isAdmin(request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /moderationReports/{reportId} {
+      allow read: if isAdmin(request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if false;
+    }
+
+    match /moderationKeywords/{docId} {
+      allow read, create, update, delete: if isAdmin(request.auth.uid);
+    }
+
+    match /adminAudit/{docId} {
+      allow read: if isAdmin(request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /notificationDeadLetters/{docId} {
+      allow read: if isAdmin(request.auth.uid);
+      allow create, update, delete: if false;
+    }
+
+    match /deviceTokens/{userId} {
+      allow read, create, update, delete: if false;
+    }
+
+    match /matchAcceptances/{key} {
+      allow read: if isSignedIn() && (
+        request.auth.uid in resource.data.users ||
+        (resource.data.acceptedBy != null && request.auth.uid in resource.data.acceptedBy)
+      );
+      allow create, update, delete: if false;
     }
   }
 }

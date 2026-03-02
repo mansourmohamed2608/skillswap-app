@@ -69,20 +69,20 @@ export default function HomeScreen() {
           <View style={cn('w-full py-16 px-6 items-center bg-primary')}> 
             <HeroLogo />
             <Text style={cn('text-3xl font-bold mb-4 text-primary-foreground text-center')}>
-              Welcome to SkillSwap!
+              {t('home.welcome')}
             </Text>
             <Text style={cn('text-lg mb-8 text-primary-foreground text-center max-w-[640px]')}> 
-              SkillSwap is your vibrant hub to share your skills and services with your community — unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.
+              {t('home.hero_body')}
             </Text>
             <View style={cn('gap-4 w-full items-center')}> 
               <Link href="/listings">
                 <View style={cn('px-6 py-3 rounded-lg bg-accent shadow-md')}>
-                  <Text style={cn('text-accent-foreground font-semibold text-center')}>Browse Listings</Text>
+                  <Text style={cn('text-accent-foreground font-semibold text-center')}>{t('home.browse_listings')}</Text>
                 </View>
               </Link>
               <Link href="/listings/new">
                 <View style={cn('px-6 py-3 rounded-lg border border-accent bg-card')}>
-                  <Text style={cn('text-accent font-semibold text-center')}>Post a Listing</Text>
+                  <Text style={cn('text-accent font-semibold text-center')}>{t('home.post_listing')}</Text>
                 </View>
               </Link>
             </View>
@@ -92,7 +92,7 @@ export default function HomeScreen() {
         {/* How it Works Section */}
         <View style={cn('px-6 py-16')}>
           <Text style={cn('text-3xl font-bold text-foreground text-center mb-12')}>
-            How SkillSwap Works
+            {t('home.how_it_works')}
           </Text>
           <View style={cn('gap-6')}>
             <Card>
@@ -100,10 +100,10 @@ export default function HomeScreen() {
                 <View style={cn('p-3 rounded-full bg-primary/10 mb-2')}>
                   <Search size={32} color="#2b6b4f" />
                 </View>
-                <CardTitle className="text-center">1. Offer & Request</CardTitle>
+                <CardTitle className="text-center">{t('home.step1_title')}</CardTitle>
               </CardHeader>
               <CardDescription className="text-center px-4 pb-4">
-                List the skills you can offer and the services you're looking for in return. Be specific to attract the right swaps!
+                {t('home.step1_body')}
               </CardDescription>
             </Card>
             <Card>
@@ -111,10 +111,10 @@ export default function HomeScreen() {
                 <View style={cn('p-3 rounded-full bg-primary/10 mb-2')}>
                   <Sparkles size={32} color="#2b6b4f" />
                 </View>
-                <CardTitle className="text-center">2. Find a Match</CardTitle>
+                <CardTitle className="text-center">{t('home.step2_title')}</CardTitle>
               </CardHeader>
               <CardDescription className="text-center px-4 pb-4">
-                Browse listings by category or use our AI Matchmaker to find potential exchanges based on your profile.
+                {t('home.step2_body')}
               </CardDescription>
             </Card>
             <Card>
@@ -122,10 +122,10 @@ export default function HomeScreen() {
                 <View style={cn('p-3 rounded-full bg-primary/10 mb-2')}>
                   <Users size={32} color="#2b6b4f" />
                 </View>
-                <CardTitle className="text-center">3. Connect & Swap</CardTitle>
+                <CardTitle className="text-center">{t('home.step3_title')}</CardTitle>
               </CardHeader>
               <CardDescription className="text-center px-4 pb-4">
-                Use in-app chat to discuss details and schedule your service exchange. Happy swapping!
+                {t('home.step3_body')}
               </CardDescription>
             </Card>
           </View>
@@ -134,7 +134,7 @@ export default function HomeScreen() {
         {/* Featured Listings Section */}
         <View style={cn('px-6 py-16')}>
           <Text style={cn('text-3xl font-bold text-foreground text-center mb-12')}>
-            Featured Listings
+            {t('home.featured_listings')}
           </Text>
           {loading ? (
             <View style={cn('items-center py-8')}>
@@ -148,7 +148,7 @@ export default function HomeScreen() {
               <View style={cn('items-center mt-4')}>
                 <Link href="/listings">
                   <View style={cn('px-6 py-3 rounded-lg border border-primary')}>
-                    <Text style={cn('text-primary font-semibold')}>View All Listings</Text>
+                    <Text style={cn('text-primary font-semibold')}>{t('home.view_all_listings')}</Text>
                   </View>
                 </Link>
               </View>
@@ -156,14 +156,14 @@ export default function HomeScreen() {
           ) : (
             <View style={cn('items-center py-8 border border-dashed border-destructive/50 rounded-lg bg-card')}> 
               <Search size={48} color="#6b7280" />
-              <Text style={cn('mt-4 text-xl font-semibold text-foreground')}>No Listings to Display</Text>
+              <Text style={cn('mt-4 text-xl font-semibold text-foreground')}>{t('home.no_listings_title')}</Text>
               <Text style={cn('mt-2 text-muted-foreground text-center px-4')}>
-                There are no service listings available at the moment. This might be due to a connection issue.
+                {t('home.no_listings_body')}
               </Text>
               <View style={cn('items-center mt-4')}>
                 <Link href="/listings">
                   <View style={cn('px-6 py-3 rounded-lg border border-primary')}>
-                    <Text style={cn('text-primary font-semibold')}>View All Listings</Text>
+                    <Text style={cn('text-primary font-semibold')}>{t('home.view_all_listings')}</Text>
                   </View>
                 </Link>
               </View>
@@ -183,13 +183,13 @@ export default function HomeScreen() {
                 <View style={cn('p-3 bg-accent/10 rounded-full mb-2')}>
                   <Heart size={32} color="#D2691E" />
                 </View>
-                <CardTitle className="text-center">Make Someone's Wishes Come True!</CardTitle>
+                <CardTitle className="text-center">{t('home.wishes_donate_title')}</CardTitle>
               </CardHeader>
-              <CardDescription className="text-center px-4 pb-2">Your generosity can make a real difference. Contribute to our community fund to help fulfill the wishes of those in need.</CardDescription>
+              <CardDescription className="text-center px-4 pb-2">{t('home.wishes_donate_body')}</CardDescription>
               <CardFooter className="items-center justify-center">
                 <Link href="/wishes/donate">
                   <View style={cn('px-6 py-3 rounded-lg bg-accent')}>
-                    <Text style={cn('text-accent-foreground font-semibold')}>Gift Now</Text>
+                    <Text style={cn('text-accent-foreground font-semibold')}>{t('home.wishes_donate_button')}</Text>
                   </View>
                 </Link>
               </CardFooter>
@@ -199,13 +199,13 @@ export default function HomeScreen() {
                 <View style={cn('p-3 bg-primary/10 rounded-full mb-2')}>
                   <Star size={32} color="#2b6b4f" />
                 </View>
-                <CardTitle className="text-center">Make Your Wishes Come True!</CardTitle>
+                <CardTitle className="text-center">{t('home.wishes_request_title')}</CardTitle>
               </CardHeader>
-              <CardDescription className="text-center px-4 pb-2">If you're facing hardship and need something you can't afford, let the community know. Post a wish and let us help.</CardDescription>
+              <CardDescription className="text-center px-4 pb-2">{t('home.wishes_request_body')}</CardDescription>
               <CardFooter className="items-center justify-center">
                 <Link href="/wishes/request">
                   <View style={cn('px-6 py-3 rounded-lg border border-primary')}>
-                    <Text style={cn('text-primary font-semibold')}>Make a Wish</Text>
+                    <Text style={cn('text-primary font-semibold')}>{t('home.wishes_request_button')}</Text>
                   </View>
                 </Link>
               </CardFooter>

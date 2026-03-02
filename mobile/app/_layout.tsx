@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '@/context/AuthContext';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Platform, View } from 'react-native';
+import { Text, Platform, View, type ViewStyle } from 'react-native';
 import { useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import i18n from '@/lib/i18n';
@@ -49,7 +49,7 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <SafeAreaView style={[{ flex: 1 }, cn('bg-background')]}>
+        <SafeAreaView style={[{ flex: 1 }, cn('bg-background') as ViewStyle] as any}>
           <HeaderFadeProvider>
             <KycGate>
               <LayoutWithHeaderPadding />

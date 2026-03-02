@@ -8,6 +8,7 @@
 import { getApps, getApp, initializeApp } from 'firebase/app';
 import { getMessaging, getToken, isSupported, Messaging, onMessage } from 'firebase/messaging';
 import { auth, firebaseConfig } from '@/services/firebase';
+import { getFunctionsBase } from '@/services/api';
 
 function getOrInitApp() {
   try { return getApps().length ? getApp() : initializeApp(firebaseConfig); } catch { return undefined; }
@@ -31,10 +32,8 @@ async function registerMessagingSW(): Promise<ServiceWorkerRegistration | undefi
     await navigator.serviceWorker.ready;
     
     return registration;
-  } catch (error) {
-    console.warn('Failed to register firebase-messaging-sw.js:', error);
-    
-    // Fallback: try to use any existing service worker
+  } catch {
+    // SW registration failed; try existing registration
     try {
       const existing = await navigator.serviceWorker.getRegistration();
       if (existing) return existing;
@@ -52,8 +51,6 @@ async function registerMessagingSW(): Promise<ServiceWorkerRegistration | undefi
  */
 export function setupForegroundMessageHandler(messaging: Messaging): void {
   onMessage(messaging, (payload) => {
-    console.log('Foreground message received:', payload);
-    
     // Show notification if we have permission and the browser supports it
     if (Notification.permission === 'granted' && payload.notification) {
       const { title, body } = payload.notification;
@@ -100,7 +97,6 @@ export async function ensurePushRegistered(): Promise<string | null> {
     // Get VAPID key from environment
     const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
     if (!vapidKey) {
-      console.warn('NEXT_PUBLIC_FIREBASE_VAPID_KEY not configured');
       return null;
     }
 
@@ -112,18 +108,20 @@ export async function ensurePushRegistered(): Promise<string | null> {
     });
     
     if (!token) {
-      console.warn('Failed to get FCM token');
       return null;
     }
 
     // Send token to backend
     const idToken = await auth?.currentUser?.getIdToken();
     if (!idToken) {
-      console.log('User not signed in, will register token later');
       return token; // Return token but don't send to backend yet
     }
     
-    const base = process.env.NEXT_PUBLIC_API_BASE || '/api';
+    const base = (() => {
+      const fnBase = getFunctionsBase();
+      return fnBase ? `${fnBase}/api` : (process.env.NEXT_PUBLIC_API_BASE || '');
+    })();
+    if (!base) return token;
     const response = await fetch(`${base}/user/devices/register`, {
       method: 'POST',
       headers: {
@@ -134,12 +132,11 @@ export async function ensurePushRegistered(): Promise<string | null> {
     });
     
     if (!response.ok) {
-      console.warn('Failed to register device token with backend:', response.status);
+      // token registration failed; will retry on next launch
     }
     
     return token;
-  } catch (e) {
-    console.warn('Push registration failed', e);
+  } catch {
     return null;
   }
 }

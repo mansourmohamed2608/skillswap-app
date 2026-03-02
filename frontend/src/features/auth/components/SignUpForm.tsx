@@ -65,7 +65,6 @@ export function SignUpForm() {
       const email = String(form.get('email') || '').trim();
       const phoneNumber = String(form.get('phoneNumber') || '').trim();
       const phoneNumberNormalized = normalizePhoneNumber(phoneNumber);
-      const emailLower = email.toLowerCase();
       const occupation = String(form.get('occupation') || '');
       const country = String(form.get('country') || '');
       const city = String(form.get('city') || '');
@@ -194,7 +193,6 @@ export function SignUpForm() {
 
       window.location.href = resp.url as string;
     } catch (err: any) {
-      console.error('Signup/KYC failed', err);
       const msg = getErrorMessage(err, t('auth.signUp.errors.signupFailed'));
       setState({ message: msg, success: false });
       toast({ title: t('auth.signUp.errors.signupFailedTitle'), description: msg, variant: 'destructive' });

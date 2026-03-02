@@ -38,7 +38,7 @@ function getPool(): Pool | null {
 function requirePool(context: string): Pool | null {
   const active = getPool();
   if (!active) {
-    console.warn(`PostgreSQL pool not configured; skipping ${context}`);
+    logger.warn(`PostgreSQL pool not configured; skipping ${context}`);
     return null;
   }
   return active;
@@ -69,7 +69,7 @@ export async function savePaymentRecord(record: {
   try {
     await pool.query(query, values);
   } catch (err) {
-    console.error('Error inserting payment into PostgreSQL:', err);
+    logger.error({ err }, 'Error inserting payment into PostgreSQL');
   }
 }
 
@@ -80,7 +80,7 @@ export async function updatePaymentStatus(sessionId: string, status: string): Pr
   try {
     await pool.query(query, [status, sessionId]);
   } catch (err) {
-    console.error('Error updating payment status in PostgreSQL:', err);
+    logger.error({ err }, 'Error updating payment status in PostgreSQL');
   }
 }
 
@@ -113,7 +113,7 @@ export async function saveDonationRecord(record: {
   try {
     await pool.query(query, values);
   } catch (err) {
-    console.error('Error inserting donation into PostgreSQL:', err);
+    logger.error({ err }, 'Error inserting donation into PostgreSQL');
   }
 }
 
@@ -124,6 +124,6 @@ export async function updateDonationStatus(sessionId: string, status: string): P
   try {
     await pool.query(query, [status, sessionId]);
   } catch (err) {
-    console.error('Error updating donation status in PostgreSQL:', err);
+    logger.error({ err }, 'Error updating donation status in PostgreSQL');
   }
 }

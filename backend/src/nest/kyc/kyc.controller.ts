@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, NotFoundException, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Logger, NotFoundException, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import Busboy from 'busboy';
 import * as admin from 'firebase-admin';
@@ -10,6 +10,8 @@ const IS_EMULATOR = Boolean(process.env.FUNCTIONS_EMULATOR || process.env.FIREBA
 
 @Controller('kyc')
 export class KycController {
+  private readonly logger = new Logger(KycController.name);
+
   constructor(private readonly kycService: KycService) {}
 
 
@@ -58,15 +60,15 @@ export class KycController {
   async verifyIdDocument(
     @Req() req: Request,
   ) {
-    console.log('[KYC] verifyIdDocument called');
-    console.log('[KYC] Content-Type:', req.headers['content-type']);
+    this.logger.debug('[KYC] verifyIdDocument called');
+    this.logger.debug(`[KYC] Content-Type: ${req.headers['content-type']}`);
     
     const uid = (req as any)?.user?.uid;
     if (!uid) throw new UnauthorizedException('Authentication required');
     
     // Parse multipart form data using busboy - works with Firebase Functions
     const files = await this.parseMultipartRequest(req);
-    console.log('[KYC] parsed files:', Object.keys(files));
+    this.logger.debug(`[KYC] parsed files: ${Object.keys(files).join(', ')}`);
     
     const front = files.front;
     const back = files.back;
@@ -124,7 +126,7 @@ export class KycController {
         });
 
         busboy.on('error', (err: Error) => {
-          console.error('[KYC] Busboy error:', err);
+          this.logger.error(`[KYC] Busboy error: ${err.message}`);
           reject(new BadRequestException('Failed to parse multipart form data: ' + err.message));
         });
 
@@ -141,7 +143,7 @@ export class KycController {
           req.pipe(busboy);
         }
       } catch (err: any) {
-        console.error('[KYC] Error initializing busboy:', err);
+        this.logger.error(`[KYC] Error initializing busboy: ${err.message}`);
         reject(new BadRequestException('Failed to initialize multipart parser: ' + err.message));
       }
     });
@@ -162,6 +164,59 @@ export class KycController {
     const uid = (req as any)?.user?.uid || null;
     if (!uid) throw new UnauthorizedException('Authentication required');
     return this.kycService.cancel(uid);
+  }
+
+  /**
+   * POST /kyc/submit
+   * Authenticated flow: accept Firebase Storage URLs, download them and
+   * run Didit ID-verification on the server side.
+   */
+  @UseGuards(FirebaseAuthGuard)
+  @Post('submit')
+  async submit(
+    @Body() body: { fullName?: string; nationalId?: string; idFrontUrl?: string; idBackUrl?: string },
+    @Req() req: Request,
+  ) {
+    const uid = (req as any)?.user?.uid || null;
+    if (!uid) throw new UnauthorizedException('Authentication required');
+    if (!body?.idFrontUrl || !body?.idBackUrl) {
+      throw new BadRequestException('idFrontUrl and idBackUrl are required');
+    }
+    return this.kycService.submitFromUrls(uid, {
+      fullName: String(body.fullName || ''),
+      nationalId: body.nationalId ? String(body.nationalId) : undefined,
+      idFrontUrl: body.idFrontUrl,
+      idBackUrl: body.idBackUrl,
+    });
+  }
+
+  /**
+   * POST /kyc/submit-public
+   * Pre-signup / unauthenticated flow: accept base64-encoded images with a
+   * `vendor` identifier.  Results are stored in kyc_temp/{vendor} and can
+   * be finalised via POST /kyc/finalize once the user has an account.
+   */
+  @Post('submit-public')
+  async submitPublic(
+    @Body() body: {
+      fullName?: string;
+      vendor?: string;
+      idFrontBase64?: string;
+      idBackBase64?: string;
+      nationalId?: string;
+    },
+  ) {
+    const vendor = String(body?.vendor || '').trim();
+    if (!vendor) throw new BadRequestException('vendor is required');
+    if (!body?.idFrontBase64 || !body?.idBackBase64) {
+      throw new BadRequestException('idFrontBase64 and idBackBase64 are required');
+    }
+    return this.kycService.submitFromBase64(vendor, {
+      fullName: String(body.fullName || ''),
+      idFrontBase64: body.idFrontBase64,
+      idBackBase64: body.idBackBase64,
+      nationalId: body.nationalId ? String(body.nationalId) : undefined,
+    });
   }
 
   @Post('webhook')

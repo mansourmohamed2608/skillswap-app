@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { decrementListingCount } from '../../core/membership';
 import { BANNED_KEYWORDS } from '../../core/banned-keywords';
@@ -15,10 +15,25 @@ const DEFAULT_KEYWORDS = normalizeKeywords(BANNED_KEYWORDS);
 
 @Injectable()
 export class AdminService {
+  private readonly logger = new Logger(AdminService.name);
+
+  // In-process TTL cache: avoids a Firestore read on every admin action within the same
+  // Cloud Functions instance.  A cache miss (first call, or after TTL) still hits Firestore.
+  // TTL is 5 min — a revoked admin retains access for at most 5 min on a warm instance,
+  // which is acceptable for internal tooling.
+  private readonly adminCache = new Map<string, number>(); // uid → expiresAt ms
+  private readonly ADMIN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
   private async assertAdmin(uid: string) {
+    const now = Date.now();
+    const cachedExpiry = this.adminCache.get(uid);
+    if (cachedExpiry && cachedExpiry > now) return; // cache hit
+
     const userSnap = await admin.firestore().collection('users').doc(uid).get();
     const role = (userSnap.data() as any)?.role;
     if (role !== 'admin') throw new ForbiddenException('Admin access required');
+
+    this.adminCache.set(uid, now + this.ADMIN_CACHE_TTL_MS);
   }
 
   async listFlagged(uid: string) {
@@ -168,11 +183,26 @@ export class AdminService {
     const userRef = admin.firestore().collection('users').doc(targetUid);
     const snap = await userRef.get();
     if (!snap.exists) throw new NotFoundException('User not found');
+
+    // Write Firestore first (source of truth), then propagate to Firebase Custom Claims
+    // so that the user's next issued token carries the role (eliminates DB read in assertAdmin
+    // for other admin users whose tokens already have the claim).
     await userRef.set({
       role,
       roleUpdatedAt: this.timestampValue(),
       roleUpdatedBy: uid,
     }, { merge: true });
+
+    // Propagate to Firebase Custom Claims for fast token-based role checks
+    try {
+      await admin.auth().setCustomUserClaims(targetUid, { role });
+      // Invalidate any local admin cache for this user in case role was demoted
+      this.adminCache.delete(targetUid);
+    } catch (e: any) {
+      // Log but do NOT fail — Firestore is the authoritative source
+      this.logger.warn({ event: 'set_custom_claims_failed', targetUid, role, error: e?.message }, 'Failed to set custom claims');
+    }
+
     await this.logAdminAction(uid, 'set_role', targetUid, { role });
     return { success: true };
   }
@@ -317,7 +347,7 @@ export class AdminService {
       snap.docs.forEach((d) => batch.delete(d.ref));
       if (!snap.empty) await batch.commit();
     } catch (e) {
-      console.warn('Failed to cleanup moderation flags', e);
+      this.logger.warn(`Failed to cleanup moderation flags: ${(e as any)?.message || e}`);
     }
   }
 

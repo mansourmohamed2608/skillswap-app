@@ -71,8 +71,7 @@ export async function findMatchesAction(
         matches: [],
       };
     }
-  } catch (error) {
-    console.error('Matchmaking Error:', error);
+  } catch {
     return {
       message: null,
       messageKey: 'matchmaking.form.errorMessage',

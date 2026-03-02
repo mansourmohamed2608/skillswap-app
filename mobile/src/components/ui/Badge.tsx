@@ -16,17 +16,17 @@ export function Badge({ variant = 'default', children, className, style, ...prop
   
   const variantClasses: Record<BadgeVariant, string> = {
     default: 'bg-primary border-primary',
-    secondary: 'bg-gray-200 border-gray-200',
-    destructive: 'bg-red-500 border-red-500',
-    outline: 'bg-white border-gray-300',
+    secondary: 'bg-muted border-muted',
+    destructive: 'bg-destructive border-destructive',
+    outline: 'bg-card border-border',
     success: 'bg-green-100 border-green-100',
   };
 
   const textVariantClasses: Record<BadgeVariant, string> = {
-    default: 'text-white',
-    secondary: 'text-gray-900',
-    destructive: 'text-white',
-    outline: 'text-gray-900',
+    default: 'text-primary-foreground',
+    secondary: 'text-muted-foreground',
+    destructive: 'text-destructive-foreground',
+    outline: 'text-foreground',
     success: 'text-green-800',
   };
 

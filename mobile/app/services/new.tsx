@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ServicesNewRedirect() {
-  return <Redirect href="/(tabs)/listings/new" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/listings/new'); }, [router]);
+  return null;
 }

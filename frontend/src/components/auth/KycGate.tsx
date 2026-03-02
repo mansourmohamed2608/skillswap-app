@@ -59,6 +59,7 @@ export function KycGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user?.uid || !db) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- resetting on dep change is intentional
       setKycStatus(null);
       setStatusDocReady(false);
       setUserDocReady(false);

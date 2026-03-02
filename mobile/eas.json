@@ -8,7 +8,8 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_USE_EMULATORS": "false"
+        "EXPO_PUBLIC_USE_EMULATORS": "false",
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
       }
     },
     "preview": {
@@ -20,7 +21,8 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_USE_EMULATORS": "false"
+        "EXPO_PUBLIC_USE_EMULATORS": "false",
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
       }
     },
     "production": {
@@ -33,7 +35,8 @@
       },
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
-        "EXPO_PUBLIC_USE_MOCK_PAYMENTS": "false"
+        "EXPO_PUBLIC_USE_MOCK_PAYMENTS": "false",
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
       }
     }
   },

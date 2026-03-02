@@ -4,11 +4,12 @@ import { createHash, createHmac } from 'crypto';
 import { DURATION_IN_MONTHS, SubscriptionPlan } from './constants';
 import { saveDonationRecord, savePaymentRecord, updateDonationStatus, updatePaymentStatus } from './postgres';
 import { sendEmail, sendEmailNotification, sendInAppNotification, sendPushNotification } from './notifications';
+import { logger } from './logger';
 
 // SECURITY: Strict environment detection - never trust emulator flags in production
-const IS_PRODUCTION = process.env.NODE_ENV === 'production' || 
-  process.env.GCLOUD_PROJECT === 'skillswap-69yxi' ||
-  process.env.K_SERVICE !== undefined; // Cloud Run/Functions indicator
+// K_SERVICE is always set in Firebase Functions v2 / Cloud Run environments.
+const IS_PRODUCTION = process.env.NODE_ENV === 'production' ||
+  process.env.K_SERVICE !== undefined; // Cloud Run/Functions v2 indicator
 
 const IS_EMULATOR = !IS_PRODUCTION && Boolean(
   process.env.FUNCTIONS_EMULATOR ||
@@ -126,7 +127,7 @@ export async function createGeideaSession(
     if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
       const sessionId = `mock_fallback_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${currency}`;
-      console.warn('[Payments] Geidea config missing. Using mock checkout fallback session.');
+      logger.warn('[Payments] Geidea config missing. Using mock checkout fallback session.');
       return { paymentUrl, sessionId };
     }
     throw new Error('Geidea config missing. Set GEIDEA_MERCHANT_ID, GEIDEA_API_PASSWORD, GEIDEA_CALLBACK_URL env vars OR enable mock via USE_MOCK_PAYMENTS=1.');
@@ -185,7 +186,7 @@ export async function createGeideaDonationSession(args: {
     if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
       const sessionId = `mock_fallback_donation_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
       const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${amount}&currency=${currency}`;
-      console.warn('[Payments] Geidea config missing. Using donation mock checkout fallback session.');
+      logger.warn('[Payments] Geidea config missing. Using donation mock checkout fallback session.');
       return { paymentUrl, sessionId };
     }
     throw new Error('Geidea config missing. Set GEIDEA_MERCHANT_ID, GEIDEA_API_PASSWORD, GEIDEA_CALLBACK_URL env vars OR enable mock via USE_MOCK_PAYMENTS=1.');
@@ -246,7 +247,7 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
     ? `geidea:${sessionId}:${eventId}`
     : `geidea:${sessionId}:${rawHash}`;
   if (!sessionId) throw new Error('Missing sessionId in webhook');
-  console.info('[Payments] webhook received', { eventKey, sessionId, status: incomingStatus });
+  logger.info({ eventKey, sessionId, status: incomingStatus }, '[Payments] webhook received');
 
   const eventsRef = admin.firestore().collection('paymentEvents').doc(String(eventKey));
   const tsVal =
@@ -269,7 +270,7 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
     });
   } catch (e: any) {
     if (e?.code === 6 || e?.code === 'already-exists' || /already exists/i.test(String(e?.message || ''))) {
-      console.info('[Payments] webhook duplicate', { eventKey, sessionId });
+      logger.info({ eventKey, sessionId }, '[Payments] webhook duplicate');
       return { ok: true, alreadyProcessed: true };
     }
     throw e;
@@ -290,7 +291,7 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
       .limit(1)
       .get();
     if (donationSnap.empty) {
-      console.warn('[Payments] payment not found', { eventKey, sessionId });
+      logger.warn({ eventKey, sessionId }, '[Payments] payment not found');
       throw new Error(`Payment record not found for sessionId=${sessionId}`);
     }
     const donationDoc = donationSnap.docs[0];
@@ -341,7 +342,7 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
   });
   if (!txResult.shouldGrant) {
     await eventsRef.set({ processed: true, processedAt: tsVal, note: 'membership_already_granted' }, { merge: true });
-    console.info('[Payments] membership already granted', { eventKey, sessionId });
+    logger.info({ eventKey, sessionId }, '[Payments] membership already granted');
     return { ok: true, alreadyProcessed: true };
   }
 
@@ -382,11 +383,11 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
     await sendPushNotification(userId, 'Membership activated', `Your ${plan} membership is active.`, '/profile');
     await sendEmailNotification(userId, 'Membership activated', `Your ${plan} membership is now active.`);
   } catch (e) {
-    console.warn('Failed to create membership notification', e);
+    logger.warn({ err: e }, 'Failed to create membership notification');
   }
 
   await eventsRef.set({ processed: true, processedAt: tsVal, note: 'membership_granted' }, { merge: true });
-  console.info('[Payments] membership granted', { eventKey, sessionId, userId });
+  logger.info({ eventKey, sessionId, userId }, '[Payments] membership granted');
   return { ok: true };
 }
 
@@ -454,7 +455,7 @@ async function handleDonationWebhook(args: {
   }
 
   await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'donation_granted' }, { merge: true });
-  console.info('[Payments] donation applied', { eventKey, sessionId, wishId, amount });
+  logger.info({ event: 'donation_applied', eventKey, sessionId, wishId, amount }, '[Payments] donation applied');
   return { ok: true };
 }
 

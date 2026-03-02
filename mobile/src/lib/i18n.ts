@@ -16,8 +16,8 @@ let resolved = 'en';
 try {
   const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
   resolved = ['en', 'ar'].includes(deviceLocale) ? deviceLocale : 'en';
-} catch (error) {
-  console.log('Could not get device locale, defaulting to English');
+} catch {
+  // Default to English
 }
 
 i18n

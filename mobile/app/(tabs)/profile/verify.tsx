@@ -106,7 +106,6 @@ export default function VerifyProfileScreen() {
       setStatus(result.result || null);
       Alert.alert(t('kyc.submittedTitle'), t('kyc.submittedBody'));
     } catch (e: any) {
-      console.error('KYC submit failed:', e);
       Alert.alert(t('kyc.submitFailedTitle'), getErrorMessage(e, t('errors.generic')));
     } finally {
       setSubmitting(false);

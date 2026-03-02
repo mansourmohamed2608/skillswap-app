@@ -117,7 +117,7 @@ export default function BookingDetailsScreen() {
               {data.message ? <Text style={cn('text-sm')}>{t('bookings.messageLabel') || 'Message'}: {data.message}</Text> : null}
               <Text style={cn('mt-2 font-medium')}>{t('bookings.proposedLabel') || 'Proposed time (ISO)'}</Text>
               <TextInput
-                style={cn('border border-input bg-white rounded-md px-3 py-2 w-full')}
+                style={cn('border border-input bg-background rounded-md px-3 py-2 w-full')}
                 placeholder={t('bookings.timePlaceholder')}
                 value={proposedTime}
                 onChangeText={setProposedTime}

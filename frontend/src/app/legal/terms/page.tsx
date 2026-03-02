@@ -2,7 +2,7 @@
 'use client';
 
 // src/app/legal/terms/page.tsx
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { ScrollTextIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

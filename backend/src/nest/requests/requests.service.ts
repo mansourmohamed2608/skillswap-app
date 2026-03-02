@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { canCreateBooking, getUserDocument, incrementBookingCount, decrementListingCount } from '../../core/membership';
 import { sendInAppNotification, sendPushNotification, sendEmailNotification } from '../../core/notifications';
@@ -7,6 +7,8 @@ import { createRequestPublicId } from '../../core/public-ids';
 
 @Injectable()
 export class RequestsService {
+  private readonly logger = new Logger(RequestsService.name);
+
   async createRequest(userId: string, params: { listingId: string; proposedTime?: string; message?: string }) {
     if (!userId) throw new UnauthorizedException('Authentication required');
     const { listingId, proposedTime, message } = params;
@@ -67,7 +69,7 @@ export class RequestsService {
       await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', cleanLink);
       await sendEmailNotification(ownerId, 'New exchange request', 'You have a new exchange request on your listing.');
     } catch (e) {
-      console.warn('Failed to send notifications for owner', e);
+      this.logger.warn('Failed to send notifications for owner', e);
     }
 
     return { id: docRef.id, publicId };
@@ -170,7 +172,7 @@ export class RequestsService {
       await sendPushNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.', cleanLink);
       await sendEmailNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.');
     } catch (e) {
-      console.warn('Failed to send accept notifications', e);
+      this.logger.warn('Failed to send accept notifications', e);
     }
 
     return { success: true };
@@ -226,7 +228,7 @@ export class RequestsService {
       await sendPushNotification(requesterId, 'Request declined', 'Your exchange request was declined.', cleanLink);
       await sendEmailNotification(requesterId, 'Request declined', 'Your exchange request was declined.');
     } catch (e) {
-      console.warn('Failed to send decline notifications', e);
+      this.logger.warn('Failed to send decline notifications', e);
     }
 
     return { success: true };
@@ -287,7 +289,7 @@ export class RequestsService {
       await sendPushNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.', cleanLink);
       await sendEmailNotification(otherId, 'Request cancelled', 'An exchange request was cancelled.');
     } catch (e) {
-      console.warn('Failed to send cancel notifications', e);
+      this.logger.warn('Failed to send cancel notifications', e);
     }
 
     return { success: true };
@@ -352,7 +354,7 @@ export class RequestsService {
       await sendPushNotification(otherId, 'Request completed', 'An exchange request was completed.', `/requests/${requestId}`);
       await sendEmailNotification(otherId, 'Request completed', 'An exchange request was completed.');
     } catch (e) {
-      console.warn('Failed to send completion notifications', e);
+      this.logger.warn('Failed to send completion notifications', e);
     }
 
     return { success: true };

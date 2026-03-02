@@ -87,7 +87,7 @@ export default function ChatThreadScreen() {
           <CardFooter>
             <View style={cn('flex-row items-center gap-2 w-full')}>
               <TextInput
-                style={cn('flex-1 border border-input bg-white rounded-md px-3 py-2')}
+                style={cn('flex-1 border border-input bg-background rounded-md px-3 py-2')}
                 placeholder={t('chat.thread.placeholder')}
                 value={text}
                 onChangeText={setText}

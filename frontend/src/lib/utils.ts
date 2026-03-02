@@ -19,8 +19,8 @@ export function formatDate(d: Date, opts?: Intl.DateTimeFormatOptions, lang?: st
 }
 
 export function formatTime(d: Date, opts?: Intl.DateTimeFormatOptions, lang?: string) {
-  const o = opts || { hour: '2-digit', minute: '2-digit' } as const;
-  return formatDate(d, o as any, lang);
+  const o: Intl.DateTimeFormatOptions = opts ?? { hour: '2-digit', minute: '2-digit' };
+  return formatDate(d, o, lang);
 }
 
 export function formatNumber(n: number, lang?: string) {

@@ -107,7 +107,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       }
     })();
     return () => { mounted = false; };
-  }, [isBusiness, user?.uid]);
+  }, [isBusiness, user]);
 
   const categoryOptions = useMemo(() => {
     const extras = [
@@ -124,7 +124,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       value,
       label: getServiceCategoryLabel(value, t),
     }));
-  }, [categoryOptions, i18n.resolvedLanguage, t]);
+  }, [categoryOptions, t]);
 
   useEffect(() => {
     if (!initialListing) return;
@@ -213,7 +213,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     }
   }
 
-  async function useCurrentLocation() {
+  async function fetchCurrentLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setLocationHintTone('warning');
       setLocationHint(t('listings.form.locationUnsupported'));
@@ -271,7 +271,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     if (initialListing) return;
     if (location.trim() || geo) return;
     autoLocationRequestedRef.current = true;
-    void useCurrentLocation();
+    void fetchCurrentLocation();
     // Intentionally run once when create form is ready.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, initialListing, location, geo]);
@@ -289,7 +289,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
     return () => {
       mounted = false;
     };
-  }, [geo?.lat, geo?.lng, i18n.resolvedLanguage, locationSource, t]);
+  }, [geo, i18n.resolvedLanguage, locationSource, t]);
   
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -657,7 +657,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
                 />
                 <div className="flex items-center gap-2 mt-2">
                   {(locating || !geo || !location.trim()) ? (
-                    <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+                    <Button type="button" variant="outline" onClick={fetchCurrentLocation} disabled={locating}>
                       {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
                       {t('listings.form.useCurrentLocation')}
                     </Button>

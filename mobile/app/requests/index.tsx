@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function RequestsIndexRedirect() {
-  return <Redirect href="/(tabs)/requests" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/requests'); }, [router]);
+  return null;
 }

@@ -57,15 +57,15 @@ export default function AdminPage() {
             try {
               const keywordRes = await fetchModerationKeywords();
               setKeywords(keywordRes.keywords || []);
-            } catch (keywordErr) {
-              console.error('Failed to load moderation keywords', keywordErr);
+            } catch {
+              // failed to load keywords; section stays empty
             }
             try {
               setUsersLoading(true);
               const usersRes = await fetchAdminUsers(50);
               setUsers(usersRes.users || []);
-            } catch (usersErr) {
-              console.error('Failed to load users', usersErr);
+            } catch {
+              // failed to load users; section stays empty
             } finally {
               setUsersLoading(false);
             }
@@ -73,8 +73,8 @@ export default function AdminPage() {
               setAuditLoading(true);
               const auditRes = await fetchAdminAudit(50);
               setAuditItems(auditRes.items || []);
-            } catch (auditErr) {
-              console.error('Failed to load audit log', auditErr);
+            } catch {
+              // failed to load audit log; section stays empty
             } finally {
               setAuditLoading(false);
             }
@@ -83,8 +83,8 @@ export default function AdminPage() {
               const analyticsRes = await fetchAdminAnalytics(200);
               setAnalyticsSummary(analyticsRes.summary || []);
               setAnalyticsItems(analyticsRes.items || []);
-            } catch (analyticsErr) {
-              console.error('Failed to load analytics', analyticsErr);
+            } catch {
+              // failed to load analytics; section stays empty
             } finally {
               setAnalyticsLoading(false);
             }
@@ -92,15 +92,15 @@ export default function AdminPage() {
               setReportsLoading(true);
               const reportRes = await fetchAdminReports(50);
               setReports(reportRes.items || []);
-            } catch (reportErr) {
-              console.error('Failed to load reports', reportErr);
+            } catch {
+              // failed to load reports; section stays empty
             } finally {
               setReportsLoading(false);
             }
           }
         }
-      } catch (err) {
-        console.error('Error fetching admin data:', err);
+      } catch {
+        // admin data load failed; page will show empty sections
       } finally {
         setLoading(false);
       }
@@ -155,8 +155,8 @@ export default function AdminPage() {
       const res = await addModerationKeyword(value);
       setKeywords(res.keywords || []);
       setKeywordInput('');
-    } catch (err) {
-      console.error('Failed to add keyword', err);
+    } catch {
+      // keyword add failed silently
     } finally {
       setKeywordsLoading(false);
     }
@@ -167,8 +167,8 @@ export default function AdminPage() {
     try {
       const res = await removeModerationKeyword(keyword);
       setKeywords(res.keywords || []);
-    } catch (err) {
-      console.error('Failed to remove keyword', err);
+    } catch {
+      // keyword remove failed silently
     } finally {
       setKeywordsLoading(false);
     }
@@ -178,8 +178,8 @@ export default function AdminPage() {
     try {
       await updateAdminUserRole(userId, role);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, role } : u)));
-    } catch (err) {
-      console.error('Failed to update role', err);
+    } catch {
+      // role update failed silently
     }
   };
 
@@ -187,8 +187,8 @@ export default function AdminPage() {
     try {
       await updateAdminUserStatus(userId, status);
       setUsers((prev) => prev.map((u) => (u.id === userId ? { ...u, accountStatus: status } : u)));
-    } catch (err) {
-      console.error('Failed to update status', err);
+    } catch {
+      // status update failed silently
     }
   };
 
@@ -196,8 +196,8 @@ export default function AdminPage() {
     try {
       await resolveAdminReport(reportId, action);
       setReports((prev) => prev.filter((r) => r.id !== reportId));
-    } catch (err) {
-      console.error('Failed to resolve report', err);
+    } catch {
+      // report resolve failed silently
     }
   };
 
@@ -440,8 +440,8 @@ export default function AdminPage() {
                         try {
                           await dismissFlaggedContent(type, id);
                           setFlagged((prev) => prev.filter((item) => item.id !== id));
-                        } catch (e) {
-                          console.error('Failed to dismiss flag', e);
+                        } catch {
+                          // dismiss failed silently
                         }
                       }}
                     >
@@ -454,8 +454,8 @@ export default function AdminPage() {
                         try {
                           await removeFlaggedContent(type, id);
                           setFlagged((prev) => prev.filter((item) => item.id !== id));
-                        } catch (e) {
-                          console.error('Failed to remove content', e);
+                        } catch {
+                          // remove failed silently
                         }
                       }}
                     >

@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { haversineDistanceKm, readGeoPoint } from '../../core/geo';
 
 @Injectable()
 export class SearchService {
+  private readonly logger = new Logger(SearchService.name);
+
   private isVisibleListingStatus(status: unknown) {
     const normalized = String(status || 'open').trim().toLowerCase();
     return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
@@ -112,14 +114,14 @@ export class SearchService {
           return { hits: refinedHits, page: result.page, nbPages: result.nbPages, nbHits: refinedHits.length };
         }
         // If index is stale/misaligned with current schema, fall back to Firestore search.
-        console.warn('Algolia returned 0 hits, falling back to Firestore search', {
+        this.logger.warn('Algolia returned 0 hits, falling back to Firestore search', {
           q: q || '',
           category: category || '',
           location: location || '',
         });
       }
     } catch (e) {
-      console.warn('Algolia search skipped', e);
+      this.logger.warn('Algolia search skipped', e);
     }
 
     let snap: FirebaseFirestore.QuerySnapshot<FirebaseFirestore.DocumentData>;

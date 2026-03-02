@@ -1,5 +1,5 @@
 import { useLocalSearchParams, Link, useRouter } from 'expo-router';
-import { View, Text, ActivityIndicator, ScrollView, Image, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent, TextInput, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, ScrollView, Image, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent, TextInput, Alert, useColorScheme } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getListingById, getUserById } from '@/services/data';
@@ -21,6 +21,8 @@ import { getErrorMessage } from '@/lib/errors';
 
 export default function ListingDetailsScreen() {
   const { t } = useTranslation();
+  const colorScheme = useColorScheme();
+  const foregroundIconColor = colorScheme === 'dark' ? '#d1d5db' : '#374151';
   const { user: authUser } = useAuth();
   const { active, canCreateBooking, loading: membershipLoading } = useMembership();
   const router = useRouter();
@@ -43,7 +45,7 @@ export default function ListingDetailsScreen() {
   const [reportNote, setReportNote] = useState('');
   const [reportBusy, setReportBusy] = useState(false);
   const { setFade } = useHeaderFade();
-  const ownerId = listing?.offeredByUserId || listing?.userId;
+  const ownerId = listing?.offeredByUserId;
   const isOwner = !!authUser?.uid && ownerId === authUser.uid;
 
   useEffect(() => {
@@ -161,14 +163,20 @@ export default function ListingDetailsScreen() {
     );
   }
 
-  const statusMap: Record<ServiceListing['status'], { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; IconComponent: any }> = {
-    open: { text: t('status.open') || 'Open for Exchange', variant: 'default', IconComponent: InfoIcon },
-    pending_exchange: { text: t('status.pending') || 'Exchange Pending', variant: 'outline', IconComponent: CalendarIcon },
-    completed: { text: t('status.completed') || 'Completed', variant: 'secondary', IconComponent: CheckCircle },
-    cancelled: { text: t('status.cancelled') || 'Cancelled', variant: 'destructive', IconComponent: XCircle },
+  const statusMap: Record<ServiceListing['status'], { text: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; IconComponent: any; iconColor: string; textClass: string }> = {
+    open: { text: t('status.open') || 'Open for Exchange', variant: 'default', IconComponent: InfoIcon, iconColor: '#fff', textClass: 'text-white' },
+    pending_exchange: { text: t('status.pending') || 'Exchange Pending', variant: 'outline', IconComponent: CalendarIcon, iconColor: foregroundIconColor, textClass: 'text-foreground' },
+    completed: { text: t('status.completed') || 'Completed', variant: 'secondary', IconComponent: CheckCircle, iconColor: foregroundIconColor, textClass: 'text-foreground' },
+    cancelled: { text: t('status.cancelled') || 'Cancelled', variant: 'destructive', IconComponent: XCircle, iconColor: '#fff', textClass: 'text-white' },
+    removed: { text: t('status.removed') || 'Removed', variant: 'destructive', IconComponent: XCircle, iconColor: '#fff', textClass: 'text-white' },
   };
-  const statusInfo = statusMap[listing.status];
+  const statusInfo = statusMap[listing.status] ?? statusMap.cancelled;
   const IconComponent = statusInfo.IconComponent;
+  const requestedHeading = listing.requestedKind === 'money'
+    ? (t('listings.payment_requested') || 'Payment Requested:')
+    : listing.requestedKind === 'product'
+      ? (t('listings.product_requested') || 'Product Requested:')
+      : (t('listings.service_requested') || 'Service Requested:');
 
   return (
     <ScrollView
@@ -202,8 +210,8 @@ export default function ListingDetailsScreen() {
             </View>
             <Badge variant={statusInfo.variant} className="ml-2">
               <View style={cn('flex-row items-center gap-1')}>
-                <IconComponent size={14} color="#fff" />
-                <Text style={cn('text-xs font-semibold text-white')}>{statusInfo.text}</Text>
+                <IconComponent size={14} color={statusInfo.iconColor} />
+                <Text style={cn(`text-xs font-semibold ${statusInfo.textClass}`)}>{statusInfo.text}</Text>
               </View>
             </Badge>
           </View>
@@ -244,7 +252,7 @@ export default function ListingDetailsScreen() {
         {/* Service Requested */}
         <View style={cn('mb-4')}>
           <Text style={cn('mb-2 text-lg font-semibold text-accent')}>
-            {t('listings.service_requested') || 'Service Requested:'}
+            {requestedHeading}
           </Text>
           <Text style={cn('mb-1 text-lg font-medium text-accent')}>
             {listing.requestedService.title}

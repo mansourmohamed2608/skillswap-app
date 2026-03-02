@@ -64,7 +64,7 @@ export default function NewEventPage() {
     return () => {
       mounted = false;
     };
-  }, [user?.uid]);
+  }, [user]);
 
   useEffect(() => {
     if (!coverFile) {
@@ -270,6 +270,7 @@ export default function NewEventPage() {
               />
               <p className="text-xs text-muted-foreground">{t("events.create.coverHelp")}</p>
               {coverPreview && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={coverPreview}
                   alt={t("events.create.coverLabel")}

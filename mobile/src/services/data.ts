@@ -27,9 +27,21 @@ function docToServiceListing(d: any): ServiceListing {
     offeredByUserId: data.userId ?? data.offeredByUserId ?? 'unknown',
     offeredService: offered,
     requestedService: requested,
+    requestedKind: (data.requestedKind || 'service') as ServiceListing['requestedKind'],
+    requestedProduct: data.requestedProduct ? {
+      name: String(data.requestedProduct.name || ''),
+      description: data.requestedProduct.description ? String(data.requestedProduct.description) : undefined,
+    } : undefined,
+    requestedMoney: data.requestedMoney ? {
+      amount: Number(data.requestedMoney.amount || 0),
+      currency: String(data.requestedMoney.currency || 'USD'),
+    } : undefined,
     postedDate: posted,
     status: (data.status as ServiceListing['status']) ?? 'open',
     location: data.location,
+    geo: (data.geo && Number.isFinite(Number(data.geo.lat)) && Number.isFinite(Number(data.geo.lng)))
+      ? { lat: Number(data.geo.lat), lng: Number(data.geo.lng) }
+      : undefined,
   };
 }
 

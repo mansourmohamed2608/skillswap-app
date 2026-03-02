@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, HttpException, Injectable, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { getUserDocument } from '../../core/membership';
 import { findBannedKeyword, findBannedKeywordInFields } from '../../core/moderation-utils';
@@ -12,6 +12,8 @@ type ReviewInput = {
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
+
   private safeNumber(value: unknown, fallback = 0): number {
     const n = Number(value);
     return Number.isFinite(n) ? n : fallback;
@@ -185,7 +187,7 @@ export class ReviewsService {
       return { id: reviewRef.id, flagged };
     } catch (error: any) {
       if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
-      console.error('[Reviews] createReview failed', {
+      this.logger.error('[Reviews] createReview failed', {
         reviewerId,
         listingId: String(payload?.listingId || ''),
         message: String(error?.message || error),
@@ -257,7 +259,7 @@ export class ReviewsService {
       return { success: true };
     } catch (error: any) {
       if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
-      console.error('[Reviews] updateReview failed', {
+      this.logger.error('[Reviews] updateReview failed', {
         reviewerId,
         reviewId,
         message: String(error?.message || error),
@@ -309,7 +311,7 @@ export class ReviewsService {
       return { success: true };
     } catch (error: any) {
       if (error instanceof HttpException || typeof error?.getStatus === 'function') throw error;
-      console.error('[Reviews] deleteReview failed', {
+      this.logger.error('[Reviews] deleteReview failed', {
         reviewerId,
         reviewId,
         message: String(error?.message || error),
@@ -345,7 +347,7 @@ export class ReviewsService {
           .slice(0, lim);
       }
     } catch (error: any) {
-      console.error('[Reviews] listForListing failed', { listingId, message: String(error?.message || error) });
+      this.logger.error('[Reviews] listForListing failed', { listingId, message: String(error?.message || error) });
       return [];
     }
   }
@@ -376,7 +378,7 @@ export class ReviewsService {
           .slice(0, lim);
       }
     } catch (error: any) {
-      console.error('[Reviews] listForUser failed', { userId, message: String(error?.message || error) });
+      this.logger.error('[Reviews] listForUser failed', { userId, message: String(error?.message || error) });
       return [];
     }
   }

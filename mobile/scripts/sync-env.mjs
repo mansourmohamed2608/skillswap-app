@@ -67,8 +67,15 @@ function main() {
   // Sensible host default for Android Emulator (change to 127.0.0.1 for iOS)
   if (!out['EXPO_PUBLIC_EMULATOR_HOST']) out['EXPO_PUBLIC_EMULATOR_HOST'] = '10.0.2.2';
 
-  // Do NOT copy NEXT_PUBLIC_FUNCTIONS_BASE. Mobile should derive the functions base
-  // from EXPO_PUBLIC_EMULATOR_HOST to support Android emulator (10.0.2.2) or iOS (127.0.0.1).
+  // For local dev, FUNCTIONS_BASE is derived from EXPO_PUBLIC_EMULATOR_HOST (different
+  // per platform: 10.0.2.2 for Android, 127.0.0.1 for iOS).  When the frontend
+  // .env.local sets a NEXT_PUBLIC_FUNCTIONS_BASE pointing at a real hosted backend,
+  // copy it across so the mobile dev build can reach the same environment.
+  const webFnBase = srcVars['NEXT_PUBLIC_FUNCTIONS_BASE'];
+  if (webFnBase && !webFnBase.includes('127.0.0.1') && !webFnBase.includes('localhost')) {
+    out['EXPO_PUBLIC_FUNCTIONS_BASE'] = webFnBase;
+    out['EXPO_PUBLIC_USE_EMULATORS'] = 'false';
+  }
 
   fs.writeFileSync(mobileEnv, stringifyEnv(out), 'utf8');
   console.log('Synced env to mobile/.env');

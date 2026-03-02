@@ -109,7 +109,7 @@ export default function ForgotPasswordScreen() {
                 <View style={cn('gap-1')}>
                   <Text style={cn('text-sm font-medium text-foreground')}>{t('auth.forgot.emailLabel')}</Text>
                   <TextInput
-                    style={[cn('border border-input bg-white rounded-md px-3 py-2 text-base'), { minHeight: 44 }]}
+                    style={[cn('border border-input bg-background rounded-md px-3 py-2 text-base'), { minHeight: 44 }]}
                     placeholder={t('auth.forgot.emailPlaceholder')}
                     placeholderTextColor={placeholderColor}
                     keyboardType="email-address"
@@ -119,9 +119,9 @@ export default function ForgotPasswordScreen() {
                   />
                 </View>
                 {errorMessage && (
-                  <View style={cn('bg-red-50 border border-red-200 rounded-md p-3')}>
-                    <Text style={cn('text-sm font-medium text-red-800')}>{t('auth.forgot.requestFailedTitle')}</Text>
-                    <Text style={cn('text-sm text-red-700 mt-1')}>{errorMessage}</Text>
+                  <View style={cn('bg-destructive/10 border border-destructive/20 rounded-md p-3')}>
+                    <Text style={cn('text-sm font-medium text-destructive')}>{t('auth.forgot.requestFailedTitle')}</Text>
+                    <Text style={cn('text-sm text-destructive mt-1')}>{errorMessage}</Text>
                   </View>
                 )}
               </View>

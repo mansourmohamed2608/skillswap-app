@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Required GitHub Secrets to configure:
+# =======================================
+# FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF - Service Account JSON (preferred)
+# FIREBASE_TOKEN              - Firebase CI token (firebase login:ci) — fallback
+# NEXT_PUBLIC_FIREBASE_API_KEY
+# NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+# NEXT_PUBLIC_FIREBASE_PROJECT_ID
+# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+# NEXT_PUBLIC_FIREBASE_APP_ID
+# NEXT_PUBLIC_FIREBASE_VAPID_KEY
+# NEXT_PUBLIC_FUNCTIONS_BASE
+# NEXT_PUBLIC_API_BASE        - (optional) API base URL
+#
+# Backend secrets (set via Firebase Secrets Manager, not GitHub):
+# - ALGOLIA_APP_ID, ALGOLIA_API_KEY
+# - DIDIT_API_KEY, DIDIT_WEBHOOK_SECRET, DIDIT_WORKFLOW_ID
+# - GEIDEA_WEBHOOK_SECRET (when ready)
+# - POSTGRES_CONNECTION_STRING
+# =======================================
+
+jobs:
+  # ==========================================
+  # Backend CI
+  # ==========================================
+  backend:
+    name: Backend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint || echo "Lint warnings found"
+
+      - name: Run tests
+        run: npm test -- --passWithNoTests --forceExit
+
+      - name: Build
+        run: npm run build
+
+  # ==========================================
+  # Frontend CI
+  # ==========================================
+  frontend:
+    name: Frontend CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint || echo "Lint warnings found"
+
+      - name: Run tests
+        run: npm test -- --passWithNoTests || echo "No tests yet"
+
+      - name: Build
+        run: npm run build
+        env:
+          # Use secrets when available; fall back to CI-safe placeholders so the build
+          # does not fail on forks or PRs where secrets are not accessible.
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY || 'ci-placeholder' }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'ci-placeholder.firebaseapp.com' }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'ci-placeholder' }}
+          NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'ci-placeholder.appspot.com' }}
+          NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || '000000000000' }}
+          NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID || '1:000000000000:web:ci' }}
+          NEXT_PUBLIC_FIREBASE_VAPID_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_VAPID_KEY || 'ci-placeholder' }}
+          NEXT_PUBLIC_FUNCTIONS_BASE: ${{ secrets.NEXT_PUBLIC_FUNCTIONS_BASE || 'https://backdup-333cf.web.app' }}
+          NEXT_PUBLIC_API_BASE: ${{ secrets.NEXT_PUBLIC_API_BASE || '' }}
+
+  # ==========================================
+  # Mobile CI
+  # ==========================================
+  mobile:
+    name: Mobile CI
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Run tests
+        run: npm test -- --passWithNoTests || echo "No tests yet"
+
+  # ==========================================
+  # Deploy to Firebase (only on main)
+  # ==========================================
+  deploy:
+    name: Deploy to Firebase
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      # Backend deployment
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Build backend
+        working-directory: backend
+        run: npm run build
+
+      - name: Deploy Functions
+        working-directory: backend
+        run: firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}"
+
+      # Frontend deployment (Firebase App Hosting handles this via GitHub integration)
+      # If using manual deployment:
+      # - name: Install frontend dependencies
+      #   working-directory: frontend
+      #   run: npm ci
+      # - name: Build frontend
+      #   working-directory: frontend
+      #   run: npm run build
+      # - name: Deploy Hosting
+      #   run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"

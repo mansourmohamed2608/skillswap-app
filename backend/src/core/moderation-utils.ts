@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import axios from 'axios';
 import { BANNED_KEYWORDS } from './banned-keywords';
 import { ensureAdminApp } from './firebase-admin';
+import { logger } from './logger';
 
 const KEYWORDS_COLLECTION = 'moderationKeywords';
 const KEYWORDS_DOC = 'active';
@@ -294,7 +295,7 @@ export async function checkImageModeration(imageUrl?: string | null): Promise<{ 
     }
     return { ok: true };
   } catch (e) {
-    console.warn('[Moderation] image check failed, skipping', e);
+    logger.warn({ err: e }, '[Moderation] image check failed, skipping');
     return { ok: true };
   }
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { sendInAppNotification } from '../../core/notifications';
@@ -6,6 +6,8 @@ import { geocodeAddress, haversineDistanceKm, readGeoPoint, type GeoPoint } from
 
 @Injectable()
 export class MatchmakingService {
+  private readonly logger = new Logger(MatchmakingService.name);
+
   async recommendations(uid: string) {
     const userDoc = await this.getVerifiedUser(uid);
     const udata: any = userDoc.data() || {};
@@ -525,7 +527,7 @@ export class MatchmakingService {
         .get();
     } catch (err: any) {
       if (this.isFirestoreIndexError(err)) {
-        console.warn('[matchmaking] Falling back to non-indexed pending requests query.');
+        this.logger.warn('[matchmaking] Falling back to non-indexed pending requests query.');
         return requestsRef
           .where('status', '==', 'pending')
           .limit(limit)

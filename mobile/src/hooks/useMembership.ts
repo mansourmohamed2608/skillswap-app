@@ -21,12 +21,11 @@ export function useMembership() {
       if (m?.endDate instanceof Timestamp) m.endDate = m.endDate.toDate();
       setMembership(m || null);
       setLoading(false);
-    }, (err) => {
-      console.error('Error fetching membership:', err);
+    }, () => {
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [db, user?.uid]);
+  }, [user]);
 
   const active = !!membership?.active && membership?.endDate && new Date(membership.endDate).getTime() > Date.now();
   const plan: string | undefined = membership?.plan;

@@ -1,2 +1,0 @@
---- Change http:// to https:// for Firebase Studio auth emulator
---- Line 107: const authURL = inStudio ? `https://${hostFor(AUTH_PORT)}` : `http://localhost:${AUTH_PORT}`;

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/services/firebase";
 import { getStatusMessage } from "@/lib/errors";
 

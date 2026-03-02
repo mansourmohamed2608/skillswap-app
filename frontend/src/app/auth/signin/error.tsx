@@ -15,7 +15,6 @@ export default function Error({
     <RouteError
       error={error}
       reset={reset}
-      logPrefix="Sign In Page"
       description={t('errorPage.loadFailed')}
     />
   );

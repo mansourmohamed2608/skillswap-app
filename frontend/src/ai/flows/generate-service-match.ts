@@ -78,13 +78,18 @@ function extractLocationHint(text: string): string | undefined {
 }
 
 function getApiBase() {
-  const base = process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '/api';
-  return base.replace(/\/$/, '');
+  const fnBase = typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FUNCTIONS_BASE
+    ? process.env.NEXT_PUBLIC_FUNCTIONS_BASE
+    : '';
+  if (fnBase) return `${fnBase}/api`;
+  const base = (process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '').replace(/\/$/, '');
+  return base;
 }
 
 async function fetchListings(query: { q?: string; category?: string; location?: string }) {
   try {
     const base = getApiBase();
+    if (!base) return [];
     const params = new URLSearchParams();
     if (query.q) params.set('q', query.q);
     if (query.category) params.set('category', query.category);

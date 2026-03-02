@@ -93,7 +93,6 @@ export async function signupAction(
     } else {
       errorMessage = getErrorMessage(error, errorMessage);
     }
-    console.error('Sign up error:', error);
     return { message: `Sign up failed: ${errorMessage}`, success: false, errors: { server: [errorMessage] } };
   }
 
@@ -115,8 +114,8 @@ export async function signupAction(
       servicesOffered: [],
       servicesRequested: [],
     });
-  } catch (error) {
-    console.error("Error creating user doc:", error);
+  } catch (_error) {
+    // user doc creation failed; auth already succeeded so continue
   }
 
   // 4. Create Didit session and redirect to hosted flow
@@ -139,7 +138,6 @@ export async function signupAction(
     });
     const data = await r.json();
     if (!r.ok) {
-      console.error('Didit session error:', data);
       throw new Error('Failed to create Didit session');
     }
 
@@ -152,8 +150,7 @@ export async function signupAction(
     }, { merge: true });
 
     redirect(data.url as string);
-  } catch (e) {
-    console.error('Didit create-session failed:', e);
+  } catch (_e) {
     redirect('/auth/signin');
   }
 }
@@ -205,7 +202,6 @@ export async function signinAction(
     } else {
       errorMessage = getErrorMessage(error, errorMessage);
     }
-    console.error('Sign in error:', error);
     return { message: errorMessage, success: false, errors: { server: [errorMessage] } };
   }
 
@@ -260,8 +256,7 @@ export async function forgotPasswordAction(
       message: 'If an account exists for that email, a password reset link has been sent.',
       success: true,
     };
-  } catch (error: any) {
-    console.error('Forgot password error:', error);
+  } catch (_error: unknown) {
     // Also return a generic message on error for security.
     // A specific error could be logged for developers but not shown to the user.
     return {

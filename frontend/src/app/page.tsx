@@ -11,9 +11,10 @@ export default async function HomePage() {
       getListingsWithUsers({ count: 4 }),
       getFeaturedWishes({ count: 2 }),
     ]);
+    // eslint-disable-next-line react-hooks/error-boundaries -- server component, try/catch is valid
     return <HomePageContent featuredListingsData={featuredListingsData} featuredWishes={featuredWishes} />;
-  } catch (error) {
-    console.error('HomePage server render fallback:', error);
+  } catch {
+    // eslint-disable-next-line react-hooks/error-boundaries
     return <HomePageContent featuredListingsData={[]} featuredWishes={[]} />;
   }
 }

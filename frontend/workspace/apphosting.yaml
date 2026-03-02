@@ -1,18 +1,17 @@
-runtime: nodejs20
+runtime: nodejs20        # pins Cloud Build to Node 20 LTS
 
+# (Optional) build-time and run-time env vars
 env:
   - variable: NEXT_PUBLIC_FUNCTIONS_BASE
-    value: "https://europe-west3-skillswap-69yxi.cloudfunctions.net"
+    # Firebase Hosting rewrites /api/** → Cloud Function 'api' (europe-west3)
+    value: "https://backdup-333cf.web.app"
     availability: [BUILD, RUNTIME]
-
   - variable: NEXT_PUBLIC_API_BASE
-    value: "https://europe-west3-skillswap-69yxi.cloudfunctions.net/api"
+    value: "https://backdup-333cf.web.app/api"
     availability: [BUILD, RUNTIME]
-
   - variable: MATCHMAKING_MODE
     value: "auto"
     availability: [BUILD, RUNTIME]
-
   - variable: GEMINI_API_KEY
     secret: GEMINI_API_KEY
     availability: [RUNTIME]

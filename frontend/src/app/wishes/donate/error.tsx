@@ -16,7 +16,6 @@ export default function Error({
     <RouteError
       error={error}
       reset={reset}
-      logPrefix="Donate Page"
       description={t('errorPage.loadFailed')}
     />
   );

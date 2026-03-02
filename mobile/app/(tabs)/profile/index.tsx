@@ -188,21 +188,25 @@ export default function ProfileScreen() {
 
         {/* Action Buttons */}
         <View style={cn('mt-4 w-full flex-row gap-2')}>
-          <Link href="/profile/edit">
-            <Button variant="outline" className="flex-1">
-              <View style={cn('flex-row items-center justify-center gap-2')}>
-                <Settings size={16} color="#666" />
-                <Text style={cn('text-foreground font-medium')}>
-                  {t('profile.edit') || 'Edit Profile'}
-                </Text>
-              </View>
+          <View style={{ flex: 1 }}>
+            <Link href="/profile/edit" asChild>
+              <Button variant="outline" className="w-full">
+                <View style={cn('flex-row items-center justify-center gap-2')}>
+                  <Settings size={16} color="#666" />
+                  <Text style={cn('text-foreground font-medium')}>
+                    {t('profile.edit') || 'Edit Profile'}
+                  </Text>
+                </View>
+              </Button>
+            </Link>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button variant="outline" onPress={signOut} className="w-full">
+              <Text style={cn('text-foreground font-medium')}>
+                {t('header.signOut') || 'Sign Out'}
+              </Text>
             </Button>
-          </Link>
-          <Button variant="outline" onPress={signOut} className="flex-1">
-            <Text style={cn('text-foreground font-medium')}>
-              {t('home.signout') || 'Sign Out'}
-            </Text>
-          </Button>
+          </View>
         </View>
       </View>
 

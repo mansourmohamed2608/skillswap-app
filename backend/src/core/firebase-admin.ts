@@ -38,7 +38,8 @@ export function ensureAdminApp() {
   } catch (err: any) {
     const message = String(err?.message || '');
     if (!message.includes('Firestore has already been initialized')) {
-      console.warn('[firebase-admin] Firestore settings skipped:', message);
+      // Non-fatal: log to stderr so Cloud Logging captures it without polluting structured logs
+      process.stderr.write(`[firebase-admin] Firestore settings skipped: ${message}\n`);
     }
   }
 

@@ -48,9 +48,22 @@ export interface ServiceListing {
     category: string;
     description: string;
   };
+  requestedKind?: 'service' | 'product' | 'money';
+  requestedProduct?: {
+    name: string;
+    description?: string;
+  };
+  requestedMoney?: {
+    amount: number;
+    currency: string;
+  };
   postedDate: string;
-  status: 'open' | 'pending_exchange' | 'completed' | 'cancelled';
+  status: 'open' | 'pending_exchange' | 'completed' | 'cancelled' | 'removed';
   location?: string;
+  geo?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export type BookingStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'completed';

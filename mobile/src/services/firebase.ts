@@ -45,7 +45,7 @@ if (app && auth && db && storage && (getEnv('EXPO_PUBLIC_USE_EMULATORS') === 'tr
   // If running on web, 10.0.2.2 is not valid; prefer localhost unless an explicit host was provided
   if (Platform.OS === 'web' && (!rawHost || rawHost === '10.0.2.2')) host = '127.0.0.1';
   connectAuthEmulator(auth, `http://${host}:9099`);
-  connectFirestoreEmulator(db, host, 8080);
+  connectFirestoreEmulator(db, host, 8085);
   connectStorageEmulator(storage, host, 9199);
-  if (rtdb) connectDatabaseEmulator(rtdb, host, 9000);
+  if (rtdb) connectDatabaseEmulator(rtdb, host, 9005);
 }

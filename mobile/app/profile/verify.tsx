@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ProfileVerifyRedirect() {
-  return <Redirect href="/(tabs)/profile/verify" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/profile/verify'); }, [router]);
+  return null;
 }

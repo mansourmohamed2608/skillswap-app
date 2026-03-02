@@ -1,33 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth, storage } from '@/services/firebase';
-import { toApiError } from '@/services/api';
+import { toApiError, getFunctionsBase } from '@/services/api';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
-const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
-const FUNCTIONS_REGION = process.env.NEXT_PUBLIC_FUNCTIONS_REGION || 'europe-west3';
-
-function inferProjectIdFromHostedApp() {
-  if (typeof window === 'undefined') return '';
-  const host = window.location.hostname || '';
-  const m = host.match(/--([a-z0-9-]+)\.[a-z0-9-]+\.hosted\.app$/i);
-  return m?.[1] || '';
-}
-
-function inferFunctionsBase() {
-  if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
-  const inferredProjectId = PROJECT_ID || inferProjectIdFromHostedApp();
-  if (!inferredProjectId) return '';
-  if (typeof window === 'undefined') return `http://127.0.0.1:5001/${inferredProjectId}/us-central1`;
-  const host = window.location.hostname || '';
-  const isLocal = host === 'localhost' || host === '127.0.0.1';
-  return isLocal
-    ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
-    : `https://${FUNCTIONS_REGION}-${inferredProjectId}.cloudfunctions.net`;
-}
-
-export function getKycApiBase() {
+export function getKycApiBase(): string {
   if (process.env.NEXT_PUBLIC_API_BASE) return process.env.NEXT_PUBLIC_API_BASE;
-  const fnBase = inferFunctionsBase();
-  return fnBase ? `${fnBase}/api` : '/api';
+  const fnBase = getFunctionsBase();
+  // Never fall back to a relative '/api' path — that would hit Next.js routes, not the backend.
+  return fnBase ? `${fnBase}/api` : '';
 }
 
 export async function uploadKycFile(uid: string, file: File, name: string): Promise<string> {

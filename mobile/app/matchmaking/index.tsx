@@ -109,11 +109,11 @@ export default function MatchmakingScreen() {
   }, [triads, pairs]);
 
   const onAcceptTriad = async (idx: number) => {
-    const t = triads[idx];
-    const key = triadKey(t.users as unknown as string[]);
+    const triad = triads[idx];
+    const key = triadKey(triad.users as unknown as string[]);
     setAcceptingKey(key);
     try {
-      await acceptMatchMobile({ type: 'triad', users: t.users as unknown as string[], edges: t.edges as any });
+      await acceptMatchMobile({ type: 'triad', users: triad.users as unknown as string[], edges: triad.edges as any });
       setAcceptedKeys(new Set([...Array.from(acceptedKeys), key]));
     } catch (e: any) {
       setError(getErrorMessage(e, t('matchmaking.acceptFailed')));
@@ -169,7 +169,7 @@ export default function MatchmakingScreen() {
               <View style={cn('gap-3')}>
                 <Text style={cn('text-sm font-medium')}>{t('matchmaking.mobile.offeredLabel')}</Text>
                 <TextInput
-                  style={cn('border border-input bg-white rounded-md px-3 py-2 w-full min-h-[90px]')}
+                  style={cn('border border-input bg-background rounded-md px-3 py-2 w-full min-h-[90px]')}
                   multiline
                   placeholder={t('matchmaking.mobile.offeredPlaceholder')}
                   value={offered}
@@ -177,7 +177,7 @@ export default function MatchmakingScreen() {
                 />
                 <Text style={cn('text-sm font-medium mt-2')}>{t('matchmaking.mobile.requestedLabel')}</Text>
                 <TextInput
-                  style={cn('border border-input bg-white rounded-md px-3 py-2 w-full min-h-[90px]')}
+                  style={cn('border border-input bg-background rounded-md px-3 py-2 w-full min-h-[90px]')}
                   multiline
                   placeholder={t('matchmaking.mobile.requestedPlaceholder')}
                   value={lookingFor}
@@ -215,7 +215,7 @@ export default function MatchmakingScreen() {
           {/* Server-powered matches: triads and mutual pairs on the same page */}
           <View style={cn('flex-row items-center justify-between mt-2 mb-1')}>
             <Text style={cn('text-base text-muted-foreground')}>{t('matchmaking.mobile.personalizedTitle')}</Text>
-            <TouchableOpacity onPress={loadMatches} disabled={loadingMatches} style={cn('px-3 py-1 rounded-md border border-border bg-white')}>
+            <TouchableOpacity onPress={loadMatches} disabled={loadingMatches} style={cn('px-3 py-1 rounded-md border border-border bg-card')}>
               {loadingMatches ? (
                 <ActivityIndicator size="small" />
               ) : (
@@ -228,7 +228,7 @@ export default function MatchmakingScreen() {
           {triads.length > 0 && (
             <View style={cn('mt-2')}>
               <Text style={cn('text-sm text-muted-foreground mb-2')}>{t('matchmaking.mobile.triadTitle')}</Text>
-              {triads.map((t, i) => (
+              {triads.map((triad, i) => (
                 <Card key={`tri-${i}`}>
                   {/* No CardHeader/title per requirement */}
                   <CardContent>
@@ -239,29 +239,29 @@ export default function MatchmakingScreen() {
                     <View style={cn('gap-1')}>
                       <Text style={cn('text-sm')}>
                         <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.youGet')} </Text>
-                        <Text style={cn('font-semibold')}>{t.perspective?.willGet?.title || t.perspective?.willGet?.category || t('matchmaking.mobile.serviceFallback')}</Text>
+                        <Text style={cn('font-semibold')}>{triad.perspective?.willGet?.title || triad.perspective?.willGet?.category || t('matchmaking.mobile.serviceFallback')}</Text>
                       </Text>
                       <Text style={cn('text-sm')}>
                         <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.youGive')} </Text>
-                        <Text style={cn('font-semibold')}>{t.perspective?.willGive?.title || t.perspective?.willGive?.category || t('matchmaking.mobile.serviceFallback')}</Text>
+                        <Text style={cn('font-semibold')}>{triad.perspective?.willGive?.title || triad.perspective?.willGive?.category || t('matchmaking.mobile.serviceFallback')}</Text>
                       </Text>
                     </View>
                     <Text style={cn('text-xs text-muted-foreground mt-2')}>
                       {t('matchmaking.mobile.triadParticipants', {
-                        participants: (t.participants && t.participants.length > 0)
-                          ? t.participants.map(p => p.name || p.uid).join(', ')
-                          : t.users.join(', ')
+                        participants: (triad.participants && triad.participants.length > 0)
+                          ? triad.participants.map(p => p.name || p.uid).join(', ')
+                          : triad.users.join(', ')
                       })}
                     </Text>
                     {/* Progress + Open Chat */}
-                    {(() => { const key = triadKey(t.users as unknown as string[]); const pr = progress[key]; return pr ? (
+                    {(() => { const key = triadKey(triad.users as unknown as string[]); const pr = progress[key]; return pr ? (
                       <View style={cn('mt-2 flex-row items-center gap-3')}>
                         <Text style={cn('text-xs text-muted-foreground')}>
                           {t('matchmaking.mobile.acceptedCount', { accepted: pr.accepted, total: pr.total })}
                         </Text>
                         {pr.conversationId && (
                           <Link href={`/chat/${pr.conversationId}`} asChild>
-                            <TouchableOpacity style={cn('px-2 py-1 rounded-md border border-border bg-white')}>
+                            <TouchableOpacity style={cn('px-2 py-1 rounded-md border border-border bg-card')}>
                               <Text style={cn('text-xs text-foreground')}>{t('matchmaking.mobile.openChat')}</Text>
                             </TouchableOpacity>
                           </Link>
@@ -269,11 +269,11 @@ export default function MatchmakingScreen() {
                       </View>
                     ) : null; })()}
                     <View style={cn('mt-2 flex-row')}>
-                      {acceptedKeys.has(triadKey(t.users as unknown as string[])) ? (
+                      {acceptedKeys.has(triadKey(triad.users as unknown as string[])) ? (
                         <Badge variant="success">{t('matchmaking.mobile.acceptedBadge')}</Badge>
                       ) : (
-                        <TouchableOpacity onPress={() => onAcceptTriad(i)} disabled={acceptingKey === triadKey(t.users as unknown as string[])} style={cn('px-3 py-2 rounded-md bg-accent')}>
-                          {acceptingKey === triadKey(t.users as unknown as string[]) ? (
+                        <TouchableOpacity onPress={() => onAcceptTriad(i)} disabled={acceptingKey === triadKey(triad.users as unknown as string[])} style={cn('px-3 py-2 rounded-md bg-accent')}>
+                          {acceptingKey === triadKey(triad.users as unknown as string[]) ? (
                             <Text style={cn('text-white')}>{t('matchmaking.mobile.accepting')}</Text>
                           ) : (
                             <Text style={cn('text-white')}>{t('matchmaking.mobile.accept')}</Text>
@@ -321,7 +321,7 @@ export default function MatchmakingScreen() {
                         </Text>
                         {pr.conversationId && (
                           <Link href={`/chat/${pr.conversationId}`} asChild>
-                            <TouchableOpacity style={cn('px-2 py-1 rounded-md border border-border bg-white')}>
+                            <TouchableOpacity style={cn('px-2 py-1 rounded-md border border-border bg-card')}>
                               <Text style={cn('text-xs text-foreground')}>{t('matchmaking.mobile.openChat')}</Text>
                             </TouchableOpacity>
                           </Link>

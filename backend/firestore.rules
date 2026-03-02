@@ -141,6 +141,11 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    /** KYC session references (Didit) — server-only; clients have no direct access */
+    match /kycReferences/{docId} {
+      allow read, create, update, delete: if false;
+    }
+
     /** Device tokens — server-only access */
     match /deviceTokens/{userId} {
       allow read, create, update, delete: if false;

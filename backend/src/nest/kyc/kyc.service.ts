@@ -4,12 +4,14 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import axios from 'axios';
 import FormData from 'form-data';
+import { createHash } from 'crypto';
 import { getKycStatus, handleDiditWebhook, KycPayload, clean, fetchDiditDecision } from '../../core/kyc';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
 const IS_EMULATOR = Boolean(
@@ -20,6 +22,16 @@ const IS_EMULATOR = Boolean(
 
 @Injectable()
 export class KycService {
+  private readonly logger = new Logger(KycService.name);
+
+  private normalizeDocumentNumber(value: string | undefined): string {
+    return String(value || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+  }
+
+  private sha256(value: string): string {
+    return createHash('sha256').update(value).digest('hex');
+  }
+
   async verifyIdDocument(uid: string, frontFile: Express.Multer.File, backFile: Express.Multer.File) {
     if (!uid) throw new UnauthorizedException('Authentication required');
 
@@ -83,13 +95,37 @@ export class KycService {
         status = 'PENDING';
       }
 
+      const rawDocumentNumber = verification.document_number || verification.personal_number;
+      const normalizedDocumentNumber = this.normalizeDocumentNumber(rawDocumentNumber);
+      const documentNumberHash = normalizedDocumentNumber ? this.sha256(normalizedDocumentNumber) : undefined;
+
+      if (status === 'VERIFIED' && documentNumberHash) {
+        const indexRef = admin.firestore().collection('kycDocumentIndex').doc(documentNumberHash);
+        await admin.firestore().runTransaction(async (tx) => {
+          const idxSnap = await tx.get(indexRef);
+          if (idxSnap.exists) {
+            const existingUid = String((idxSnap.data() as any)?.uid || '');
+            if (existingUid && existingUid !== uid) {
+              throw new BadRequestException({ code: 'kyc/document-already-used' });
+            }
+          }
+          tx.set(indexRef, {
+            uid,
+            provider: 'didit',
+            updatedAt: new Date(),
+            createdAt: idxSnap.exists ? (idxSnap.data() as any)?.createdAt || new Date() : new Date(),
+          }, { merge: true });
+        });
+      }
+
       // Store verification result
       const kycData = {
         status,
         provider: 'didit',
         referenceId: data.id || verification.id || undefined,
         documentType: verification.document_type,
-        documentNumber: verification.document_number || verification.personal_number,
+        documentNumber: rawDocumentNumber,
+        documentNumberHash,
         firstName: verification.first_name,
         lastName: verification.last_name,
         birthDate: verification.birth_date,
@@ -116,12 +152,17 @@ export class KycService {
 
       return kycData;
     } catch (error: any) {
-      console.error('[KYC] ID verification failed:', error.response?.data || error.message);
+      this.logger.error(`[KYC] ID verification failed: ${error.response?.data || error.message}`);
 
+      const exceptionResponse = error instanceof HttpException ? error.getResponse() : null;
+      const exceptionCode =
+        typeof exceptionResponse === 'object' && exceptionResponse
+          ? (exceptionResponse as any).code
+          : null;
       const failedData = {
         status: 'FAILED',
         provider: 'didit',
-        reason: error.response?.data?.message || error.message || 'Verification failed',
+        reason: exceptionCode || error.response?.data?.message || error.message || 'Verification failed',
         updatedAt: new Date(),
       };
 
@@ -130,10 +171,8 @@ export class KycService {
         { merge: true }
       );
 
-      throw new HttpException(
-        failedData.reason,
-        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      if (error instanceof HttpException) throw error;
+      throw new HttpException(failedData.reason, error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
@@ -215,7 +254,7 @@ export class KycService {
         if (!IS_EMULATOR) {
           throw new ForbiddenException('Session does not belong to user');
         }
-        console.warn('[kyc.sync] bypassing ownership check in emulator', {
+        this.logger.warn('[kyc.sync] bypassing ownership check in emulator', {
           sessionId,
           targetUid,
           refUid: refUid || null,
@@ -305,5 +344,92 @@ export class KycService {
   async webhook(rawBody: Buffer, headers: Record<string, any>) {
     if (!rawBody || !(rawBody instanceof Buffer)) throw new BadRequestException('Missing raw body');
     return handleDiditWebhook(rawBody, headers);
+  }
+
+  /**
+   * Submit KYC via Firebase Storage download URLs (authenticated, post-signup flow).
+   * Downloads the images from Firebase Storage and calls the Didit ID-verification API.
+   */
+  async submitFromUrls(
+    uid: string,
+    params: { fullName: string; nationalId?: string; idFrontUrl: string; idBackUrl: string },
+  ) {
+    if (!uid) throw new UnauthorizedException('Authentication required');
+    const { idFrontUrl, idBackUrl } = params;
+    if (!idFrontUrl || !idBackUrl) throw new BadRequestException('Both idFrontUrl and idBackUrl are required');
+
+    const downloadAsFile = async (url: string, fieldname: string): Promise<Express.Multer.File> => {
+      const resp = await axios.get(url, { responseType: 'arraybuffer', timeout: 20_000 });
+      const contentType = String(resp.headers['content-type'] || 'image/jpeg');
+      const ext = contentType.split('/')[1]?.split(';')[0]?.trim() || 'jpg';
+      const buffer = Buffer.from(resp.data as ArrayBuffer);
+      return {
+        fieldname,
+        originalname: `${fieldname}.${ext}`,
+        encoding: '7bit',
+        mimetype: contentType,
+        buffer,
+        size: buffer.length,
+      } as Express.Multer.File;
+    };
+
+    const [frontFile, backFile] = await Promise.all([
+      downloadAsFile(idFrontUrl, 'front'),
+      downloadAsFile(idBackUrl, 'back'),
+    ]);
+
+    return this.verifyIdDocument(uid, frontFile, backFile);
+  }
+
+  /**
+   * Submit KYC via base64-encoded images (public / pre-signup flow).
+   * Used when the user does not yet have a Firebase account.
+   * The `vendor` string is the temporary identifier stored in `kyc_temp/{vendor}`.
+   */
+  async submitFromBase64(
+    vendor: string,
+    params: {
+      fullName: string;
+      idFrontBase64: string;
+      idBackBase64: string;
+      nationalId?: string;
+    },
+  ) {
+    if (!vendor) throw new BadRequestException('vendor is required');
+    const { idFrontBase64, idBackBase64 } = params;
+    if (!idFrontBase64 || !idBackBase64) throw new BadRequestException('Both idFrontBase64 and idBackBase64 are required');
+
+    const base64ToFile = (b64: string, fieldname: string): Express.Multer.File => {
+      // Support optional data-URI prefix: "data:image/jpeg;base64,..."
+      const stripped = b64.replace(/^data:[^;]+;base64,/, '');
+      const buffer = Buffer.from(stripped, 'base64');
+      return {
+        fieldname,
+        originalname: `${fieldname}.jpg`,
+        encoding: '7bit',
+        mimetype: 'image/jpeg',
+        buffer,
+        size: buffer.length,
+      } as Express.Multer.File;
+    };
+
+    const frontFile = base64ToFile(idFrontBase64, 'front');
+    const backFile  = base64ToFile(idBackBase64, 'back');
+
+    // Use the vendor as uid so the result is written to kyc_temp/{vendor}
+    // and can later be finalised via POST /kyc/finalize
+    const tempUid = `__vendor__${vendor}`;
+    const result = await this.verifyIdDocument(tempUid, frontFile, backFile);
+
+    // Mirror to kyc_temp so /kyc/finalize can read it
+    await admin.firestore().collection('kyc_temp').doc(String(vendor)).set({
+      status: result.status,
+      provider: 'didit',
+      referenceId: (result as any).referenceId,
+      updatedAt: new Date(),
+      vendor,
+    }, { merge: true });
+
+    return result;
   }
 }

@@ -96,7 +96,6 @@ export default function EditProfilePage() {
         }
         setEmail(user.email ?? '');
       } catch (err: any) {
-        console.error('Failed to load profile', err);
         setError(getErrorMessage(err, t('profile.edit.errorLoad')));
       } finally {
         setProfileLoaded(true);
@@ -123,7 +122,7 @@ export default function EditProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  async function useCurrentLocation() {
+  async function fetchCurrentLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
       setLocationHintTone('warning');
       setLocationHint(t('profile.edit.locationUnsupported'));
@@ -172,7 +171,7 @@ export default function EditProfilePage() {
     if (!profileLoaded) return;
     if (location.trim() || geo) return;
     autoLocationRequestedRef.current = true;
-    void useCurrentLocation();
+    void fetchCurrentLocation();
     // Intentionally run only when auth/profile/location readiness changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, profileLoaded, location, geo]);
@@ -285,7 +284,6 @@ export default function EditProfilePage() {
   // re-authenticate.
   router.push('/profile');
     } catch (err: any) {
-      console.error('Profile update failed:', err);
       setError(getErrorMessage(err, t('profile.edit.errorUpdateFailed')));
     } finally {
       setLoading(false);
@@ -299,7 +297,7 @@ export default function EditProfilePage() {
           <CardTitle>{t('profile.edit.title')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
+          {error && <p className="text-destructive mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="displayName">{t('profile.edit.nameLabel')}</Label>
@@ -343,7 +341,7 @@ export default function EditProfilePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="outline" onClick={useCurrentLocation} disabled={locating}>
+              <Button type="button" variant="outline" onClick={fetchCurrentLocation} disabled={locating}>
                 {locating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <LocateFixedIcon className="h-4 w-4 mr-2" />}
                 {t('profile.edit.useCurrentLocation')}
               </Button>

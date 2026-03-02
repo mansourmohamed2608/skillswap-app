@@ -14,18 +14,23 @@ export function useConversationsRTDB() {
     if (!rtdb || !user) return;
     const ucRef = ref(rtdb, `userConversations/${user.uid}`);
     const unsub = onValue(ucRef, async (snap) => {
-      const val = snap.val() || {};
-      const ids = Object.keys(val);
-      const results: any[] = [];
-      for (const id of ids) {
-        const cs = await get(child(ref(rtdb), `conversations/${id}`));
-        if (cs.exists()) results.push({ id, ...cs.val() });
+      try {
+        const val = snap.val() || {};
+        const ids = Object.keys(val);
+        const snapshots = await Promise.all(
+          ids.map((id) => get(child(ref(rtdb), `conversations/${id}`)))
+        );
+        const results: any[] = snapshots
+          .map((cs, i) => (cs.exists() ? { id: ids[i], ...cs.val() } : null))
+          .filter(Boolean);
+        results.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
+        setItems(results);
+      } catch {
+        // RTDB read failed; keep existing items
       }
-      results.sort((a, b) => (b.lastMessageAt || 0) - (a.lastMessageAt || 0));
-      setItems(results);
     });
     return () => unsub();
-  }, [rtdb, user?.uid]);
+  }, [user]);
   return items;
 }
 
@@ -41,7 +46,7 @@ export function useMessagesRTDB(conversationId: string | undefined) {
       setItems(entries);
     });
     return () => unsub();
-  }, [rtdb, conversationId]);
+  }, [conversationId]);
   return items;
 }
 

@@ -86,7 +86,6 @@ export default function BookingsPage() {
           .map(toItem);
         if (mounted) setRequests(combined);
       } catch (e: any) {
-        console.error("Failed to load requests:", e);
         toast({ title: t('bookings.failedLoad'), description: getErrorMessage(e, t('bookings.failedLoad')), variant: "destructive" });
       } finally {
         if (mounted) setLoadingRequests(false);
@@ -95,7 +94,7 @@ export default function BookingsPage() {
     return () => {
       mounted = false;
     };
-  }, [toast]);
+  }, [toast, t]);
 
   const [listingTitles, setListingTitles] = useState<Record<string, string>>({});
   const [partnerNames, setPartnerNames] = useState<Record<string, string>>({});

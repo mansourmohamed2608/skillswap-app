@@ -134,7 +134,6 @@ export default function VerifyProfilePage() {
         });
       }
     } catch (err: any) {
-      console.error('Verification failed', err);
       toast({
         title: t('profile.verify.errorTitle'),
         description: err.message || t('profile.verify.errorBody'),
@@ -217,6 +216,7 @@ export default function VerifyProfilePage() {
                     />
                     {frontPreview && (
                       <div className="relative w-full h-48 border rounded-lg overflow-hidden bg-muted">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={frontPreview} alt={t('profile.verify.frontPreviewAlt')} className="w-full h-full object-contain" />
                       </div>
                     )}
@@ -243,6 +243,7 @@ export default function VerifyProfilePage() {
                     />
                     {backPreview && (
                       <div className="relative w-full h-48 border rounded-lg overflow-hidden bg-muted">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={backPreview} alt={t('profile.verify.backPreviewAlt')} className="w-full h-full object-contain" />
                       </div>
                     )}

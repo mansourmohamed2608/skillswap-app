@@ -75,3 +75,6 @@ node_modules/
 #lib folder
 lib/
 
+# Firebase service account key — NEVER commit this
+serviceAccountKey.json
+*-serviceAccountKey.json

@@ -25,6 +25,7 @@ export function RescheduleDialog({ triggerLabel, initialDate, onOpenGuard, onCon
       const d = new Date(initialDate);
       const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
       const s = `${local.getFullYear()}-${pad(local.getMonth() + 1)}-${pad(local.getDate())}T${pad(local.getHours())}:${pad(local.getMinutes())}`;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(s);
     }
   }, [initialDate]);

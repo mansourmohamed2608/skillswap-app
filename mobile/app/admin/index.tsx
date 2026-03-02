@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ScrollView, ActivityIndicator, TouchableOpacity, Alert, NativeSyntheticEvent, NativeScrollEvent, TextInput } from 'react-native';
+import { View, Text, FlatList, ScrollView, ActivityIndicator, TouchableOpacity, Alert, NativeSyntheticEvent, NativeScrollEvent, TextInput, useColorScheme } from 'react-native';
 import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { db } from '@/services/firebase';
@@ -16,6 +16,10 @@ import { addModerationKeywordMobile, dismissFlaggedContentMobile, fetchFlaggedCo
 export default function AdminScreen() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const colorScheme = useColorScheme();
+  const brandGreen = colorScheme === 'dark' ? '#86efac' : '#4f7942';
+  const destructiveRed = '#ef4444';
+  const successGreen = colorScheme === 'dark' ? '#34d399' : '#10b981';
   const [flags, setFlags] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -45,12 +49,12 @@ export default function AdminScreen() {
           try {
             const keywordRes = await fetchModerationKeywordsMobile();
             setKeywords(keywordRes.keywords || []);
-          } catch (keywordErr) {
-            console.error('Error fetching keywords:', keywordErr);
+          } catch {
+            // keywords are non-critical; continue without them
           }
         }
-      } catch (error) {
-        console.error('Error fetching admin data:', error);
+      } catch {
+        // admin data fetch failed silently
       } finally {
         setLoading(false);
       }
@@ -63,8 +67,7 @@ export default function AdminScreen() {
       setFlags((prev) => prev.filter(f => f.id !== contentId));
       setSelectedFlag(null);
       Alert.alert(t('admin.success') || 'Success', t('admin.flag_dismissed') || 'Flag dismissed');
-    } catch (error) {
-      console.error('Error approving:', error);
+    } catch {
       Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
     }
   };
@@ -75,8 +78,7 @@ export default function AdminScreen() {
       setFlags((prev) => prev.filter(f => f.id !== contentId));
       setSelectedFlag(null);
       Alert.alert(t('admin.success') || 'Success', t('admin.content_removed') || 'Content removed');
-    } catch (error) {
-      console.error('Error rejecting:', error);
+    } catch {
       Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
     }
   };
@@ -89,8 +91,7 @@ export default function AdminScreen() {
       const res = await addModerationKeywordMobile(value);
       setKeywords(res.keywords || []);
       setKeywordInput('');
-    } catch (error) {
-      console.error('Error adding keyword:', error);
+    } catch {
       Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
     } finally {
       setKeywordsLoading(false);
@@ -102,8 +103,7 @@ export default function AdminScreen() {
     try {
       const res = await removeModerationKeywordMobile(keyword);
       setKeywords(res.keywords || []);
-    } catch (error) {
-      console.error('Error removing keyword:', error);
+    } catch {
       Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
     } finally {
       setKeywordsLoading(false);
@@ -113,7 +113,7 @@ export default function AdminScreen() {
   if (loading) {
     return (
       <View style={cn('flex-1 items-center justify-center bg-background')}>
-        <ActivityIndicator size="large" color="#4f7942" />
+        <ActivityIndicator size="large" color={brandGreen} />
       </View>
     );
   }
@@ -136,7 +136,7 @@ export default function AdminScreen() {
   if (!isAdmin) {
     return (
       <View style={cn('flex-1 items-center justify-center bg-background px-6')}>
-        <AlertTriangle size={48} color="#ef4444" />
+        <AlertTriangle size={48} color={destructiveRed} />
         <Text style={cn('mt-4 text-center text-lg font-semibold text-foreground')}>
           {t('admin.access_denied') || 'Access Denied'}
         </Text>
@@ -187,7 +187,7 @@ export default function AdminScreen() {
 
           <View style={cn('rounded-lg border border-border bg-card p-4')}>
             <View style={cn('mb-3 flex-row items-center gap-2')}>
-              <AlertTriangle size={20} color="#ef4444" />
+              <AlertTriangle size={20} color={destructiveRed} />
               <Badge variant="destructive">
                 <Text style={cn('text-xs font-semibold text-white')}>{selectedFlag.type || 'content'}</Text>
               </Badge>
@@ -307,7 +307,7 @@ export default function AdminScreen() {
 
         {flags.length === 0 ? (
           <View style={cn('items-center py-8')}>
-            <CheckCircle size={48} color="#10b981" />
+            <CheckCircle size={48} color={successGreen} />
             <Text style={cn('mt-4 text-center text-muted-foreground')}>
               {t('admin.no_flags') || 'No flagged content to review'}
             </Text>
@@ -336,7 +336,7 @@ export default function AdminScreen() {
                     </Badge>
                     <TouchableOpacity onPress={() => setSelectedFlag(item)}>
                       <View style={cn('flex-row items-center gap-1')}>
-                        <Eye size={16} color="#4f7942" />
+                        <Eye size={16} color={brandGreen} />
                         <Text style={cn('text-sm text-primary')}>{t('common.view') || 'View'}</Text>
                       </View>
                     </TouchableOpacity>

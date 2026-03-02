@@ -8,6 +8,7 @@ import { Avatar } from './Avatar';
 import { CategoryPill } from './CategoryPill';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/cn';
+import { useTranslation } from 'react-i18next';
 
 export interface ServiceCardProps extends TouchableOpacityProps {
   listing: ServiceListing;
@@ -15,6 +16,8 @@ export interface ServiceCardProps extends TouchableOpacityProps {
 }
 
 export function ServiceCard({ listing, user, ...props }: ServiceCardProps) {
+  const { t } = useTranslation();
+
   const getStatusBadgeVariant = (status: ServiceListing['status']): 'default' | 'outline' | 'secondary' | 'destructive' => {
     switch (status) {
       case 'open': return 'default';
@@ -26,15 +29,21 @@ export function ServiceCard({ listing, user, ...props }: ServiceCardProps) {
 
   const getStatusText = (status: ServiceListing['status']) => {
     switch (status) {
-      case 'open': return 'Open for Exchange';
-      case 'pending_exchange': return 'Pending Exchange';
-      case 'completed': return 'Completed';
-      case 'cancelled': return 'Cancelled';
+      case 'open': return t('listings.card.status.open') || 'Open for Exchange';
+      case 'pending_exchange': return t('listings.card.status.pending') || 'Pending Exchange';
+      case 'completed': return t('listings.card.status.completed') || 'Completed';
+      case 'cancelled': return t('listings.card.status.cancelled') || 'Cancelled';
+      case 'removed': return t('listings.card.status.cancelled') || 'Removed';
       default: return status;
     }
   };
 
   const postedAt = formatDistanceToNow(new Date(listing.postedDate), { addSuffix: true });
+  const exchangeLabel = listing.requestedKind === 'money'
+    ? (t('listings.card.paymentRequested') || 'Payment Requested:')
+    : listing.requestedKind === 'product'
+      ? (t('listings.card.productRequested') || 'Product Requested:')
+      : (t('listings.card.exchangeFor') || 'In Exchange For:');
 
   return (
     <Link href={`/listings/${listing.id}`} asChild>
@@ -44,7 +53,7 @@ export function ServiceCard({ listing, user, ...props }: ServiceCardProps) {
       >
         {/* Image */}
         {listing.offeredService?.imageUrl && (
-          <View style={cn('relative h-48 w-full')}>
+          <View style={cn('relative h-48 w-full overflow-hidden')}>
             <Image
               source={{ uri: listing.offeredService.imageUrl }}
               style={cn('h-full w-full') as any}
@@ -79,7 +88,7 @@ export function ServiceCard({ listing, user, ...props }: ServiceCardProps) {
           </View>
 
           {/* Requested Service */}
-          <Text style={cn('mb-1 text-sm font-semibold text-foreground')}>In Exchange For:</Text>
+          <Text style={cn('mb-1 text-sm font-semibold text-foreground')}>{exchangeLabel}</Text>
           <Text style={cn('mb-1 font-medium text-primary')} numberOfLines={1}>
             {listing.requestedService?.title ?? 'Open to offers'}
           </Text>

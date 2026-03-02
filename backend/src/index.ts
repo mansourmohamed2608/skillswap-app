@@ -11,6 +11,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { getNestServer } from './nest/firebase-nest';
 import { ensureAdminApp } from './core/firebase-admin';
+import * as admin from 'firebase-admin';
 import { logger } from './core/logger';
 import { correlationIdMiddleware, CORRELATION_ID_HEADER } from './core/correlation-id';
 
@@ -34,8 +35,8 @@ logger.info({ event: 'server_start', isProduction: IS_PRODUCTION }, 'SkillSwap A
 
 // Production origins - add your custom domain here
 const PROD_ORIGINS = new Set([
-  'https://skillswap-69yxi.web.app',
-  'https://skillswap-69yxi.firebaseapp.com',
+  'https://backdup-333cf.web.app',
+  'https://backdup-333cf.firebaseapp.com',
 ]);
 
 // Development origins
@@ -217,6 +218,56 @@ app.use((req, res, next) => {
   if (isWebhookRequest(req)) return next();
   return (apiLimiter as any)(req, res, next);
 });
+
+// Stricter rate limit for account-creation endpoint to prevent enumeration / spam
+// 20 attempts per hour per IP — well above legitimate use but blocks credential stuffing
+const bootstrapLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { statusCode: 429, message: 'Too many sign-up attempts. Try again later.' },
+  validate: { ip: false, trustProxy: false, xForwardedForHeader: false },
+  keyGenerator: (req) => {
+    const xf = (req.headers['x-forwarded-for'] as string) || '';
+    const ip = (req as any)._clientIp || req.ip || xf.split(',')[0]?.trim() || '127.0.0.1';
+    return `bootstrap:${ip}`;
+  },
+});
+const isBootstrapRequest = (req: express.Request) => {
+  const p = (req.path || req.originalUrl || '').replace(/\/api/, '');
+  return /^\/user\/bootstrap(\?|$)/.test(p) && req.method === 'POST';
+};
+app.use((req, res, next) => {
+  if (!isBootstrapRequest(req)) return next();
+  return (bootstrapLimiter as any)(req, res, next);
+});
+
+// ── Firebase App Check (optional, controlled by ENFORCE_APP_CHECK=true) ───────
+// When enabled, every non-webhook, non-health request must carry a valid
+// X-Firebase-AppCheck header.  Enable this after wiring App Check in the
+// Firebase console and both client SDKs.
+const ENFORCE_APP_CHECK = process.env.ENFORCE_APP_CHECK === 'true';
+if (ENFORCE_APP_CHECK) {
+  app.use(async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Skip webhooks (signed separately) and health checks
+    const path = req.path || req.originalUrl || '';
+    if (isWebhookRequest(req) || /\/health(\/|$|\?)/.test(path)) return next();
+    const appCheckToken = (req.headers['x-firebase-appcheck'] as string) || '';
+    if (!appCheckToken) {
+      logger.warn({ event: 'app_check_missing', path }, 'App Check token missing');
+      return res.status(401).json({ statusCode: 401, message: 'App Check token required' });
+    }
+    try {
+      ensureAdminApp();
+      await admin.appCheck().verifyToken(appCheckToken);
+      return next();
+    } catch (e: any) {
+      logger.warn({ event: 'app_check_invalid', path, error: e?.message }, 'Invalid App Check token');
+      return res.status(401).json({ statusCode: 401, message: 'Invalid App Check token' });
+    }
+  });
+}
 
 app.use('/', (req, res, next) => {
   try {

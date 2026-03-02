@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ProfileIndexRedirect() {
-  return <Redirect href="/(tabs)/profile" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/profile'); }, [router]);
+  return null;
 }

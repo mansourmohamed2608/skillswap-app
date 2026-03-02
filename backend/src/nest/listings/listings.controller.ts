@@ -2,6 +2,7 @@ import { BadRequestException, Body, Controller, Param, Post, Req, UseGuards } fr
 import { Request } from 'express';
 import { ListingsService } from './listings.service';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
+import { CreateListingDto } from './dto/create-listing.dto';
 
 @Controller('listings')
 export class ListingsController {
@@ -9,7 +10,7 @@ export class ListingsController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post('create')
-  async create(@Body() body: Record<string, any>, @Req() req: Request) {
+  async create(@Body() body: CreateListingDto, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;
     if (!uid) throw new BadRequestException('Unauthenticated request');
     return this.listingsService.createListing(uid, body);
@@ -17,10 +18,10 @@ export class ListingsController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post(':id/update')
-  async update(@Param('id') id: string, @Body() body: Record<string, any>, @Req() req: Request) {
+  async update(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;
     if (!uid) throw new BadRequestException('Unauthenticated request');
-    return this.listingsService.updateListing(uid, id, body?.listing || body);
+    return this.listingsService.updateListing(uid, id, (body?.listing as any) || body);
   }
 
   @UseGuards(FirebaseAuthGuard)

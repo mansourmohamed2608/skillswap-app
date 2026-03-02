@@ -1,8 +1,14 @@
-import { BadRequestException, Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, ForbiddenException, Post, Req, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
+
+const IS_EMULATOR = Boolean(
+  process.env.FUNCTIONS_EMULATOR ||
+  process.env.FIREBASE_AUTH_EMULATOR_HOST ||
+  process.env.FIREBASE_EMULATOR_HUB,
+);
 
 @Controller('payments')
 export class PaymentsController {
@@ -27,8 +33,12 @@ export class PaymentsController {
     return this.paymentsService.handleWebhook(raw, req.headers || {});
   }
 
+  /** DEV / EMULATOR ONLY — blocked in production */
   @Post('mock-complete')
   async mockComplete(@Body('sessionId') sessionId: string) {
+    if (!IS_EMULATOR) {
+      throw new ForbiddenException('This endpoint is only available in the local emulator environment');
+    }
     return this.paymentsService.completeMock(sessionId);
   }
 }

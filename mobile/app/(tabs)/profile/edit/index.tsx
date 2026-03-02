@@ -232,7 +232,7 @@ export default function EditProfilePage() {
             <CardTitle>{t('profile.edit.title')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {error ? <Text style={cn('text-red-600 mb-2')}>{error}</Text> : null}
+            {error ? <Text style={cn('text-destructive mb-2')}>{error}</Text> : null}
             <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.nameLabel')}</Text>
             <Input value={displayName} onChangeText={setDisplayName} className="mb-3" />
             <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.usernameLabel')}</Text>

@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { MailIcon, MapPinIcon, EditIcon, ImageIcon } from 'lucide-react';
+import { MailIcon, MapPinIcon, EditIcon } from 'lucide-react';
 import type { User } from '@/types';
 import { RatingDisplay } from '@/components/RatingDisplay';
 import { CategoryPill } from '@/features/listings/components/CategoryPill';
@@ -31,8 +31,7 @@ export function UserProfileSummaryCard({ user }: UserProfileSummaryCardProps) {
       <CardHeader className="relative p-0">
         {user.coverUrl ? (
           <div className="h-32 rounded-t-lg relative overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={user.coverUrl} alt={t('profile.public.coverAlt')} className="w-full h-full object-cover" />
+            <Image src={user.coverUrl} alt={t('profile.public.coverAlt')} fill className="object-cover" />
           </div>
         ) : isCurrentUser ? (
           <div className="h-32 rounded-t-lg bg-muted flex items-center justify-center select-none cursor-default">

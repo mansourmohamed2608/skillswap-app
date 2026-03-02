@@ -1,0 +1,30 @@
+# Root-level ignore to prevent accidental installs and sensitive files
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.expo/
+
+# Env files
+.env
+.env.*.local
+*.pem
+*.p12
+*.key
+*service-account*.json
+*credentials*.json
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+
+# Caches / builds (common)
+.next/
+dist/
+build/
+coverage/
+tsconfig.tsbuildinfo

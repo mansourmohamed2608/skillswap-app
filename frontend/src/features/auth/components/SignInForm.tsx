@@ -51,7 +51,6 @@ export function SignInForm() {
       router.push('/profile');
     } catch (err: any) {
       // Provide a generic error message but log the real error for debugging.
-      console.error('Client sign in error:', err);
       const message = getErrorMessage(err, t('auth.signIn.invalidCredentials'));
       setErrorMessage(message);
     } finally {

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
-import { registerForEvent } from "@/services/api";
+import { registerForEvent, getFunctionsBase } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,7 +34,9 @@ export default function EventsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const base = process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || "/api";
+        const fnBase = getFunctionsBase();
+        const base = fnBase ? `${fnBase}/api` : (process.env.NEXT_PUBLIC_API_BASE || process.env.API_BASE_URL || '');
+        if (!base) { setItems([]); setLoading(false); return; }
         const resp = await fetch(`${base}/events`, { cache: "no-store" });
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();

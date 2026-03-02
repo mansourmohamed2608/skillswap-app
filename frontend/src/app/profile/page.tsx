@@ -2,6 +2,7 @@
 'use client';
 
 import { Suspense, useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { UserProfileSummaryCard } from '@/features/profile/components/UserProfileSummaryCard';
@@ -115,8 +116,7 @@ function CurrentUserProfilePageContent() {
               const dt = data.date;
               try {
                 // Firestore Timestamp support
-                // @ts-ignore
-                if (dt && typeof dt.toDate === 'function') dateIso = dt.toDate().toISOString();
+                if (dt && typeof dt.toDate === 'function') dateIso = (dt as any).toDate().toISOString();
                 else if (typeof dt === 'string') dateIso = new Date(dt).toISOString();
                 else if (dt instanceof Date) dateIso = dt.toISOString();
                 else dateIso = new Date().toISOString();
@@ -308,8 +308,13 @@ function CurrentUserProfilePageContent() {
           {businessProfile ? (
             <div className="space-y-1 text-sm text-muted-foreground">
               {businessProfile.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={businessProfile.logoUrl} alt={businessProfile.name || t('profile.business.title')} className="h-12 w-12 rounded border object-cover" />
+                <Image
+                  src={businessProfile.logoUrl}
+                  alt={businessProfile.name || t('profile.business.title')}
+                  width={48}
+                  height={48}
+                  className="rounded border object-cover"
+                />
               )}
               {businessProfile.name && (
                 <div>

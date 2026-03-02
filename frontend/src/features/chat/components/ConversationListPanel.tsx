@@ -90,6 +90,7 @@ export function ConversationListPanel({
     };
   }, [loadingUsers, otherIds, userMetaById]);
 
+  // eslint-disable-next-line react-hooks/preserve-manual-memoization
   const chats = useMemo(() => {
     const formatTimestamp = (value?: number) => {
       if (!value) return "";

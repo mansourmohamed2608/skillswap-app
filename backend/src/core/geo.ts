@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logger } from './logger';
 
 export type GeoPoint = { lat: number; lng: number };
 
@@ -76,7 +77,7 @@ export async function geocodeAddress(query: string): Promise<GeocodeResult | nul
       provider: 'google',
     };
   } catch (err) {
-    console.warn('[Geo] Geocoding failed', err);
+    logger.warn({ err }, '[Geo] Geocoding failed');
     return null;
   }
 }

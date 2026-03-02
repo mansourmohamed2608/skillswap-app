@@ -10,6 +10,9 @@ export class SearchController {
     @Query('q') q?: string,
     @Query('category') category?: string,
     @Query('location') location?: string,
+    @Query('nearLat') nearLat?: string,
+    @Query('nearLng') nearLng?: string,
+    @Query('radiusKm') radiusKm?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
@@ -17,6 +20,9 @@ export class SearchController {
       q: q || '',
       category: category || '',
       location: location || '',
+      nearLat: nearLat !== undefined ? Number(nearLat) : undefined,
+      nearLng: nearLng !== undefined ? Number(nearLng) : undefined,
+      radiusKm: radiusKm !== undefined ? Number(radiusKm) : undefined,
       page: page !== undefined ? Number(page) : 0,
       pageSize: pageSize !== undefined ? Number(pageSize) : undefined,
     });

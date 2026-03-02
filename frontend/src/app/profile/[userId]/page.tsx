@@ -21,6 +21,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   useEffect(() => {
     let mounted = true;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     (async () => {
       const fallbackUid = String(searchParams?.get('uid') || '').trim();

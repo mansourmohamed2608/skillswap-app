@@ -6,12 +6,8 @@ import ActiveConversationPanel from "@/features/chat/components/ActiveConversati
 
 type Params = { chatId: string };
 
-function unwrapMaybePromise<T>(value: T | Promise<T>): T {
-  return (typeof (value as any)?.then === "function") ? use(value as Promise<T>) : (value as T);
-}
-
 export default function ChatDetailPage({ params }: { params: Params | Promise<Params> }) {
-  const resolvedParams = unwrapMaybePromise(params);
+  const resolvedParams = use(Promise.resolve(params));
   const chatId = resolvedParams.chatId;
 
   return (

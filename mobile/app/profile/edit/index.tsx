@@ -1,5 +1,8 @@
-import { Redirect } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ProfileEditRedirect() {
-  return <Redirect href="/(tabs)/profile/edit" />;
+  const router = useRouter();
+  useEffect(() => { router.replace('/(tabs)/profile/edit'); }, [router]);
+  return null;
 }

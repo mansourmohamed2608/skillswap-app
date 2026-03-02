@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import { StarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';

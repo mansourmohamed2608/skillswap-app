@@ -30,7 +30,6 @@ export default function SignInScreen() {
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   const { setFade } = useHeaderFade();
   const { t } = useTranslation();
 
@@ -45,7 +44,6 @@ export default function SignInScreen() {
       Alert.alert(t('auth.signin.successTitle'), t('auth.signin.successBody'));
       router.replace('/profile');
     } catch (err: any) {
-      console.error('Sign in error:', err);
       const message = getErrorMessage(err, t('auth.signin.invalidCredentials'));
       setErrorMessage(message);
     } finally {
@@ -89,7 +87,7 @@ export default function SignInScreen() {
               <View style={cn('gap-1')}>
                 <Text style={cn('text-sm font-medium text-foreground')}>{t('auth.signin.emailLabel')}</Text>
                 <TextInput
-                  style={[cn('border border-input bg-white rounded-md px-3 py-2 text-base'), { minHeight: 44 }]}
+                  style={[cn('border border-input bg-background rounded-md px-3 py-2 text-base'), { minHeight: 44 }]}
                   placeholder={t('auth.signin.emailPlaceholder')}
                   placeholderTextColor={colors.placeholder}
                   keyboardType="email-address"
@@ -108,7 +106,7 @@ export default function SignInScreen() {
                   </Link>
                 </View>
                 <PasswordInput
-                  className="border border-input bg-white rounded-md px-3 py-2 text-base"
+                  className="border border-input bg-background rounded-md px-3 py-2 text-base"
                   placeholder={t('auth.signin.passwordPlaceholder')}
                   value={password}
                   onChangeText={setPassword}
@@ -121,7 +119,7 @@ export default function SignInScreen() {
                 onPress={() => setRememberMe(!rememberMe)}
               >
                 <View style={[cn('h-5 w-5 border-2 rounded items-center justify-center'), 
-                  rememberMe ? { borderColor: colors.primary, backgroundColor: colors.primary } : { borderColor: '#D1D5DB' }]}>
+                  rememberMe ? { borderColor: colors.primary, backgroundColor: colors.primary } : { borderColor: colors.border }]}>
                   {rememberMe && <Text style={cn('text-white text-xs')}>✓</Text>}
                 </View>
                 <Text style={cn('text-sm text-muted-foreground')}>{t('auth.signin.rememberMe')}</Text>
@@ -149,9 +147,9 @@ export default function SignInScreen() {
 
               {/* Error Message */}
               {errorMessage && (
-                <View style={cn('bg-red-50 border border-red-200 rounded-md p-3')}>
-                  <Text style={cn('text-sm font-medium text-red-800')}>{t('auth.signin.errorTitle')}</Text>
-                  <Text style={cn('text-sm text-red-700 mt-1')}>{errorMessage}</Text>
+                <View style={cn('bg-destructive/10 border border-destructive/20 rounded-md p-3')}>
+                  <Text style={cn('text-sm font-medium text-destructive')}>{t('auth.signin.errorTitle')}</Text>
+                  <Text style={cn('text-sm text-destructive mt-1')}>{errorMessage}</Text>
                 </View>
               )}
 
@@ -174,4 +172,5 @@ export default function SignInScreen() {
 const colors = {
   primary: '#4A7C59',
   placeholder: '#9CA3AF',
+  border: '#D1D5DB',
 };

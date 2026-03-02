@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { Request, Response } from 'express';
 import { getUserDocument, canCreateBooking, incrementBookingCount, isMembershipActive } from './core/membership';
 import { sendInAppNotification, sendPushNotification, sendEmailNotification } from './core/notifications';
+import { logger } from './core/logger';
 
 /**
  * Create a new service exchange request.
@@ -80,11 +81,11 @@ export async function createRequest(req: Request, res: Response): Promise<void> 
     await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', `/requests/${docRef.id}`);
     await sendEmailNotification(ownerId, 'New exchange request', 'You have a new exchange request on your listing.');
   } catch (e) {
-    console.warn('Failed to send notifications for owner', e);
+    logger.warn({ err: e }, 'Failed to send notifications for owner');
   }
     res.json({ id: docRef.id });
   } catch (err: any) {
-    console.error(err);
+    logger.error({ err }, 'createRequest failed');
     res.status(500).json({ error: err.message });
   }
 }
@@ -146,7 +147,7 @@ export async function rescheduleRequest(req: Request, res: Response): Promise<vo
     await reqRef.update({ proposedTime: new Date(proposedTime) });
     res.json({ success: true });
   } catch (err: any) {
-    console.error(err);
+    logger.error({ err }, 'rescheduleRequest failed');
     res.status(500).json({ error: err.message });
   }
 }

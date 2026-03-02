@@ -134,7 +134,7 @@ export function MatchmakingForm() {
               disabled={isGuest}
             />
             <p className="text-xs text-muted-foreground">
-              Example: "I design logos, brand kits, and simple social media visuals for small businesses."
+              Example: &quot;I design logos, brand kits, and simple social media visuals for small businesses.&quot;
             </p>
             {state?.errors?.userProfile && (
               <p className="text-sm text-destructive">{state.errors.userProfile.join(', ')}</p>
@@ -152,7 +152,7 @@ export function MatchmakingForm() {
               disabled={isGuest}
             />
             <p className="text-xs text-muted-foreground">
-              Example: "I need a frontend developer, Arabic copywriter, or product photographer."
+              Example: &quot;I need a frontend developer, Arabic copywriter, or product photographer.&quot;
             </p>
             {state?.errors?.serviceRequests && (
               <p className="text-sm text-destructive">{state.errors.serviceRequests.join(', ')}</p>

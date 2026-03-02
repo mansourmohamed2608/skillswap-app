@@ -7,7 +7,7 @@ import { BellIcon, Star, MessageSquare, Briefcase, Info } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface NotificationListProps {
@@ -23,15 +23,14 @@ const iconMap = {
 
 export function NotificationList({ notifications }: NotificationListProps) {
   const { t } = useTranslation();
-  const [notificationTimes, setNotificationTimes] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    const newTimes: Record<string, string> = {};
+  const notificationTimes = useMemo<Record<string, string>>(() => {
+    const times: Record<string, string> = {};
     notifications.forEach(n => {
-      newTimes[n.id] = formatDistanceToNow(new Date(n.date), { addSuffix: true });
+      times[n.id] = formatDistanceToNow(new Date(n.date), { addSuffix: true });
     });
-    setNotificationTimes(newTimes);
+    return times;
   }, [notifications]);
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (notifications.length === 0) {
     return (
@@ -44,25 +43,38 @@ export function NotificationList({ notifications }: NotificationListProps) {
   }
 
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardContent className="p-0">
+        <div className="flex flex-col gap-2 border-b bg-muted/30 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{t('profile.tabs.notifications')}</p>
+            <p className="text-xs text-muted-foreground">
+              {unreadCount > 0
+                ? t('profile.notifications.unreadCount', { count: unreadCount })
+                : t('profile.notifications.recent')}
+            </p>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            {t('profile.notifications.itemCount', { count: notifications.length })}
+          </div>
+        </div>
         <ul className="divide-y divide-border">
           {notifications.map((notification) => {
             const content = (
-              <div className="flex items-center space-x-4">
-                <div className="flex-shrink-0">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 pt-0.5">
                   <div className="h-10 w-10 flex items-center justify-center bg-muted rounded-full">
                     {iconMap[notification.type]}
                   </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{notification.content}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-foreground break-words">{notification.content}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     {notificationTimes[notification.id] || t('profile.notifications.recent')}
                   </p>
                 </div>
                 {!notification.isRead && (
-                  <div className="flex-shrink-0">
+                  <div className="flex-shrink-0 pt-1">
                     <span className="h-2.5 w-2.5 rounded-full bg-accent flex" />
                   </div>
                 )}
@@ -73,7 +85,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
               <li
                 key={notification.id}
                 className={cn(
-                  'p-4 transition-colors',
+                  'p-4 transition-colors sm:p-5',
                   notification.isRead ? 'bg-card/60' : 'bg-muted/40',
                   notification.link && 'hover:bg-muted/50'
                 )}

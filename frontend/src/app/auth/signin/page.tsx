@@ -29,7 +29,7 @@ const AuthLogo = () => (
 export default function SignInPage() {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem-5rem)] py-8">
+    <div className="relative overflow-hidden flex flex-col items-center justify-center min-h-[calc(100vh-10rem-5rem)] py-8">
        <div className="absolute inset-0 opacity-5 -z-10">
         <Image 
             src="https://placehold.co/1920x1080.png" 

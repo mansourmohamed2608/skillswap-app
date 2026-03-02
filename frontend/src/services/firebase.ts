@@ -12,17 +12,15 @@ import { getStorage, connectStorageEmulator, type FirebaseStorage } from "fireba
 import { getDatabase, connectDatabaseEmulator, type Database } from "firebase/database";
 
 // ---------- Public config ----------
-export const firebaseConfig: FirebaseOptions = (() => {
-  const raw = process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG;
-  if (!raw) return {};
-  try {
-    return JSON.parse(raw) as FirebaseOptions;
-  } catch (e) {
-    console.error("Failed to parse NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG", e);
-    return {};
-  }
-})();
-
+export const firebaseConfig: FirebaseOptions = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  // databaseURL optional; only needed if you use RTDB
+};
 
 export function isFirebaseConfigured(): boolean {
   try {
@@ -81,6 +79,8 @@ function connectEmulatorsIfNeeded() {
 
   // Map <port> to either "localhost" (local dev) or "<port>-<studioBase>" (Studio)
   const hostFor = (port: number) => (inStudio ? `${port}-${studioBase}` : "localhost");
+  // In Firebase Studio, cloud workstations proxy through port 443 (HTTPS)
+  // For Firestore/Storage, we need to use port 443 with SSL
   const portFor = (port: number) => (inStudio ? 443 : port);
 
   try {
@@ -103,26 +103,24 @@ function connectEmulatorsIfNeeded() {
     const ST_PORT   = 9199;
     const RT_PORT   = 9005;
 
-    // Skip emulators that dont support HTTPS (Firebase Studio)
-    if (!inStudio) {
-      if (rtdb) connectDatabaseEmulator(rtdb, hostFor(RT_PORT), portFor(RT_PORT));
-
     // Auth emulator needs a full URL string
+    // Firebase Studio uses HTTPS for cloud workstation URLs
     const authURL = inStudio ? `https://${hostFor(AUTH_PORT)}` : `http://localhost:${AUTH_PORT}`;
     connectAuthEmulator(auth, authURL, { disableWarnings: true });
-    console.log("Connecting Auth Emulator at:", authURL);
 
-    // Firestore/Storage emulators use host + port
-    connectFirestoreEmulator(db, hostFor(FS_PORT), portFor(FS_PORT));
-    connectStorageEmulator(storage, hostFor(ST_PORT), portFor(ST_PORT));
+    // Firestore/Storage/RTDB emulators don't support HTTPS
+    // In Firebase Studio, skip client-side emulator connections - use server-side API instead
+    if (!inStudio) {
+      if (rtdb) connectDatabaseEmulator(rtdb, hostFor(RT_PORT), portFor(RT_PORT));
+      connectFirestoreEmulator(db, hostFor(FS_PORT), portFor(FS_PORT));
+      connectStorageEmulator(storage, hostFor(ST_PORT), portFor(ST_PORT));
     } else {
-      console.log("Firebase Studio: Skipping Firestore/Storage client emulators");
+      // Firebase Studio: skip Firestore/Storage/RTDB client emulators
     }
 
     window.__EMULATORS_CONNECTED__ = true;
-    console.log(`Connected to Firebase emulators (${inStudio ? "Firebase Studio" : "local"})`);
-  } catch (e) {
-    console.error("Error connecting to Firebase emulators:", e);
+  } catch {
+    // emulator connection failed; falling back to production services
   }
 }
 
@@ -172,9 +170,8 @@ function connectEmulatorsForServer(): void {
     connectStorageEmulator(storage, '127.0.0.1', ST_PORT);
     if (rtdb) connectDatabaseEmulator(rtdb, '127.0.0.1', RT_PORT);
     globalAny.__EMULATORS_CONNECTED__ = true;
-    console.log('Connected to Firebase emulators (server)');
-  } catch (e) {
-    console.error('Error connecting to Firebase emulators (server):', e);
+  } catch {
+    // emulator connection failed server-side
   }
 }
 
@@ -195,10 +192,8 @@ if (typeof window !== 'undefined') {
     firebaseConfig,
   };
 
-  // log when we connect to emulators
+  // expose firebase handles for console inspection
   if (auth && (window as any).__EMULATORS_CONNECTED__) {
-    // @ts-ignore - internal field may exist depending on SDK version
-    const emu = (auth as any).emulatorConfig?.url || (auth as any)._emulatorConfig?.url;
-    console.log('[Init] Auth emulator URL:', emu || '(unknown)');
+    // emulators active
   }
 }

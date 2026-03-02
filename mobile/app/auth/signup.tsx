@@ -161,7 +161,6 @@ export default function SignupScreen() {
         }
       });
     } catch (err: any) {
-      console.error('KYC submit failed', err);
       const msg = getErrorMessage(err, t('auth.signup.errors.kycFailedFallback'));
       setErrors((s) => ({ ...s, server: msg }));
       Alert.alert(t('auth.signup.errors.kycFailedTitle'), msg);
@@ -200,10 +199,9 @@ export default function SignupScreen() {
         });
         try { await AsyncStorage.removeItem('kyc_vendor'); } catch {}
         Alert.alert(t('auth.signup.successTitle'), t('auth.signup.successBody'), [
-          { text: 'Continue', onPress: () => router.replace('/') },
+          { text: t('common.continue'), onPress: () => router.replace('/') },
         ]);
       } catch (err: any) {
-        console.error('Finalize signup failed', err);
         const msg = getErrorMessage(err, t('auth.signup.errors.signupFailedFallback'));
         setErrors((s) => ({ ...s, server: msg }));
         Alert.alert(t('auth.signup.errors.signupFailedTitle'), msg);
@@ -322,7 +320,7 @@ export default function SignupScreen() {
               <View>
                 <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.idFrontLabel')}</Text>
                 {frontBase64 ? (
-                  <Image source={{ uri: frontBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' }} />
+                  <Image source={{ uri: frontBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#e5e7eb' }} />
                 ) : null}
                 <Button
                   variant="outline"
@@ -338,7 +336,7 @@ export default function SignupScreen() {
               <View>
                 <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.idBackLabel')}</Text>
                 {backBase64 ? (
-                  <Image source={{ uri: backBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' }} />
+                  <Image source={{ uri: backBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#e5e7eb' }} />
                 ) : null}
                 <Button
                   variant="outline"

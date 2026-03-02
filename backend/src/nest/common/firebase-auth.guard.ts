@@ -20,6 +20,8 @@ export class FirebaseAuthGuard implements CanActivate {
       }
       return true;
     } catch (e) {
+      // Preserve ForbiddenException (account suspended) rather than masking it as 401
+      if (e instanceof ForbiddenException) throw e;
       throw new UnauthorizedException('Invalid or expired token');
     }
   }

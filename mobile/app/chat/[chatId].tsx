@@ -1,8 +1,13 @@
-import { Redirect, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 
 export default function ChatDetailRedirect() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ chatId?: string }>();
   const chatId = params?.chatId ? String(params.chatId) : '';
-  if (!chatId) return <Redirect href="/(tabs)/chat" />;
-  return <Redirect href={{ pathname: '/(tabs)/chat/[chatId]', params: { chatId } }} />;
+  useEffect(() => {
+    if (!chatId) router.replace('/(tabs)/chat');
+    else router.replace(`/(tabs)/chat/${chatId}` as any);
+  }, [router, chatId]);
+  return null;
 }
