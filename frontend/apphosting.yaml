@@ -1,0 +1,53 @@
+runtime: nodejs20
+
+# User-defined env vars for Firebase App Hosting.
+# This file is the SOURCE config (outside workspace/ which is a build output).
+# Firebase App Hosting reads this file and merges it with workspace/apphosting.yaml.
+env:
+  # ── Firebase client config ─────────────────────────────────────────────────
+  # NEXT_PUBLIC_* vars are inlined by webpack into browser bundles at build time.
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "skillswap-69yxi.firebaseapp.com"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "skillswap-69yxi"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "skillswap-69yxi.firebasestorage.app"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "1088811861633"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:1088811861633:web:50cdabc07ce7535f55af80"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_DATABASE_URL
+    value: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app"
+    availability: [BUILD, RUNTIME]
+
+  # Full config JSON as a single NEXT_PUBLIC var — resolveFirebaseConfig() in
+  # firebase.ts picks this up first, guaranteeing the browser always has config.
+  - variable: NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG
+    value: '{"apiKey":"AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc","appId":"1:1088811861633:web:50cdabc07ce7535f55af80","authDomain":"skillswap-69yxi.firebaseapp.com","databaseURL":"https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app","messagingSenderId":"1088811861633","projectId":"skillswap-69yxi","storageBucket":"skillswap-69yxi.firebasestorage.app"}'
+    availability: [BUILD, RUNTIME]
+
+  # ── API / Functions base URL ───────────────────────────────────────────────
+  - variable: NEXT_PUBLIC_FUNCTIONS_BASE
+    value: "https://skillswap-69yxi.web.app"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_API_BASE
+    value: "https://skillswap-69yxi.web.app/api"
+    availability: [BUILD, RUNTIME]
+
+  # ── Feature flags ─────────────────────────────────────────────────────────
+  - variable: MATCHMAKING_MODE
+    value: "auto"
+    availability: [BUILD, RUNTIME]
+
+  # ── Secrets (stored in Secret Manager) ────────────────────────────────────
+  - variable: GEMINI_API_KEY
+    secret: GEMINI_API_KEY
+    availability: [RUNTIME]
