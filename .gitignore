@@ -1,5 +1,9 @@
 # Root-level ignore to prevent accidental installs and sensitive files
 
+# Accidental root-level package files (each subproject has its own)
+/package.json
+/package-lock.json
+
 # Node
 node_modules/
 npm-debug.log*
