@@ -287,12 +287,3 @@ export { onListingWrite } from './search';
 export { moderateWish } from './moderation';
 export { moderateReview } from './moderation';
 export { syncPublicProfile } from './public-profiles';
-
-module.exports = {
-  api,
-  moderateListing: require('./moderation').moderateListing,
-  onListingWrite: require('./search').onListingWrite,
-  moderateWish: require('./moderation').moderateWish,
-  moderateReview: require('./moderation').moderateReview,
-  syncPublicProfile: require('./public-profiles').syncPublicProfile,
-};
