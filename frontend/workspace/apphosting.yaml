@@ -24,6 +24,10 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_DATABASE_URL
     value: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app"
     availability: [BUILD, RUNTIME]
+  # Full config JSON — picked up by firebase.ts resolveFirebaseConfig() and inlined by webpack
+  - variable: NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG
+    value: '{"apiKey":"AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc","appId":"1:1088811861633:web:50cdabc07ce7535f55af80","authDomain":"skillswap-69yxi.firebaseapp.com","databaseURL":"https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app","messagingSenderId":"1088811861633","projectId":"skillswap-69yxi","storageBucket":"skillswap-69yxi.firebasestorage.app"}'
+    availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FUNCTIONS_BASE
     # Firebase Hosting rewrites /api/** → Cloud Function 'api' (europe-west3)
     value: "https://skillswap-69yxi.web.app"

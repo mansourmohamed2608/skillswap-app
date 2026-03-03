@@ -12,15 +12,30 @@ import { getStorage, connectStorageEmulator, type FirebaseStorage } from "fireba
 import { getDatabase, connectDatabaseEmulator, type Database } from "firebase/database";
 
 // ---------- Public config ----------
-export const firebaseConfig: FirebaseOptions = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-};
+// 1. Firebase App Hosting automatically injects FIREBASE_WEBAPP_CONFIG at build time.
+// 2. Fall back to individual NEXT_PUBLIC_FIREBASE_* vars (local dev / CI).
+function resolveFirebaseConfig(): FirebaseOptions {
+  try {
+    const raw = process.env.FIREBASE_WEBAPP_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG;
+    if (raw) {
+      const parsed = JSON.parse(raw) as FirebaseOptions;
+      if (parsed.apiKey && parsed.projectId && parsed.appId) return parsed;
+    }
+  } catch {
+    // fall through
+  }
+  return {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  };
+}
+
+export const firebaseConfig: FirebaseOptions = resolveFirebaseConfig();
 
 export function isFirebaseConfigured(): boolean {
   try {
