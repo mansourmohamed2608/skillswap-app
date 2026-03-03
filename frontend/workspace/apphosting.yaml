@@ -2,6 +2,28 @@ runtime: nodejs20        # pins Cloud Build to Node 20 LTS
 
 # (Optional) build-time and run-time env vars
 env:
+  # Firebase client config — baked into the Next.js bundle at build time
+  - variable: NEXT_PUBLIC_FIREBASE_API_KEY
+    value: "AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+    value: "skillswap-69yxi.firebaseapp.com"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    value: "skillswap-69yxi"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+    value: "skillswap-69yxi.firebasestorage.app"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+    value: "1088811861633"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_APP_ID
+    value: "1:1088811861633:web:50cdabc07ce7535f55af80"
+    availability: [BUILD, RUNTIME]
+  - variable: NEXT_PUBLIC_FIREBASE_DATABASE_URL
+    value: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app"
+    availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_FUNCTIONS_BASE
     # Firebase Hosting rewrites /api/** → Cloud Function 'api' (europe-west3)
     value: "https://skillswap-69yxi.web.app"
