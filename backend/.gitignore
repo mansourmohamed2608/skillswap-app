@@ -66,6 +66,7 @@ node_modules/
 .env
 .env.*
 !.env.example
+!.env.skillswap-69yxi
 
 # dataconnect generated files
 .dataconnect

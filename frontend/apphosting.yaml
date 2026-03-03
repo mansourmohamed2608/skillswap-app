@@ -28,6 +28,10 @@ env:
     value: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app"
     availability: [BUILD, RUNTIME]
 
+  - variable: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+    value: "G-V5QYMD99DZ"
+    availability: [BUILD, RUNTIME]
+
   # Full config JSON as a single NEXT_PUBLIC var — resolveFirebaseConfig() in
   # firebase.ts picks this up first, guaranteeing the browser always has config.
   - variable: NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG
