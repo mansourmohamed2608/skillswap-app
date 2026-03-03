@@ -9,7 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
-        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     },
     "preview": {
@@ -22,7 +22,7 @@
       },
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
-        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     },
     "production": {
@@ -36,7 +36,7 @@
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
         "EXPO_PUBLIC_USE_MOCK_PAYMENTS": "false",
-        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://backdup-333cf.web.app"
+        "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     }
   },

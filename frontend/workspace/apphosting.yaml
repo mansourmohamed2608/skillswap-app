@@ -4,10 +4,10 @@ runtime: nodejs20        # pins Cloud Build to Node 20 LTS
 env:
   - variable: NEXT_PUBLIC_FUNCTIONS_BASE
     # Firebase Hosting rewrites /api/** → Cloud Function 'api' (europe-west3)
-    value: "https://backdup-333cf.web.app"
+    value: "https://skillswap-69yxi.web.app"
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_API_BASE
-    value: "https://backdup-333cf.web.app/api"
+    value: "https://skillswap-69yxi.web.app/api"
     availability: [BUILD, RUNTIME]
   - variable: MATCHMAKING_MODE
     value: "auto"

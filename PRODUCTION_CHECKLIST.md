@@ -26,7 +26,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 | 1 | `POST /payments/mock-complete` reachable in production | `IS_EMULATOR` guard added to `payments.controller.ts` |
 | 2 | `POST /didit/session` endpoint missing | `didit-session.controller.ts` created |
 | 3 | `POST /kyc/submit` endpoint missing | Added to `kyc.controller.ts` + `kyc.service.ts` |
-| 4 | Backend CORS blocked real Firebase domains | `backdup-333cf.*` added to allowed origins in `index.ts` |
+| 4 | Backend CORS blocked real Firebase domains | `skillswap-69yxi.*` added to allowed origins in `index.ts` |
 | 5 | `IS_PRODUCTION` guard used wrong project ID (`skillswap-69yxi`) | Changed to `K_SERVICE` env var check |
 | 6 | KYC callback URL used frontend env var (`NEXT_PUBLIC_APP_URL`) | Changed to `APP_URL` (backend-only) |
 
@@ -38,7 +38,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 | 8 | Mobile `firebase.ts` emulator ports same mismatch | Fixed |
 | 9 | `analytics.ts`, `push.ts`, `kyc.ts` used `\|\| '/api'` fallback hitting wrong routes | Replaced with `getFunctionsBase()` |
 | 10 | `kyc.ts` `getKycApiBase()` returned `'/api'` | Changed to return `''` |
-| 11 | `apphosting.yaml` pointed to wrong project | Fixed to `backdup-333cf.web.app` |
+| 11 | `apphosting.yaml` pointed to wrong project | Fixed to `skillswap-69yxi.web.app` |
 | 12 | No hosting rewrite for `/api/**` in `frontend/firebase.json` | Rewrite added |
 | 13 | EAS production builds had no `EXPO_PUBLIC_FUNCTIONS_BASE` | Added to all three EAS profiles |
 | 14 | Firestore rules had no explicit rule for `kycReferences` | Deny-all rule added |
@@ -75,7 +75,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 │                         Client Tier                             │
 │                                                                 │
 │  Next.js 15 (Firebase App Hosting)    Expo RN (EAS Build)      │
-│  backdup-333cf.web.app                iOS / Android             │
+│  skillswap-69yxi.web.app                iOS / Android             │
 │         │                                      │                │
 │         └──────────────┬─────────────────────┘                 │
 └─────────────────────────┼───────────────────────────────────────┘
@@ -88,7 +88,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 │  Firebase Hosting rewrite: /api/** → Cloud Function "api"       │
 │  express-rate-limit (300/15min global, 20/hr for /bootstrap)    │
 │  helmet CSP + HSTS + frame deny                                 │
-│  CORS allowlist: backdup-333cf.*, *.hosted.app                  │
+│  CORS allowlist: skillswap-69yxi.*, *.hosted.app                  │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
                            ▼
@@ -212,7 +212,7 @@ Content-Security-Policy: default-src 'self'; frame-src 'self' https://*.geidea.n
 1. Configure GitHub repository secrets (see Section H)
 2. Run `firebase deploy --only firestore:rules,database` to push security rules
 3. Run `firebase deploy --only functions` to deploy backend
-4. Verify health endpoint: `GET https://backdup-333cf.web.app/api/health`
+4. Verify health endpoint: `GET https://skillswap-69yxi.web.app/api/health`
 
 ### Sprint 2 — Bootstrap First Admin (Day 1)
 The first admin cannot be set via the API (no existing admin to call `POST /admin/users/:id/role`).
@@ -270,13 +270,13 @@ Navigate to **Settings → Secrets and variables → Actions** and add:
 |--------|-------|---------|
 | `FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF` | Service Account JSON (base64 or raw) | Deploy workflow |
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase web config | Frontend CI build |
-| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `backdup-333cf.firebaseapp.com` | Frontend CI build |
-| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `backdup-333cf` | Frontend CI build |
-| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `backdup-333cf.appspot.com` | Frontend CI build |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `skillswap-69yxi.firebaseapp.com` | Frontend CI build |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `skillswap-69yxi` | Frontend CI build |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `skillswap-69yxi.appspot.com` | Frontend CI build |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | From Firebase console | Frontend CI build |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | From Firebase console | Frontend CI build |
 | `NEXT_PUBLIC_FIREBASE_VAPID_KEY` | From Firebase console → Cloud Messaging | Push notifications |
-| `NEXT_PUBLIC_FUNCTIONS_BASE` | `https://backdup-333cf.web.app` | API calls from frontend |
+| `NEXT_PUBLIC_FUNCTIONS_BASE` | `https://skillswap-69yxi.web.app` | API calls from frontend |
 
 > **Note:** Backend runtime secrets (`ALGOLIA_API_KEY`, `DIDIT_API_KEY`, `GEIDEA_WEBHOOK_SECRET`, `POSTGRES_CONNECTION_STRING`, etc.) are stored in **Firebase Secret Manager**, not GitHub. They are injected at deploy time via `runWith({ secrets: [...] })` in `index.ts`.
 
@@ -293,7 +293,7 @@ git push origin main
     │           └── Firebase App Hosting auto-deploys frontend via GitHub integration
     │
     └─► Firebase App Hosting (automatic)
-          Frontend deployed to backdup-333cf.web.app
+          Frontend deployed to skillswap-69yxi.web.app
 ```
 
 ### Manual Deployment Commands
@@ -320,31 +320,31 @@ cd frontend && npm run build && firebase deploy --only hosting
 
 ```bash
 # 1. Health check (should return {"ok":true,"ts":...,"checks":{"firestore":"ok","auth":"ok"}})
-curl https://backdup-333cf.web.app/api/health
+curl https://skillswap-69yxi.web.app/api/health
 
 # 2. CORS preflight (should return 204 with CORS headers)
-curl -X OPTIONS https://backdup-333cf.web.app/api/health \
-  -H "Origin: https://backdup-333cf.web.app" \
+curl -X OPTIONS https://skillswap-69yxi.web.app/api/health \
+  -H "Origin: https://skillswap-69yxi.web.app" \
   -H "Access-Control-Request-Method: GET" -v 2>&1 | grep -E "< HTTP|Access-Control"
 
 # 3. Unauthenticated request (should return 401)
-curl -s https://backdup-333cf.web.app/api/user/profile | jq '.statusCode'
+curl -s https://skillswap-69yxi.web.app/api/user/profile | jq '.statusCode'
 # Expected: 401
 
 # 4. Mock-complete blocked in production (should return 403 or 404)
-curl -s -X POST https://backdup-333cf.web.app/api/payments/mock-complete \
+curl -s -X POST https://skillswap-69yxi.web.app/api/payments/mock-complete \
   -H "Content-Type: application/json" -d '{}' | jq '.statusCode'
 # Expected: 403
 
 # 5. Dev-verify blocked in production (should return 404)
-curl -s -X POST https://backdup-333cf.web.app/api/kyc/dev-verify \
+curl -s -X POST https://skillswap-69yxi.web.app/api/kyc/dev-verify \
   -H "Content-Type: application/json" -d '{}' | jq '.statusCode'
 # Expected: 404
 
 # 6. Bootstrap rate limit (run 25 times — 21st should return 429)
 for i in $(seq 1 22); do
   code=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
-    https://backdup-333cf.web.app/api/user/bootstrap \
+    https://skillswap-69yxi.web.app/api/user/bootstrap \
     -H "Content-Type: application/json" -d '{"token":"fake"}')
   echo "$i: $code"
 done
@@ -370,7 +370,7 @@ firebase emulators:start
 # UI:        4001
 
 # Quick smoke test against local functions
-curl http://127.0.0.1:5001/backdup-333cf/europe-west3/api/health
+curl http://127.0.0.1:5001/skillswap-69yxi/europe-west3/api/health
 ```
 
 ---

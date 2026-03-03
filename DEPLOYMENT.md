@@ -84,8 +84,8 @@ NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-NEXT_PUBLIC_FUNCTIONS_BASE=https://backdup-333cf.web.app
-# (Alternatively, direct Cloud Functions URL: https://europe-west3-backdup-333cf.cloudfunctions.net)
+NEXT_PUBLIC_FUNCTIONS_BASE=https://skillswap-69yxi.web.app
+# (Alternatively, direct Cloud Functions URL: https://europe-west3-skillswap-69yxi.cloudfunctions.net)
 
 # AI matchmaking (server-side in Next.js)
 MATCHMAKING_MODE=auto           # auto | gemini | rule
@@ -101,7 +101,7 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 EXPO_PUBLIC_FIREBASE_APP_ID=your-app-id
-EXPO_PUBLIC_FUNCTIONS_BASE=https://backdup-333cf.web.app
+EXPO_PUBLIC_FUNCTIONS_BASE=https://skillswap-69yxi.web.app
 EXPO_PUBLIC_USE_EMULATORS=false
 ```
 
@@ -133,8 +133,8 @@ firebase functions:secrets:set ALGOLIA_API_KEY
 
 # Non-secret runtime env vars (set in Functions runtime settings)
 # DIDIT_WORKFLOW_ID, DIDIT_BASE_URL
-# DIDIT_CALLBACK_URL=https://backdup-333cf.web.app/kyc/done
-# APP_URL=https://backdup-333cf.web.app  <-- used as KYC callback base
+# DIDIT_CALLBACK_URL=https://skillswap-69yxi.web.app/kyc/done
+# APP_URL=https://skillswap-69yxi.web.app  <-- used as KYC callback base
 # GEIDEA_MERCHANT_ID, GEIDEA_CALLBACK_URL, GEIDEA_BASE_URL
 # ALGOLIA_APP_ID, ALGOLIA_INDEX
 # USE_MOCK_PAYMENTS=0  <-- MUST be 0 in production
@@ -163,10 +163,10 @@ firebase deploy
 # Check function logs
 firebase functions:log
 
-# Test health endpoint (region: europe-west3, project: backdup-333cf)
-curl https://backdup-333cf.web.app/api/health
+# Test health endpoint (region: europe-west3, project: skillswap-69yxi)
+curl https://skillswap-69yxi.web.app/api/health
 # Direct Cloud Functions URL:
-curl https://europe-west3-backdup-333cf.cloudfunctions.net/api/health
+curl https://europe-west3-skillswap-69yxi.cloudfunctions.net/api/health
 ```
 
 ### Troubleshooting
