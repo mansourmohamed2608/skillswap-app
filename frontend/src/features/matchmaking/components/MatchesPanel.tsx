@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { fetchTriadCycles, fetchMutualPairs, acceptMatch, type ListingSummary, type Participant } from '@/services/api';
+import { fetchTriadCycles, fetchMutualPairs, fetchListingMatches, acceptMatch, type ListingSummary, type Participant, type ListingMatch } from '@/services/api';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, RefreshCcw, AlertCircleIcon } from 'lucide-react';
+import { Loader2, RefreshCcw, AlertCircleIcon, SparklesIcon, ArrowRightIcon, MapPinIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { db } from '@/services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
@@ -39,9 +39,7 @@ export function MatchesPanel() {
   const [accepting, setAccepting] = useState<string | null>(null);
   const [acceptedKeys, setAcceptedKeys] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, { accepted: number; total: number; conversationId?: string; title?: string }>>({});
-  const me = user?.uid || '';
-
-  const displayParticipantNames = (participants?: Participant[], fallbackUsers?: string[]) => {
+  const [listingMatches, setListingMatches] = useState<ListingMatch[]>([]);
     const names = (participants || []).map((p) => {
       const uid = String(p?.uid || '').trim();
       const name = String(p?.name || '').trim();
@@ -65,6 +63,7 @@ export function MatchesPanel() {
     if (!user) {
       setTriads([]);
       setPairs([]);
+      setListingMatches([]);
       setError(null);
       setLoading(false);
       return;
@@ -72,12 +71,14 @@ export function MatchesPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [tri, mut] = await Promise.all([
+      const [tri, mut, lm] = await Promise.all([
         fetchTriadCycles(),
         fetchMutualPairs(),
+        fetchListingMatches().catch(() => ({ matches: [] })),
       ]);
       setTriads((tri?.cycles || []).map((c) => ({ users: c.users, edges: c.edges as [Edge,Edge,Edge], participants: c.participants, perspective: c.perspective })));
       setPairs((mut?.pairs || []).map((p) => ({ users: p.users, edges: p.edges as [Edge,Edge], participants: p.participants, perspective: p.perspective })));
+      setListingMatches(lm?.matches || []);
     } catch (e: any) {
       setError(sanitizeError(getErrorMessage(e, t('matchmaking.panel.errorFallback'))));
     } finally {
@@ -235,13 +236,69 @@ export function MatchesPanel() {
         </Card>
       ) : null}
 
-      {!loading && !error && user && triads.length === 0 && pairs.length === 0 ? (
+      {/* Complementary listing matches — fires without needing requests */}
+      {!loading && listingMatches.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold text-foreground">Complementary Listings</span>
+            <Badge variant="secondary" className="text-xs">{listingMatches.length} found</Badge>
+          </div>
+          <p className="text-xs text-muted-foreground -mt-1">
+            These users offer exactly what you want and want exactly what you offer — no request needed yet.
+          </p>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {listingMatches.map((match, idx) => (
+              <Link key={`lm-${idx}`} href={`/listings/${match.theirListingId}`} className="block group">
+                <div className="rounded-xl border border-primary/30 bg-primary/5 p-4 space-y-3 transition-all hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <SparklesIcon className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="text-xs font-semibold text-primary">Perfect Exchange</span>
+                  </div>
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                    <div className="rounded-lg bg-card border p-2 text-xs">
+                      <div className="text-muted-foreground mb-1 text-[10px] uppercase tracking-wide">They offer</div>
+                      <div className="font-medium text-foreground truncate">{match.theirListing.title || match.theirListing.category || 'Service'}</div>
+                      {match.theirListing.category && (
+                        <div className="text-muted-foreground truncate">{match.theirListing.category}</div>
+                      )}
+                    </div>
+                    <ArrowRightIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <div className="rounded-lg bg-card border p-2 text-xs text-right">
+                      <div className="text-muted-foreground mb-1 text-[10px] uppercase tracking-wide">They want</div>
+                      <div className="font-medium text-foreground truncate">{match.theirListing.requestedCategory || '—'}</div>
+                      <div className="text-muted-foreground text-[10px] truncate">(what you offer)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between flex-wrap gap-1">
+                    {match.theirListing.location ? (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPinIcon className="h-3 w-3" />
+                        {match.theirListing.location}
+                      </div>
+                    ) : <span />}
+                    {match.participant?.name && (
+                      <div className="text-xs text-muted-foreground">by {match.participant.name}</div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-medium text-primary group-hover:bg-primary/10 transition-colors">
+                    View listing <ArrowRightIcon className="h-3 w-3" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {!loading && !error && user && triads.length === 0 && pairs.length === 0 && listingMatches.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-1 p-5 text-sm">
             <p className="font-medium text-foreground">No live exchange matches yet</p>
             <p className="text-muted-foreground">
-              These matches appear automatically when you and another user both have pending requests
-              that want what the other offers. Create a listing and send a request to get started.
+              These matches appear automatically when your listing&apos;s offer and wanted service
+              complement another user&apos;s listing. Make sure your listing has both an offered
+              service and a requested service category set.
             </p>
           </CardContent>
         </Card>

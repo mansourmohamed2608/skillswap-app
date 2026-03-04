@@ -475,6 +475,27 @@ export async function fetchMutualPairs() {
   };
 }
 
+export type ListingMatch = {
+  myListingId: string;
+  myListingTitle: string;
+  theirListingId: string;
+  theirListing: {
+    id: string;
+    title?: string;
+    category?: string;
+    requestedCategory?: string;
+    location?: string;
+    userId?: string;
+  };
+  participant?: { uid: string; name?: string };
+};
+
+export async function fetchListingMatches() {
+  const res = await authedFetch(`/api/matchmaking/listing-matches`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { matches: ListingMatch[] };
+}
+
 export async function acceptMatch(payload: { type: 'triad' | 'mutual'; users: string[]; edges?: Array<{ from: string; to: string; requestId: string; listingId: string }>; }) {
   const res = await authedFetch(`/api/matchmaking/accept`, {
     method: 'POST',

@@ -33,6 +33,14 @@ export class MatchmakingController {
   }
 
   @UseGuards(FirebaseAuthGuard)
+  @Get('listing-matches')
+  async listingMatches(@Req() req: Request) {
+    const uid = (req as any)?.user?.uid;
+    if (!uid) throw new BadRequestException('Authentication required');
+    return this.matchmakingService.listingMatches(uid);
+  }
+
+  @UseGuards(FirebaseAuthGuard)
   @Post('accept')
   async accept(@Body() body: AcceptMatchDto, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;

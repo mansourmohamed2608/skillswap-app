@@ -349,6 +349,128 @@ export class MatchmakingService {
     return { pairs: sorted };
   }
 
+  /**
+   * Listing-based complementary matching.
+   * Finds listings by other users where:
+   *   - they offer what I want (their offeredService.category === my requestedService.category)
+   *   - they want what I offer (their requestedService.category === my offeredService.category)
+   * This fires without either party needing to send a request first.
+   */
+  async listingMatches(uid: string) {
+    await this.getVerifiedUser(uid);
+
+    // 1. Get my active listings
+    const myListingsSnap = await admin.firestore().collection('listings')
+      .where('userId', '==', uid)
+      .limit(10)
+      .get();
+
+    if (myListingsSnap.empty) return { matches: [] };
+
+    const myListings = myListingsSnap.docs
+      .map(d => ({ id: d.id, ...(d.data() as any) }))
+      .filter(l => !l.flagged && String(l.status || '').toLowerCase() !== 'fulfilled');
+
+    if (!myListings.length) return { matches: [] };
+
+    // 2. Build offer/want category sets for my listings
+    const myOfferCategories = new Set<string>();
+    const myWantCategories = new Set<string>();
+    const myListingByOfferCat = new Map<string, any>();
+
+    for (const l of myListings) {
+      const offerCat = String(l.offeredService?.category || l.category || '').toLowerCase().trim();
+      const wantCat = String(l.requestedService?.category || l.requestedCategory || '').toLowerCase().trim();
+      if (offerCat) {
+        myOfferCategories.add(offerCat);
+        myListingByOfferCat.set(offerCat, l);
+      }
+      if (wantCat) myWantCategories.add(wantCat);
+    }
+
+    if (!myWantCategories.size || !myOfferCategories.size) return { matches: [] };
+
+    // 3. Fetch recent other users' active listings
+    const othersSnap = await admin.firestore().collection('listings')
+      .orderBy('createdAt', 'desc')
+      .limit(200)
+      .get();
+
+    const candidates = othersSnap.docs
+      .map(d => ({ id: d.id, ...(d.data() as any) }))
+      .filter(l => {
+        const owner = l.userId || l.offeredByUserId || l.ownerId;
+        return owner && owner !== uid && !l.flagged && String(l.status || '').toLowerCase() !== 'fulfilled';
+      });
+
+    // 4. Cross-match: their offer == my want AND their want == my offer
+    const results: Array<{
+      myListingId: string;
+      myListingTitle: string;
+      theirListingId: string;
+      theirListing: {
+        id: string;
+        title?: string;
+        category?: string;
+        requestedCategory?: string;
+        location?: string;
+        userId?: string;
+      };
+    }> = [];
+    const seen = new Set<string>();
+
+    for (const theirs of candidates) {
+      const theirOffer = String(theirs.offeredService?.category || theirs.category || '').toLowerCase().trim();
+      const theirWant = String(theirs.requestedService?.category || theirs.requestedCategory || '').toLowerCase().trim();
+
+      if (!theirOffer || !theirWant) continue;
+
+      // They offer what I want
+      if (!myWantCategories.has(theirOffer)) continue;
+
+      // They want what I offer
+      const myMatchingListing = myListingByOfferCat.get(theirWant);
+      if (!myMatchingListing) continue;
+
+      const pairKey = `${myMatchingListing.id}|${theirs.id}`;
+      if (seen.has(pairKey)) continue;
+      seen.add(pairKey);
+
+      results.push({
+        myListingId: myMatchingListing.id,
+        myListingTitle: myMatchingListing.offeredService?.title || myMatchingListing.title || 'My listing',
+        theirListingId: theirs.id,
+        theirListing: {
+          id: theirs.id,
+          title: theirs.offeredService?.title || theirs.title,
+          category: theirs.offeredService?.category || theirs.category,
+          requestedCategory: theirs.requestedService?.category || theirs.requestedCategory,
+          location: theirs.location,
+          userId: theirs.userId || theirs.offeredByUserId || theirs.ownerId,
+        },
+      });
+
+      if (results.length >= 20) break;
+    }
+
+    // 5. Enrich with user names
+    const userIds = Array.from(new Set(results.map(r => r.theirListing.userId).filter(Boolean))) as string[];
+    const userDocs = await Promise.all(userIds.map(id => admin.firestore().collection('users').doc(id).get()));
+    const usersMap = new Map<string, any>();
+    for (const doc of userDocs) usersMap.set(doc.id, (doc.data() as any) || {});
+
+    const enriched = results.map(r => ({
+      ...r,
+      participant: r.theirListing.userId ? {
+        uid: r.theirListing.userId,
+        name: (usersMap.get(r.theirListing.userId) || {}).name
+          || (usersMap.get(r.theirListing.userId) || {}).displayName,
+      } : undefined,
+    }));
+
+    return { matches: enriched };
+  }
+
   async accept(uid: string, body: any) {
     await this.getVerifiedUser(uid);
     const { type, users, edges } = body || {};
