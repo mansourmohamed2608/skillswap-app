@@ -181,6 +181,8 @@ jobs:
 
       - name: Deploy Functions
         working-directory: backend
+        env:
+          FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
         run: firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}"
 
       # Frontend deployment (Firebase App Hosting handles this via GitHub integration)
