@@ -11,7 +11,6 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { getNestServer } from './nest/firebase-nest';
 import { ensureAdminApp } from './core/firebase-admin';
-import * as admin from 'firebase-admin';
 import { logger } from './core/logger';
 import { correlationIdMiddleware, CORRELATION_ID_HEADER } from './core/correlation-id';
 
@@ -268,8 +267,8 @@ if (ENFORCE_APP_CHECK) {
       return res.status(401).json({ statusCode: 401, message: 'App Check token required' });
     }
     try {
-      ensureAdminApp();
-      await admin.appCheck().verifyToken(appCheckToken);
+      const adminSdk = ensureAdminApp();
+      await adminSdk.appCheck().verifyToken(appCheckToken);
       return next();
     } catch (e: any) {
       logger.warn({ event: 'app_check_invalid', path, error: e?.message }, 'Invalid App Check token');
