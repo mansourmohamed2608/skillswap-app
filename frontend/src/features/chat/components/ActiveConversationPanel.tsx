@@ -18,6 +18,8 @@ import { rtdb } from "@/services/firebase";
 import { onValue, ref } from "firebase/database";
 import { getProfilePath } from "@/lib/profile";
 
+type UserMeta = { name: string; avatarUrl?: string; username?: string };
+
 type ActiveConversationPanelProps = {
   chatId: string;
   showBackButton?: boolean;
@@ -25,6 +27,8 @@ type ActiveConversationPanelProps = {
   className?: string;
   onClose?: () => void;
   onBack?: () => void;
+  /** Pre-seeded metadata from the conversation list — avoids loading flash */
+  initialUserMeta?: UserMeta;
 };
 
 export function ActiveConversationPanel({
@@ -34,18 +38,20 @@ export function ActiveConversationPanel({
   className,
   onClose,
   onBack,
+  initialUserMeta,
 }: ActiveConversationPanelProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [text, setText] = useState("");
-  const [otherUserName, setOtherUserName] = useState("");
-  const [otherUsername, setOtherUsername] = useState("");
-  const [otherAvatarUrl, setOtherAvatarUrl] = useState("");
+  const [otherUserName, setOtherUserName] = useState(initialUserMeta?.name ?? "");
+  const [otherUsername, setOtherUsername] = useState(initialUserMeta?.username ?? "");
+  const [otherAvatarUrl, setOtherAvatarUrl] = useState(initialUserMeta?.avatarUrl ?? "");
   const [presence, setPresence] = useState<"online" | "offline" | "unknown">("unknown");
   const [profileLink, setProfileLink] = useState<string>("");
-  const [resolvingUser, setResolvingUser] = useState(true);
+  // If we already have meta from the list, no loading flash needed
+  const [resolvingUser, setResolvingUser] = useState(!initialUserMeta);
 
   const parsedConversationId = useMemo(() => {
     if (!user?.uid) return null;
