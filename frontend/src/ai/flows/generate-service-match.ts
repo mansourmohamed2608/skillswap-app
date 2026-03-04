@@ -150,7 +150,10 @@ async function buildListingMatches(profileText: string, requestText: string) {
   const locationHint = extractLocationHint(profileText);
 
   const category = requestCategories[0];
-  const hits = await fetchListings({ q: requestText, category, location: locationHint });
+  // Don't pass `q` as the full request text: the Firestore search fallback does an exact
+  // substring match (haystack.includes(q)) so a natural-language sentence never matches.
+  // Let category + location narrow the candidate pool; the scoring function handles relevance.
+  const hits = await fetchListings({ category, location: locationHint });
   const scored = hits
     .map((hit: any) => ({ hit, score: scoreListing(hit, requestTokens, offerTokens, requestCategories, locationHint) }))
     .filter((row: { hit: any; score: number }) => row.score > 0)
