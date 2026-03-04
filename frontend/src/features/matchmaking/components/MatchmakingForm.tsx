@@ -17,6 +17,8 @@ import {
   MapPinIcon,
   ArrowRightIcon,
   SearchXIcon,
+  BriefcaseIcon,
+  WandIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -229,7 +231,7 @@ export function MatchmakingForm() {
         <div className="px-6 pb-8 pt-2 border-t">
           <div className="flex items-center justify-between mb-1 pt-6">
             <h3 className="text-xl font-semibold text-primary">{t('matchmaking.form.potentialTitle')}</h3>
-            <Badge variant="secondary" className="text-xs">
+            <Badge variant="secondary" className="text-xs px-2.5 py-1">
               {state.matches.length} found
             </Badge>
           </div>
@@ -241,59 +243,84 @@ export function MatchmakingForm() {
               const { offerTitle, category, location, wants } = parseMatch(match);
 
               const cardContent = (
-                <div className="flex flex-col gap-3">
-                  {/* Header row: index badge + category */}
-                  <div className="flex items-center gap-2">
+                <div className="flex gap-4">
+                  {/* Left accent strip + number */}
+                  <div className="flex flex-col items-center gap-2 pt-0.5">
                     <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
                       {index + 1}
                     </span>
-                    {category && (
-                      <Badge variant="outline" className="text-xs font-medium border-primary/40 text-primary">
-                        {category}
-                      </Badge>
-                    )}
+                    <div className="w-px flex-1 bg-primary/20" />
                   </div>
 
-                  {/* Title */}
-                  <p className="text-base font-semibold text-foreground leading-snug">{offerTitle}</p>
-
-                  {/* Location */}
-                  {location && (
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                      <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
-                      <span>{location}</span>
+                  {/* Card body */}
+                  <div className="flex-1 min-w-0 space-y-3 pb-1">
+                    {/* Category + location row */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {category && (
+                        <Badge variant="outline" className="text-xs font-medium border-primary/40 text-primary">
+                          {category}
+                        </Badge>
+                      )}
+                      {location && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPinIcon className="h-3 w-3 shrink-0" />
+                          {location}
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  {/* What they want */}
-                  {wants && (
-                    <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
-                      <span className="font-medium text-muted-foreground">Looking for: </span>
-                      <span className="text-foreground">{wants}</span>
-                    </div>
-                  )}
+                    {/* Exchange visualization */}
+                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+                      {/* They offer */}
+                      <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5 space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <BriefcaseIcon className="h-3 w-3 text-primary shrink-0" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">Offers</span>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">{offerTitle}</p>
+                      </div>
 
-                  {/* CTA */}
-                  {listingId && (
-                    <div className="flex items-center gap-1 text-sm font-medium text-primary">
-                      View listing
-                      <ArrowRightIcon className="h-3.5 w-3.5" />
+                      {/* Arrow divider */}
+                      <div className="flex flex-col items-center gap-0.5">
+                        <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
+                      </div>
+
+                      {/* They want */}
+                      <div className="rounded-lg border border-border/60 bg-accent/10 p-2.5 space-y-1">
+                        <div className="flex items-center gap-1.5">
+                          <WandIcon className="h-3 w-3 text-accent shrink-0" />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-accent">Wants</span>
+                        </div>
+                        <p className="text-sm font-semibold text-foreground leading-tight">
+                          {wants ?? <span className="text-muted-foreground italic text-xs">Not specified</span>}
+                        </p>
+                      </div>
                     </div>
-                  )}
+
+                    {/* CTA */}
+                    {listingId && (
+                      <div className="pt-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary border border-primary/40 rounded-md px-3 py-1.5 bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                          View listing
+                          <ArrowRightIcon className="h-3 w-3" />
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
 
               return listingId ? (
-                <li key={index}>
+                <li key={index} className="group">
                   <Link
                     href={`/listings/${listingId}`}
-                    className="block rounded-xl border bg-background p-4 shadow-sm transition-all hover:border-primary hover:shadow-md hover:-translate-y-0.5"
+                    className="block rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
                   >
                     {cardContent}
                   </Link>
                 </li>
               ) : (
-                <li key={index} className="rounded-xl border bg-background p-4 shadow-sm">
+                <li key={index} className="rounded-xl border bg-card p-4 shadow-sm">
                   {cardContent}
                 </li>
               );
