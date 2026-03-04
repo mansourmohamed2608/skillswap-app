@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { use, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -11,9 +11,10 @@ import { PublicProfileContent } from '@/features/profile/components/PublicProfil
 import type { ServiceListing, User } from '@/types';
 
 
-export default function UserProfilePage({ params }: { params: { userId: string } }) {
+export default function UserProfilePage({ params }: { params: Promise<{ userId: string }> }) {
   useAuth();
   const { t } = useTranslation();
+  const { userId } = use(params);
   const searchParams = useSearchParams();
   const [profile, setProfile] = useState<User | null>(null);
   const [userListings, setUserListings] = useState<ServiceListing[]>([]);
@@ -25,7 +26,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     setLoading(true);
     (async () => {
       const fallbackUid = String(searchParams?.get('uid') || '').trim();
-      const identifier = decodeURIComponent(String(params.userId || '').trim());
+      const identifier = decodeURIComponent(String(userId || '').trim());
       const resolvedProfile = await getUserByIdentifier(identifier);
       const nextProfile = resolvedProfile || (fallbackUid ? await getUserById(fallbackUid) : null);
       const listings = nextProfile ? await getListingsByUserId(nextProfile.id) : [];
@@ -35,7 +36,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       setLoading(false);
     })();
     return () => { mounted = false; };
-  }, [params.userId, searchParams]);
+  }, [userId, searchParams]);
 
   if (loading) {
     return (
