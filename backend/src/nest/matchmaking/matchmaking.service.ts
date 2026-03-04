@@ -357,8 +357,7 @@ export class MatchmakingService {
    * This fires without either party needing to send a request first.
    */
   async listingMatches(uid: string) {
-    await this.getVerifiedUser(uid);
-
+    // No KYC required — browsing complementary listings is read-only discovery.
     // 1. Get my active listings
     const myListingsSnap = await admin.firestore().collection('listings')
       .where('userId', '==', uid)
