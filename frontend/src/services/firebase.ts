@@ -12,8 +12,23 @@ import { getStorage, connectStorageEmulator, type FirebaseStorage } from "fireba
 import { getDatabase, connectDatabaseEmulator, type Database } from "firebase/database";
 
 // ---------- Public config ----------
-// 1. Firebase App Hosting automatically injects FIREBASE_WEBAPP_CONFIG at build time.
-// 2. Fall back to individual NEXT_PUBLIC_FIREBASE_* vars (local dev / CI).
+// Priority:
+// 1. FIREBASE_WEBAPP_CONFIG — auto-injected by Firebase App Hosting at runtime (server-side)
+// 2. NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG — set in apphosting.yaml, inlined at build time
+// 3. Individual NEXT_PUBLIC_FIREBASE_* vars — set in apphosting.yaml, inlined at build time
+// 4. Hardcoded fallback — guarantees the browser bundle always has a valid config
+//    (these are the public Firebase web config values — not secrets)
+const FALLBACK_CONFIG: FirebaseOptions = {
+  apiKey: "AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc",
+  authDomain: "skillswap-69yxi.firebaseapp.com",
+  projectId: "skillswap-69yxi",
+  storageBucket: "skillswap-69yxi.firebasestorage.app",
+  messagingSenderId: "1088811861633",
+  appId: "1:1088811861633:web:50cdabc07ce7535f55af80",
+  databaseURL: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app",
+  measurementId: "G-V5QYMD99DZ",
+};
+
 function resolveFirebaseConfig(): FirebaseOptions {
   try {
     const raw = process.env.FIREBASE_WEBAPP_CONFIG || process.env.NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG;
@@ -24,7 +39,7 @@ function resolveFirebaseConfig(): FirebaseOptions {
   } catch {
     // fall through
   }
-  return {
+  const fromEnv: FirebaseOptions = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -33,6 +48,9 @@ function resolveFirebaseConfig(): FirebaseOptions {
     appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
     databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
   };
+  if (fromEnv.apiKey && fromEnv.projectId && fromEnv.appId) return fromEnv;
+  // Fallback: hardcoded public config ensures the app always initialises
+  return FALLBACK_CONFIG;
 }
 
 export const firebaseConfig: FirebaseOptions = resolveFirebaseConfig();
