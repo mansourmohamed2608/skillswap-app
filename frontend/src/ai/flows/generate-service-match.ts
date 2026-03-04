@@ -17,6 +17,7 @@ export type GenerateServiceMatchInput = {
 
 export type GenerateServiceMatchOutput = {
   matches: string[];
+  listingIds?: string[];
 };
 
 const MAX_MATCHES = 6;
@@ -169,7 +170,8 @@ async function buildListingMatches(profileText: string, requestText: string) {
   });
 
   const listingContext = scored.map(({ hit }: { hit: any }) => toListingContext(hit));
-  return { matches, listingContext };
+  const listingIds = scored.map(({ hit }: { hit: any }) => String(hit.objectID || hit.id || ''));
+  return { matches, listingContext, listingIds };
 }
 
 async function getGeminiRunner() {
@@ -212,7 +214,7 @@ Suggest up to 6 matches, each in a single concise sentence:`,
 }
 
 export async function generateServiceMatch(input: GenerateServiceMatchInput): Promise<GenerateServiceMatchOutput> {
-  const { matches, listingContext } = await buildListingMatches(input.userProfile, input.serviceRequests);
+  const { matches, listingContext, listingIds } = await buildListingMatches(input.userProfile, input.serviceRequests);
 
   if (matchMode !== 'rule' && hasGeminiKey && listingContext.length) {
     const runner = await getGeminiRunner();
@@ -231,5 +233,5 @@ export async function generateServiceMatch(input: GenerateServiceMatchInput): Pr
       }
     }
   }
-  return { matches };
+  return { matches, listingIds };
 }

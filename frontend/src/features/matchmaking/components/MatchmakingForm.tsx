@@ -8,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SparklesIcon, CheckCircleIcon, AlertCircleIcon, Loader2 } from 'lucide-react';
+import { SparklesIcon, CheckCircleIcon, AlertCircleIcon, Loader2, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const initialState: MatchmakingFormState = {
   message: null,
@@ -164,7 +165,7 @@ export function MatchmakingForm() {
         </CardContent>
         <CardFooter className="flex flex-col items-stretch">
           <SubmitButton disabled={isGuest} />
-          {!isGuest ? (
+          {!isGuest && state.matches === undefined ? (
             <Button type="reset" variant="ghost" className="mt-2">
               Clear form
             </Button>
@@ -182,14 +183,36 @@ export function MatchmakingForm() {
           <h3 className="text-xl font-semibold mb-4 text-primary">{t('matchmaking.form.potentialTitle')}</h3>
           <p className="mb-4 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
           <ul className="space-y-3">
-            {state.matches.map((match, index) => (
-              <li key={index} className="rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                  Possible match {index + 1}
-                </div>
-                <div>{match}</div>
-              </li>
-            ))}
+            {state.matches.map((match, index) => {
+              const listingId = state.listingIds?.[index];
+              const inner = (
+                <>
+                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                    Possible match {index + 1}
+                  </div>
+                  <div className="flex items-start justify-between gap-2">
+                    <span>{match}</span>
+                    {listingId && (
+                      <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                    )}
+                  </div>
+                </>
+              );
+              return listingId ? (
+                <li key={index}>
+                  <Link
+                    href={`/listings/${listingId}`}
+                    className="block rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                  >
+                    {inner}
+                  </Link>
+                </li>
+              ) : (
+                <li key={index} className="rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm">
+                  {inner}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

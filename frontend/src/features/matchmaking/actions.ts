@@ -14,6 +14,7 @@ export type MatchmakingFormState = {
   messageKey?: string;
   errorKey?: string;
   matches?: string[];
+  listingIds?: string[];
   errors?: {
     userProfile?: string[];
     serviceRequests?: string[];
@@ -63,6 +64,7 @@ export async function findMatchesAction(
         message: null,
         messageKey: 'matchmaking.form.successMessage',
         matches: result.matches,
+        listingIds: result.listingIds,
       };
     } else {
       return {
