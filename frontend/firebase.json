@@ -35,7 +35,7 @@
     "cors": "storage.cors.json"
   },
   "hosting": {
-    "public": "out",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",

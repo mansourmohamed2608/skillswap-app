@@ -22,6 +22,10 @@ async function bootstrapNest() {
     rawBody: true, // Enable rawBody for webhook verification and multipart handling
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // When running inside Firebase Functions, Hosting rewrites /api/** → the function
+  // with the full path (including /api). Set the global prefix so all routes
+  // are reachable at /api/<route> (e.g. /api/health, /api/listings, etc.)
+  app.setGlobalPrefix('api');
   await app.init();
   return { app, server };
 }
