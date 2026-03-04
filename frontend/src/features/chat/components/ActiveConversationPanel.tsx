@@ -37,7 +37,7 @@ export function ActiveConversationPanel({
 }: ActiveConversationPanelProps) {
   const { t } = useTranslation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const [text, setText] = useState("");
   const [otherUserName, setOtherUserName] = useState("");
@@ -96,6 +96,8 @@ export function ActiveConversationPanel({
     (async () => {
       if (active) setResolvingUser(true);
       if (!user?.uid) {
+        // Auth still loading — keep resolvingUser=true so we don't flash "User unavailable"
+        if (authLoading) return;
         if (active) {
           setResolvedOtherUserId("");
           setResolvingUser(false);
@@ -129,7 +131,7 @@ export function ActiveConversationPanel({
     return () => {
       active = false;
     };
-  }, [chatId, parsedConversationId?.otherUserId, t, user?.uid]);
+  }, [chatId, parsedConversationId?.otherUserId, t, user?.uid, authLoading]);
 
   useEffect(() => {
     let active = true;
