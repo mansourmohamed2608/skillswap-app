@@ -52,6 +52,8 @@ env:
     availability: [BUILD, RUNTIME]
 
   # ── Secrets (stored in Secret Manager) ────────────────────────────────────
-  - variable: GEMINI_API_KEY
-    secret: GEMINI_API_KEY
-    availability: [RUNTIME]
+  # GEMINI_API_KEY: add with `firebase apphosting:secrets:grantaccess GEMINI_API_KEY`
+  # then uncomment:
+  # - variable: GEMINI_API_KEY
+  #   secret: GEMINI_API_KEY
+  #   availability: [RUNTIME]
