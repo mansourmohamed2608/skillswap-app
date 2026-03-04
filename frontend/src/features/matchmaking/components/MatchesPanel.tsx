@@ -237,9 +237,12 @@ export function MatchesPanel() {
 
       {!loading && !error && user && triads.length === 0 && pairs.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="space-y-2 p-5 text-sm text-muted-foreground">
-            <p>{t('matchmaking.form.noMatchesTitle')}</p>
-            <p>Try broader service descriptions and refresh after more listings are added.</p>
+          <CardContent className="space-y-1 p-5 text-sm">
+            <p className="font-medium text-foreground">No live exchange matches yet</p>
+            <p className="text-muted-foreground">
+              These matches appear automatically when you and another user both have pending requests
+              that want what the other offers. Create a listing and send a request to get started.
+            </p>
           </CardContent>
         </Card>
       ) : null}

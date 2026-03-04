@@ -2,7 +2,7 @@
 
 import { MatchmakingForm } from '@/features/matchmaking/components/MatchmakingForm';
 import { MatchesPanel } from '@/features/matchmaking/components/MatchesPanel';
-import { SparklesIcon } from 'lucide-react';
+import { SparklesIcon, UsersIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export default function MatchmakingPage() {
@@ -21,10 +21,21 @@ export default function MatchmakingPage() {
           {t('matchmaking.page.noteBody')}
         </p>
       </header>
-      
+
+      {/* ── Step 1: AI suggestion form ── */}
       <MatchmakingForm />
 
-      <div className="mt-2">
+      {/* ── Step 2: Live backend-computed exchange matches ── */}
+      <div className="mt-4">
+        <div className="flex items-center gap-3 mb-4">
+          <UsersIcon className="h-5 w-5 text-accent shrink-0" />
+          <div>
+            <h2 className="text-lg font-semibold text-primary leading-tight">Live Exchange Matches</h2>
+            <p className="text-xs text-muted-foreground">
+              Automatic matches based on pending requests you and other users have already created.
+            </p>
+          </div>
+        </div>
         <MatchesPanel />
       </div>
 
