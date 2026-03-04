@@ -1,18 +1,45 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { findMatchesAction, type MatchmakingFormState } from '@/features/matchmaking/actions';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SparklesIcon, CheckCircleIcon, AlertCircleIcon, Loader2, ArrowRight } from 'lucide-react';
+import {
+  SparklesIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+  Loader2,
+  MapPinIcon,
+  ArrowRightIcon,
+  SearchXIcon,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+/** Parse the formatted match string into structured parts. */
+function parseMatch(match: string) {
+  const titleMatch = match.match(/^"([^"]+)"/);
+  const offerTitle = titleMatch?.[1] ?? match;
+
+  const categoryMatch = match.match(/\(([^)]+)\)/);
+  const category = categoryMatch?.[1];
+
+  const locationMatch = match.match(/•\s*(.+?)\s+wants\s+/);
+  const locationFallback = match.match(/•\s*(.+?)(?:\s*$)/);
+  const location = locationMatch?.[1]?.trim() ?? locationFallback?.[1]?.trim();
+
+  const wantsMatch = match.match(/wants\s+"([^"]+)"/);
+  const wants = wantsMatch?.[1];
+
+  return { offerTitle, category, location, wants };
+}
 
 const initialState: MatchmakingFormState = {
   message: null,
@@ -22,16 +49,21 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
   const { pending } = useFormStatus();
   const { t } = useTranslation();
   return (
-    <Button type="submit" disabled={pending || disabled} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+    <Button
+      type="submit"
+      disabled={pending || disabled}
+      className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+    >
       {pending ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           {t('matchmaking.form.submitting')}
         </>
       ) : (
-         <>
-           <SparklesIcon className="mr-2 h-4 w-4" /> {t('matchmaking.form.submit')}
-         </>
+        <>
+          <SparklesIcon className="mr-2 h-4 w-4" />
+          {t('matchmaking.form.submit')}
+        </>
       )}
     </Button>
   );
@@ -43,6 +75,13 @@ export function MatchmakingForm() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const isGuest = !loading && !user;
+
+  // Controlled values so they survive the server-action POST (native form reset won't fire)
+  const [profileValue, setProfileValue] = useState('');
+  const [requestsValue, setRequestsValue] = useState('');
+
+  const hasSubmitted =
+    state.matches !== undefined || Boolean(state.errors) || Boolean(state.errorKey);
 
   const message = user && state?.messageKey ? t(state.messageKey) : state?.message;
   const hasValidationError = Boolean(state?.errors?.userProfile || state?.errors?.serviceRequests);
@@ -133,6 +172,8 @@ export function MatchmakingForm() {
               required
               className="resize-none"
               disabled={isGuest}
+              value={profileValue}
+              onChange={(e) => setProfileValue(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
               Example: &quot;I design logos, brand kits, and simple social media visuals for small businesses.&quot;
@@ -151,6 +192,8 @@ export function MatchmakingForm() {
               required
               className="resize-none"
               disabled={isGuest}
+              value={requestsValue}
+              onChange={(e) => setRequestsValue(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
               Example: &quot;I need a frontend developer, Arabic copywriter, or product photographer.&quot;
@@ -163,57 +206,113 @@ export function MatchmakingForm() {
             Use clear service names, not single words. Better input gives better matches.
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col items-stretch">
+        <CardFooter className="flex flex-col items-stretch gap-2">
           <SubmitButton disabled={isGuest} />
-          {!isGuest && state.matches === undefined ? (
-            <Button type="reset" variant="ghost" className="mt-2">
+          {/* Only show Clear before the first submission */}
+          {!isGuest && !hasSubmitted && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setProfileValue('');
+                setRequestsValue('');
+              }}
+            >
               Clear form
             </Button>
-          ) : null}
-           {resultAlert && (
-            <div className="mt-4 w-full">
-              {resultAlert}
-            </div>
           )}
+          {resultAlert && <div className="mt-2 w-full">{resultAlert}</div>}
         </CardFooter>
       </form>
 
       {user && state?.matches && state.matches.length > 0 && (
-        <div className="p-6 mt-0 border-t">
-          <h3 className="text-xl font-semibold mb-4 text-primary">{t('matchmaking.form.potentialTitle')}</h3>
-          <p className="mb-4 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
+        <div className="px-6 pb-8 pt-2 border-t">
+          <div className="flex items-center justify-between mb-1 pt-6">
+            <h3 className="text-xl font-semibold text-primary">{t('matchmaking.form.potentialTitle')}</h3>
+            <Badge variant="secondary" className="text-xs">
+              {state.matches.length} found
+            </Badge>
+          </div>
+          <p className="mb-5 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
+
           <ul className="space-y-3">
             {state.matches.map((match, index) => {
               const listingId = state.listingIds?.[index];
-              const inner = (
-                <>
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
-                    Possible match {index + 1}
-                  </div>
-                  <div className="flex items-start justify-between gap-2">
-                    <span>{match}</span>
-                    {listingId && (
-                      <ArrowRight className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+              const { offerTitle, category, location, wants } = parseMatch(match);
+
+              const cardContent = (
+                <div className="flex flex-col gap-3">
+                  {/* Header row: index badge + category */}
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
+                      {index + 1}
+                    </span>
+                    {category && (
+                      <Badge variant="outline" className="text-xs font-medium border-primary/40 text-primary">
+                        {category}
+                      </Badge>
                     )}
                   </div>
-                </>
+
+                  {/* Title */}
+                  <p className="text-base font-semibold text-foreground leading-snug">{offerTitle}</p>
+
+                  {/* Location */}
+                  {location && (
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                      <MapPinIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span>{location}</span>
+                    </div>
+                  )}
+
+                  {/* What they want */}
+                  {wants && (
+                    <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
+                      <span className="font-medium text-muted-foreground">Looking for: </span>
+                      <span className="text-foreground">{wants}</span>
+                    </div>
+                  )}
+
+                  {/* CTA */}
+                  {listingId && (
+                    <div className="flex items-center gap-1 text-sm font-medium text-primary">
+                      View listing
+                      <ArrowRightIcon className="h-3.5 w-3.5" />
+                    </div>
+                  )}
+                </div>
               );
+
               return listingId ? (
                 <li key={index}>
                   <Link
                     href={`/listings/${listingId}`}
-                    className="block rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm transition-colors hover:border-primary hover:bg-primary/5 cursor-pointer"
+                    className="block rounded-xl border bg-background p-4 shadow-sm transition-all hover:border-primary hover:shadow-md hover:-translate-y-0.5"
                   >
-                    {inner}
+                    {cardContent}
                   </Link>
                 </li>
               ) : (
-                <li key={index} className="rounded-lg border bg-background p-4 text-foreground/90 leading-relaxed shadow-sm">
-                  {inner}
+                <li key={index} className="rounded-xl border bg-background p-4 shadow-sm">
+                  {cardContent}
                 </li>
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {/* No-matches empty state */}
+      {user && state?.matches && state.matches.length === 0 && (
+        <div className="px-6 pb-8 pt-6 border-t flex flex-col items-center text-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+            <SearchXIcon className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <p className="font-medium text-foreground">No matches found yet</p>
+          <p className="text-sm text-muted-foreground max-w-sm">
+            Try being more specific about your skills or what you&apos;re looking for. Using category keywords
+            like &quot;Web Development&quot; or &quot;Graphic Design&quot; improves results.
+          </p>
         </div>
       )}
     </Card>
