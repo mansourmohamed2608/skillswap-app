@@ -127,13 +127,13 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 max-w-screen-2xl items-center justify-between px-4 sm:px-6 md:grid md:grid-cols-[auto,1fr,auto] md:items-center md:gap-4">
-        <Link href="/" className="flex items-center gap-2 text-primary transition-colors hover:text-primary/80 md:justify-self-start">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center px-4 sm:px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2 text-primary transition-colors hover:text-primary/80">
           <AppLogo />
           <span className="hidden font-bold text-xl sm:inline">{t('common.appName')}</span>
         </Link>
 
-        <div className="hidden min-w-0 items-center justify-center md:flex">
+        <div className="hidden flex-1 items-center justify-center md:flex">
           <nav className="flex items-center gap-0.5">
             {publicNavItems.map((item) => (
               <Button key={item.label} variant="ghost" asChild>
@@ -154,7 +154,7 @@ export function AppHeader() {
           </nav>
         </div>
 
-        <div className="hidden items-center justify-end md:flex md:justify-self-end">
+        <div className="hidden shrink-0 items-center justify-end gap-1 md:flex">
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5">
               <Button variant="ghost" size="icon" asChild className="relative">
@@ -204,7 +204,7 @@ export function AppHeader() {
           )}
         </div>
 
-        <div className="flex items-center gap-2 md:hidden">
+        <div className="ml-auto flex items-center gap-2 md:hidden">
           {isAuthenticated ? (
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/chat">

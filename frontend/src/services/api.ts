@@ -97,16 +97,25 @@ function inferProjectIdFromHostedApp() {
   return m?.[1] || '';
 }
 
+// Hardcoded production base — used as last resort when NEXT_PUBLIC_FUNCTIONS_BASE
+// is not baked into the bundle (e.g. App Hosting build without env injection).
+// Points to Firebase Hosting, which rewrites /api/** → Cloud Function.
+const HARDCODED_PROD_BASE = 'https://skillswap-69yxi.web.app';
+
 function inferFunctionsBase() {
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
   const inferredProjectId = PROJECT_ID || inferProjectIdFromHostedApp();
-  if (!inferredProjectId) return '';
-  if (typeof window === 'undefined') return `http://127.0.0.1:5001/${inferredProjectId}/us-central1`;
+  if (typeof window === 'undefined') {
+    // SSR: use local emulator or hardcoded prod
+    return inferredProjectId
+      ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
+      : HARDCODED_PROD_BASE;
+  }
   const host = window.location.hostname || '';
   const isLocal = host === 'localhost' || host === '127.0.0.1';
-  return isLocal
-    ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
-    : `https://${FUNCTIONS_REGION}-${inferredProjectId}.cloudfunctions.net`;
+  if (isLocal) return `http://127.0.0.1:5001/${inferredProjectId || 'skillswap-69yxi'}/us-central1`;
+  // Production: always use Firebase Hosting so the /api/** rewrite applies
+  return HARDCODED_PROD_BASE;
 }
 
 export function getFunctionsBase() {
