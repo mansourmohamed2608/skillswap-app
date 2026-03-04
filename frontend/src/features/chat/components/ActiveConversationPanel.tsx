@@ -188,13 +188,15 @@ export function ActiveConversationPanel({
   const headerName = otherUserName || (resolvingUser ? provisionalName || t("chat.newChat.searching") : t("chat.detail.unavailable"));
   const headerInitial = headerName.slice(0, 1).toUpperCase();
   const presenceText =
-    !resolvedOtherUserId
-      ? t("chat.detail.unavailable")
-      : presence === "online"
-        ? t("chat.detail.online")
-        : presence === "offline"
-          ? t("chat.detail.offline")
-          : t("chat.detail.unavailable");
+    resolvingUser || authLoading
+      ? ""
+      : !resolvedOtherUserId
+        ? t("chat.detail.unavailable")
+        : presence === "online"
+          ? t("chat.detail.online")
+          : presence === "offline"
+            ? t("chat.detail.offline")
+            : t("chat.detail.unavailable");
 
   return (
     <Card className={className}>
@@ -239,7 +241,7 @@ export function ActiveConversationPanel({
         {!user && (
           <div className="text-sm text-muted-foreground">{t("chat.detail.signInPrompt")}</div>
         )}
-        {user && !resolvedOtherUserId && !resolvingUser && (
+        {user && !resolvedOtherUserId && !resolvingUser && !authLoading && (
           <div className="space-y-3 rounded-md border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <p>{t("chat.detail.unavailable")}</p>
             <Button asChild variant="outline" size="sm">
