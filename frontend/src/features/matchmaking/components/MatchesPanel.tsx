@@ -40,6 +40,9 @@ export function MatchesPanel() {
   const [acceptedKeys, setAcceptedKeys] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, { accepted: number; total: number; conversationId?: string; title?: string }>>({});
   const [listingMatches, setListingMatches] = useState<ListingMatch[]>([]);
+  const me = user?.uid || '';
+
+  const displayParticipantNames = (participants?: Participant[], fallbackUsers?: string[]) => {
     const names = (participants || []).map((p) => {
       const uid = String(p?.uid || '').trim();
       const name = String(p?.name || '').trim();
