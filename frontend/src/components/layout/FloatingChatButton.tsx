@@ -62,7 +62,7 @@ export function FloatingChatButton() {
 
   return (
     <>
-      <div className="fixed bottom-5 right-5 z-40 hidden sm:block">
+      <div className="fixed bottom-5 right-5 z-40 hidden sm:block" style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         <Button
           type="button"
           size="lg"
@@ -97,7 +97,7 @@ export function FloatingChatButton() {
         ) : null}
       </div>
 
-      <div className="fixed bottom-5 right-5 z-40 sm:hidden">
+      <div className="fixed bottom-5 right-4 z-40 sm:hidden" style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
         <Button
           type="button"
           size="lg"

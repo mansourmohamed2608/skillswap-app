@@ -255,12 +255,12 @@ function PricingPageInner() {
 
   return (
     <div className="space-y-8">
-      {/* Header + currency/duration controls (simple example) */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">{t('pricing.title')}</h1>
-        <div className="flex items-center gap-6">
+      {/* Header + currency/duration controls */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl sm:text-3xl font-semibold">{t('pricing.title')}</h1>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
           <div className="flex items-center gap-2">
-            <Label htmlFor="currency">{t('pricing.currency')}</Label>
+            <Label htmlFor="currency" className="shrink-0">{t('pricing.currency')}</Label>
             <Tabs value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
               <TabsList>
                 <TabsTrigger value="egp">EGP</TabsTrigger>
@@ -269,7 +269,7 @@ function PricingPageInner() {
             </Tabs>
           </div>
           <div className="flex items-center gap-2">
-            <Label htmlFor="duration">{t('pricing.duration')}</Label>
+            <Label htmlFor="duration" className="shrink-0">{t('pricing.duration')}</Label>
             <Tabs value={duration} onValueChange={(v) => setDuration(v as Duration)}>
               <TabsList>
                 <TabsTrigger value="3mo">{t('pricing.dur3mo')}</TabsTrigger>

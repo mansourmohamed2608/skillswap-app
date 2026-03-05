@@ -1,5 +1,5 @@
 // src/app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Cairo } from 'next/font/google';
 import './globals.css';
 import { LanguageController } from '@/components/i18n/LanguageController';
@@ -28,6 +28,18 @@ const cairofont = Cairo({
   display: 'swap',
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f0e0' },
+    { media: '(prefers-color-scheme: dark)',  color: '#1a1a1a' },
+  ],
+};
+
 export const metadata: Metadata = {
   title: 'SkillSwap - Exchange Services',
   description: 'A platform to offer and request services in exchange for other services.',
@@ -48,7 +60,7 @@ export default function RootLayout({
         <AuthProvider>
           <KycGate>
             <AppHeader />
-            <main className="flex-grow container mx-auto px-4 py-8 max-w-screen-2xl">
+            <main className="flex-grow container mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 max-w-screen-2xl">
               {children}
             </main>
             <FloatingChatButton />

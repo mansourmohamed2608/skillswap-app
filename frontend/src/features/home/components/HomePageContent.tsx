@@ -57,20 +57,20 @@ export function HomePageContent({
   return (
     <div className="space-y-12">
       {/* Hero Section */}
-      <section className="relative text-center py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
+      <section className="relative text-center py-10 sm:py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
         <div className="relative z-10 container mx-auto px-4">
           <HeroLogo />
-          <h1 className="text-4xl md:text-5xl font-bold mb-6 text-primary-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-primary-foreground">
             {t("home.hero.title")}
           </h1>
-          <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto text-primary-foreground/90">
+          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto text-primary-foreground/90">
             {t("home.hero.body")}
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
             <Button
               size="lg"
               asChild
-              className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:-translate-y-0.5"
+              className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:-translate-y-0.5 w-full sm:w-auto"
             >
               <Link href="/listings">{t("home.hero.ctaBrowse")}</Link>
             </Button>
@@ -78,7 +78,7 @@ export function HomePageContent({
               size="lg"
               variant="outline"
               asChild
-              className="text-accent border-accent hover:bg-accent hover:text-accent-foreground transition-transform hover:-translate-y-0.5"
+              className="text-accent border-accent hover:bg-accent hover:text-accent-foreground transition-transform hover:-translate-y-0.5 w-full sm:w-auto"
             >
               <Link href="/listings/new">{t("home.hero.ctaPost")}</Link>
             </Button>

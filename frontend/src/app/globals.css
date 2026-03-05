@@ -117,10 +117,40 @@ html[lang="ar"] body {
 .text-start { text-align: start; }
 .text-end   { text-align: end; }
 
-/* 6. Scrollbar placement – in RTL the scrollbar should appear on the left */
-html[dir="rtl"] ::-webkit-scrollbar {
-  /* Browsers place the scrollbar automatically on the correct side
-     when direction:rtl is set; this ensures it stays visible. */
+/* 6. Scrollbar placement – browsers handle this automatically with direction:rtl */
+
+/* ─── Mobile-first global fixes ────────────────────────────────────── */
+
+/* Prevent horizontal scroll on any screen size */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Safe-area inset padding for notched phones (iPhone X+, Android cutouts) */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Prevent iOS 16 auto-zoom on inputs (requires font-size >= 16px on focus) */
+@media (max-width: 767px) {
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Remove tap highlight flash on mobile browsers */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Ensure touch targets are at least 44px tall (Apple HIG + WCAG) */
+button, a, [role="button"] {
+  min-height: 0; /* let components override individually */
+  touch-action: manipulation; /* disable double-tap zoom on interactive elements */
+}
+
 @layer base {
   * {
     @apply border-border;
