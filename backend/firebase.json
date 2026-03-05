@@ -3,7 +3,7 @@
     "source": ".",
     "runtime": "nodejs22",
     "predeploy": [
-      "npm --prefix \"$RESOURCE_DIR\" run build:clean"
+      "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
   },
   "emulators": {
