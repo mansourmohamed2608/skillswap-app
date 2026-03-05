@@ -11,7 +11,7 @@ import { AlertTriangle, CheckCircle, XCircle, Eye } from 'lucide-react-native';
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import { addModerationKeywordMobile, dismissFlaggedContentMobile, fetchFlaggedContentMobile, fetchModerationKeywordsMobile, removeFlaggedContentMobile, removeModerationKeywordMobile } from '@/services/api';
+import { addModerationKeywordMobile, dismissFlaggedContentMobile, fetchFlaggedContentMobile, fetchModerationKeywordsMobile, removeFlaggedContentMobile, removeModerationKeywordMobile, fetchAdminReportsMobile, resolveAdminReportMobile, fetchAdminUsersMobile, updateAdminUserRoleMobile, updateAdminUserStatusMobile, fetchAdminAuditMobile, fetchAdminAnalyticsMobile } from '@/services/api';
 
 export default function AdminScreen() {
   const { t } = useTranslation();
@@ -27,6 +27,11 @@ export default function AdminScreen() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
   const [keywordsLoading, setKeywordsLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [reports, setReports] = useState<any[]>([]);
+  const [auditItems, setAuditItems] = useState<any[]>([]);
+  const [analyticsSummary, setAnalyticsSummary] = useState<Array<{ name: string; count: number }>>([]);
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const { setFade } = useHeaderFade();
 
   useEffect(() => {
@@ -52,6 +57,16 @@ export default function AdminScreen() {
           } catch {
             // keywords are non-critical; continue without them
           }
+          const [usersRes, reportsRes, auditRes, analyticsRes] = await Promise.allSettled([
+            fetchAdminUsersMobile(50),
+            fetchAdminReportsMobile(50),
+            fetchAdminAuditMobile(50),
+            fetchAdminAnalyticsMobile(200),
+          ]);
+          if (usersRes.status === 'fulfilled') setUsers(usersRes.value.users || []);
+          if (reportsRes.status === 'fulfilled') setReports(reportsRes.value.items || []);
+          if (auditRes.status === 'fulfilled') setAuditItems(auditRes.value.items || []);
+          if (analyticsRes.status === 'fulfilled') setAnalyticsSummary(analyticsRes.value.summary || []);
         }
       } catch {
         // admin data fetch failed silently
@@ -352,6 +367,219 @@ export default function AdminScreen() {
             }}
           />
         )}
+
+        {/* ----- Users Section ----- */}
+        <View style={cn('mb-4 rounded-lg border border-border bg-card p-4')}>
+          <TouchableOpacity
+            onPress={() => setExpandedSection(expandedSection === 'users' ? null : 'users')}
+            style={cn('flex-row items-center justify-between')}
+          >
+            <Text style={cn('text-lg font-semibold text-foreground')}>
+              {t('admin.users_title') || 'Users'} ({users.length})
+            </Text>
+            <Text style={cn('text-sm text-primary')}>
+              {expandedSection === 'users' ? (t('admin.section_collapse') || 'Hide') : (t('admin.section_expand') || 'Show')}
+            </Text>
+          </TouchableOpacity>
+          {expandedSection === 'users' && (
+            <View style={cn('mt-3 gap-3')}>
+              {users.length === 0 ? (
+                <Text style={cn('text-sm text-muted-foreground')}>{t('admin.users_empty') || 'No users found.'}</Text>
+              ) : (
+                users.map((u) => (
+                  <View key={u.id} style={cn('rounded-md border border-border p-3 gap-2')}>
+                    <Text style={cn('text-sm font-semibold text-foreground')} numberOfLines={1}>
+                      {u.name || u.email || u.id}
+                    </Text>
+                    <Text style={cn('text-xs text-muted-foreground')}>
+                      {t('admin.user_role') || 'Role'}: {u.role || 'user'} · {t('admin.user_status') || 'Status'}: {u.accountStatus || 'active'}
+                    </Text>
+                    <View style={cn('flex-row flex-wrap gap-2 mt-1')}>
+                      {(['admin', 'moderator', 'user'] as const).map((role) => (
+                        u.role !== role ? (
+                          <TouchableOpacity
+                            key={role}
+                            onPress={async () => {
+                              try {
+                                await updateAdminUserRoleMobile(u.id, role);
+                                setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, role } : x));
+                              } catch {
+                                Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
+                              }
+                            }}
+                            style={{ backgroundColor: brandGreen, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 }}
+                          >
+                            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
+                              {t(`admin.set_role_${role}`) || role}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null
+                      ))}
+                      {(['active', 'suspended', 'banned'] as const).map((st) => (
+                        (u.accountStatus || 'active') !== st ? (
+                          <TouchableOpacity
+                            key={st}
+                            onPress={async () => {
+                              try {
+                                await updateAdminUserStatusMobile(u.id, st);
+                                setUsers((prev) => prev.map((x) => x.id === u.id ? { ...x, accountStatus: st } : x));
+                              } catch {
+                                Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
+                              }
+                            }}
+                            style={{ backgroundColor: st === 'active' ? successGreen : destructiveRed, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 }}
+                          >
+                            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '600' }}>
+                              {t(`admin.set_status_${st}`) || st}
+                            </Text>
+                          </TouchableOpacity>
+                        ) : null
+                      ))}
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* ----- Reports Section ----- */}
+        <View style={cn('mb-4 rounded-lg border border-border bg-card p-4')}>
+          <TouchableOpacity
+            onPress={() => setExpandedSection(expandedSection === 'reports' ? null : 'reports')}
+            style={cn('flex-row items-center justify-between')}
+          >
+            <Text style={cn('text-lg font-semibold text-foreground')}>
+              {t('admin.reports_title') || 'User Reports'} ({reports.length})
+            </Text>
+            <Text style={cn('text-sm text-primary')}>
+              {expandedSection === 'reports' ? (t('admin.section_collapse') || 'Hide') : (t('admin.section_expand') || 'Show')}
+            </Text>
+          </TouchableOpacity>
+          {expandedSection === 'reports' && (
+            <View style={cn('mt-3 gap-3')}>
+              {reports.length === 0 ? (
+                <Text style={cn('text-sm text-muted-foreground')}>{t('admin.reports_empty') || 'No reports.'}</Text>
+              ) : (
+                reports.map((r) => (
+                  <View key={r.id} style={cn('rounded-md border border-border p-3 gap-1')}>
+                    <View style={cn('flex-row items-center justify-between')}>
+                      <Badge variant={r.status === 'resolved' ? 'secondary' : 'destructive'}>
+                        <Text style={cn('text-xs font-semibold text-white')}>{r.type || 'content'}</Text>
+                      </Badge>
+                      <Text style={cn('text-xs text-muted-foreground')}>{r.status || 'open'}</Text>
+                    </View>
+                    <Text style={cn('text-sm text-foreground mt-1')} numberOfLines={2}>{r.reason}</Text>
+                    {r.status !== 'resolved' && (
+                      <View style={cn('flex-row gap-2 mt-2')}>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            try {
+                              await resolveAdminReportMobile(r.id, 'dismiss');
+                              setReports((prev) => prev.map((x) => x.id === r.id ? { ...x, status: 'resolved' } : x));
+                            } catch {
+                              Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
+                            }
+                          }}
+                          style={{ backgroundColor: brandGreen, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5 }}
+                        >
+                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                            {t('admin.resolve_dismiss') || 'Dismiss'}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            try {
+                              await resolveAdminReportMobile(r.id, 'remove');
+                              setReports((prev) => prev.map((x) => x.id === r.id ? { ...x, status: 'resolved' } : x));
+                            } catch {
+                              Alert.alert(t('common.error') || 'Error', t('admin.action_failed') || 'Action failed');
+                            }
+                          }}
+                          style={{ backgroundColor: destructiveRed, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5 }}
+                        >
+                          <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
+                            {t('admin.resolve_remove') || 'Remove Content'}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* ----- Audit Log Section ----- */}
+        <View style={cn('mb-4 rounded-lg border border-border bg-card p-4')}>
+          <TouchableOpacity
+            onPress={() => setExpandedSection(expandedSection === 'audit' ? null : 'audit')}
+            style={cn('flex-row items-center justify-between')}
+          >
+            <Text style={cn('text-lg font-semibold text-foreground')}>
+              {t('admin.audit_title') || 'Audit Log'} ({auditItems.length})
+            </Text>
+            <Text style={cn('text-sm text-primary')}>
+              {expandedSection === 'audit' ? (t('admin.section_collapse') || 'Hide') : (t('admin.section_expand') || 'Show')}
+            </Text>
+          </TouchableOpacity>
+          {expandedSection === 'audit' && (
+            <View style={cn('mt-3 gap-2')}>
+              {auditItems.length === 0 ? (
+                <Text style={cn('text-sm text-muted-foreground')}>{t('admin.audit_empty') || 'No audit entries.'}</Text>
+              ) : (
+                auditItems.map((entry) => {
+                  const ts = entry.createdAt;
+                  const date = ts && typeof ts.toDate === 'function' ? ts.toDate() : ts ? new Date(ts) : null;
+                  return (
+                    <View key={entry.id} style={cn('rounded-md border border-border p-3 gap-1')}>
+                      <Text style={cn('text-xs font-semibold text-primary')}>{entry.action || '—'}</Text>
+                      <Text style={cn('text-xs text-muted-foreground')} numberOfLines={1}>
+                        {t('admin.audit_actor') || 'Actor'}: {entry.actorId || '—'}
+                      </Text>
+                      <Text style={cn('text-xs text-muted-foreground')} numberOfLines={1}>
+                        {t('admin.audit_target') || 'Target'}: {entry.targetId || '—'}
+                      </Text>
+                      {date && (
+                        <Text style={cn('text-xs text-muted-foreground')}>{date.toLocaleString()}</Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* ----- Analytics Section ----- */}
+        <View style={cn('mb-6 rounded-lg border border-border bg-card p-4')}>
+          <TouchableOpacity
+            onPress={() => setExpandedSection(expandedSection === 'analytics' ? null : 'analytics')}
+            style={cn('flex-row items-center justify-between')}
+          >
+            <Text style={cn('text-lg font-semibold text-foreground')}>
+              {t('admin.analytics_title') || 'Analytics'}
+            </Text>
+            <Text style={cn('text-sm text-primary')}>
+              {expandedSection === 'analytics' ? (t('admin.section_collapse') || 'Hide') : (t('admin.section_expand') || 'Show')}
+            </Text>
+          </TouchableOpacity>
+          {expandedSection === 'analytics' && (
+            <View style={cn('mt-3 gap-2')}>
+              {analyticsSummary.length === 0 ? (
+                <Text style={cn('text-sm text-muted-foreground')}>{t('admin.analytics_empty') || 'No analytics data.'}</Text>
+              ) : (
+                analyticsSummary.map((item) => (
+                  <View key={item.name} style={cn('flex-row items-center justify-between rounded-md border border-border p-3')}>
+                    <Text style={cn('text-sm text-foreground')}>{item.name}</Text>
+                    <Text style={cn('text-sm font-semibold text-primary')}>{item.count}</Text>
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </View>
   );

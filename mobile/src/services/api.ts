@@ -570,3 +570,53 @@ export async function createEventMobile(args: {
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { id: string };
 }
+
+// --------------- Admin extended ---------------
+
+export async function fetchAdminReportsMobile(limit = 50) {
+  const res = await authedFetch(`/api/admin/reports?limit=${encodeURIComponent(String(limit))}`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { items: Array<{ id: string; type: string; contentId: string; reason: string; note?: string; reporterId: string; ownerId?: string; status: string; createdAt?: any }> };
+}
+
+export async function resolveAdminReportMobile(reportId: string, action: 'dismiss' | 'remove' = 'dismiss') {
+  const res = await authedFetch(`/api/admin/reports/${encodeURIComponent(reportId)}/resolve`, {
+    body: JSON.stringify({ action }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { ok: boolean };
+}
+
+export async function fetchAdminUsersMobile(limit = 50) {
+  const res = await authedFetch(`/api/admin/users?limit=${encodeURIComponent(String(limit))}`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { users: Array<{ id: string; email?: string; name?: string; role?: string; accountStatus?: string }> };
+}
+
+export async function updateAdminUserRoleMobile(userId: string, role: 'admin' | 'moderator' | 'user') {
+  const res = await authedFetch(`/api/admin/users/${encodeURIComponent(userId)}/role`, {
+    body: JSON.stringify({ role }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { ok: boolean };
+}
+
+export async function updateAdminUserStatusMobile(userId: string, status: 'active' | 'suspended' | 'banned') {
+  const res = await authedFetch(`/api/admin/users/${encodeURIComponent(userId)}/status`, {
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { ok: boolean };
+}
+
+export async function fetchAdminAuditMobile(limit = 50) {
+  const res = await authedFetch(`/api/admin/audit?limit=${encodeURIComponent(String(limit))}`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { items: Array<{ id: string; actorId: string; action: string; targetId: string; details?: any; createdAt?: any }> };
+}
+
+export async function fetchAdminAnalyticsMobile(limit = 200) {
+  const res = await authedFetch(`/api/admin/analytics?limit=${encodeURIComponent(String(limit))}`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { summary: Array<{ name: string; count: number }>; items: Array<{ id: string; name: string; userId?: string; properties?: any; createdAt?: any }> };
+}
