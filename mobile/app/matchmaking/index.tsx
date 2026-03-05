@@ -9,7 +9,7 @@ import type { ServiceListing } from '@/types';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { Badge } from '@/components/ui/Badge';
-import { fetchMutualPairsMobile, fetchTriadCyclesMobile, acceptMatchMobile, type Participant, type ListingSummary } from '@/services/api';
+import { fetchMutualPairsMobile, fetchTriadCyclesMobile, acceptMatchMobile, fetchListingMatchesMobile, type Participant, type ListingSummary, type ListingMatch } from '@/services/api';
 import { db } from '@/services/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { getErrorMessage } from '@/lib/errors';
@@ -25,6 +25,7 @@ export default function MatchmakingScreen() {
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [triads, setTriads] = useState<Array<{ users: [string,string,string]; edges: any[]; participants?: Participant[]; perspective?: { willGet?: ListingSummary; willGive?: ListingSummary } }>>([]);
   const [pairs, setPairs] = useState<Array<{ users: [string,string]; edges: any[]; participants?: Participant[]; perspective?: { willGet?: ListingSummary; willGive?: ListingSummary } }>>([]);
+  const [listingMatches, setListingMatches] = useState<ListingMatch[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [inputError, setInputError] = useState<string | null>(null);
   const [acceptingKey, setAcceptingKey] = useState<string | null>(null);
@@ -44,9 +45,14 @@ export default function MatchmakingScreen() {
     setLoadingMatches(true);
     setError(null);
     try {
-      const [t, p] = await Promise.all([fetchTriadCyclesMobile(), fetchMutualPairsMobile()]);
+      const [t, p, lm] = await Promise.all([
+        fetchTriadCyclesMobile(),
+        fetchMutualPairsMobile(),
+        fetchListingMatchesMobile().catch(() => ({ matches: [] as ListingMatch[] })),
+      ]);
       setTriads(t?.cycles || []);
       setPairs(p?.pairs || []);
+      setListingMatches(lm?.matches || []);
     } catch (e: any) {
       setError(getErrorMessage(e, t('matchmaking.loadFailed')));
     } finally {
@@ -224,6 +230,46 @@ export default function MatchmakingScreen() {
             </TouchableOpacity>
           </View>
           {error ? <Text style={cn('text-destructive text-sm')}>{error}</Text> : null}
+
+          {/* Complementary Listings */}
+          {listingMatches.length > 0 && (
+            <View style={cn('mt-4')}>
+              <View style={cn('flex-row items-center gap-2 mb-2')}>
+                <Text style={cn('text-sm font-semibold text-foreground')}>{t('matchmaking.mobile.complementaryTitle')}</Text>
+                <Text style={cn('text-xs text-muted-foreground')}>({t('matchmaking.mobile.countFound', { count: listingMatches.length })})</Text>
+              </View>
+              <Text style={cn('text-xs text-muted-foreground mb-3')}>{t('matchmaking.mobile.complementaryDesc')}</Text>
+              {listingMatches.map((match, i) => (
+                <Card key={`lm-${i}`} style={cn('mb-3') as any}>
+                  <CardContent>
+                    <View style={cn('flex-row items-center gap-2 mb-2')}>
+                      <Badge variant="secondary">{t('matchmaking.mobile.perfectExchange')}</Badge>
+                    </View>
+                    <Text style={cn('text-sm font-semibold text-foreground')} numberOfLines={1}>
+                      {match.participant?.name || t('matchmaking.mobile.serviceFallback')}
+                    </Text>
+                    <View style={cn('gap-1 mt-1')}>
+                      <Text style={cn('text-sm')}>
+                        <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.youGet')} </Text>
+                        <Text style={cn('font-semibold')}>{match.theirListing.title || match.theirListing.category || t('matchmaking.mobile.serviceFallback')}</Text>
+                      </Text>
+                      <Text style={cn('text-sm')}>
+                        <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.exchangeFor')} </Text>
+                        <Text style={cn('font-semibold')}>{match.theirListing.requestedCategory || t('matchmaking.mobile.serviceFallback')}</Text>
+                      </Text>
+                    </View>
+                    {match.theirListing.id ? (
+                      <Link href={`/listings/${match.theirListing.id}`} asChild>
+                        <TouchableOpacity style={cn('mt-2 px-3 py-2 rounded-md border border-border bg-card self-start')}>
+                          <Text style={cn('text-sm text-foreground')}>{t('matchmaking.mobile.viewListing')}</Text>
+                        </TouchableOpacity>
+                      </Link>
+                    ) : null}
+                  </CardContent>
+                </Card>
+              ))}
+            </View>
+          )}
 
           {triads.length > 0 && (
             <View style={cn('mt-2')}>

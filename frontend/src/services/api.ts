@@ -487,7 +487,7 @@ export type ListingMatch = {
     location?: string;
     userId?: string;
   };
-  participant?: { uid: string; name?: string };
+  participant?: { uid: string; name?: string | null; photoURL?: string | null };
 };
 
 export async function fetchListingMatches() {

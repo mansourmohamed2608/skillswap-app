@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fetchTriadCycles, fetchMutualPairs, fetchListingMatches, acceptMatch, type ListingSummary, type Participant, type ListingMatch } from '@/services/api';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { CategoryPill } from '@/features/listings/components/CategoryPill';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, RefreshCcw, AlertCircleIcon, SparklesIcon, ArrowRightIcon, MapPinIcon, RepeatIcon } from 'lucide-react';
@@ -200,7 +200,7 @@ export function MatchesPanel() {
           <div className="text-lg text-muted-foreground">{t('matchmaking.panel.subtitle')}</div>
           {user && !loading && totalMatches > 0 ? (
             <div className="mt-1 text-sm text-muted-foreground">
-              {totalMatches} match{totalMatches === 1 ? '' : 'es'} ready to review
+              {t('matchmaking.panel.matchesReady', { count: totalMatches })}
             </div>
           ) : null}
         </div>
@@ -236,7 +236,7 @@ export function MatchesPanel() {
         <Card className="border-dashed">
           <CardContent className="flex items-center justify-center gap-2 p-8 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Checking your latest matches...
+            {t('matchmaking.panel.loadingMatches')}
           </CardContent>
         </Card>
       ) : null}
@@ -246,23 +246,24 @@ export function MatchesPanel() {
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <SparklesIcon className="h-4 w-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Complementary Listings</span>
-            <Badge variant="secondary" className="text-xs">{listingMatches.length} found</Badge>
+            <span className="text-sm font-semibold text-foreground">{t('matchmaking.panel.complementaryTitle')}</span>
+            <Badge variant="secondary" className="text-xs">{t('matchmaking.panel.countFound', { count: listingMatches.length })}</Badge>
           </div>
           <p className="text-xs text-muted-foreground -mt-1">
-            These users offer exactly what you want and want exactly what you offer — no request needed yet.
+            {t('matchmaking.panel.complementaryDesc')}
           </p>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {listingMatches.map((match, idx) => {
               const participantName = match.participant?.name || '';
-              const initials = participantName ? participantName.substring(0, 1).toUpperCase() : '?';
+              const participantPhoto = match.participant?.photoURL || '';
+              const initials = participantName ? participantName.substring(0, 1).toUpperCase() : 'U';
               return (
                 <Card key={`lm-${idx}`} className="flex flex-col h-full shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors duration-300 rounded-lg overflow-hidden">
                   <CardContent className="p-4 flex-grow space-y-2">
                     {/* "Perfect Exchange" badge + category */}
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-none shrink-0">
-                        <SparklesIcon className="h-3 w-3 mr-1" />Perfect Exchange
+                        <SparklesIcon className="h-3 w-3 mr-1" />{t('matchmaking.panel.perfectExchange')}
                       </Badge>
                       {match.theirListing.category && (
                         <CategoryPill category={match.theirListing.category as any} />
@@ -293,6 +294,7 @@ export function MatchesPanel() {
                       {/* Avatar + name + location */}
                       <div className="flex items-start gap-2 min-w-0">
                         <Avatar className="h-8 w-8 shrink-0">
+                          {participantPhoto ? <AvatarImage src={participantPhoto} alt={participantName || 'User'} /> : null}
                           <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
@@ -326,11 +328,9 @@ export function MatchesPanel() {
       {!loading && !error && user && triads.length === 0 && pairs.length === 0 && listingMatches.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="space-y-1 p-5 text-sm">
-            <p className="font-medium text-foreground">No live exchange matches yet</p>
+            <p className="font-medium text-foreground">{t('matchmaking.panel.noLiveMatches')}</p>
             <p className="text-muted-foreground">
-              These matches appear automatically when your listing&apos;s offer and wanted service
-              complement another user&apos;s listing. Make sure your listing has both an offered
-              service and a requested service category set.
+              {t('matchmaking.panel.noLiveMatchesDesc')}
             </p>
           </CardContent>
         </Card>

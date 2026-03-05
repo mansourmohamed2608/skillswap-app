@@ -458,14 +458,17 @@ export class MatchmakingService {
     const usersMap = new Map<string, any>();
     for (const doc of userDocs) usersMap.set(doc.id, (doc.data() as any) || {});
 
-    const enriched = results.map(r => ({
-      ...r,
-      participant: r.theirListing.userId ? {
-        uid: r.theirListing.userId,
-        name: (usersMap.get(r.theirListing.userId) || {}).name
-          || (usersMap.get(r.theirListing.userId) || {}).displayName,
-      } : undefined,
-    }));
+    const enriched = results.map(r => {
+      const uData = r.theirListing.userId ? (usersMap.get(r.theirListing.userId) || {}) : {};
+      return {
+        ...r,
+        participant: r.theirListing.userId ? {
+          uid: r.theirListing.userId,
+          name: uData.name || uData.displayName || uData.fullName || null,
+          photoURL: uData.photoURL || uData.avatarUrl || uData.profileImage || null,
+        } : undefined,
+      };
+    });
 
     return { matches: enriched };
   }

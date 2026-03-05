@@ -147,6 +147,8 @@ export function MatchmakingForm() {
         </CardDescription>
       </CardHeader>
       <form action={formAction}>
+        {/* Hidden field so the server action can exclude the current user's own listings */}
+        <input type="hidden" name="userId" value={user?.uid || ''} />
         <CardContent className="space-y-6">
           {isGuest && (
             <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm">

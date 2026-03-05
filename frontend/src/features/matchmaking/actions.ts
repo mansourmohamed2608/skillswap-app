@@ -42,6 +42,7 @@ export async function findMatchesAction(
   const inputData: GenerateServiceMatchInput = {
     userProfile: validatedFields.data.userProfile,
     serviceRequests: validatedFields.data.serviceRequests,
+    excludeUserId: String(formData.get('userId') || '').trim() || undefined,
   };
 
   const banned = findBannedKeywordInFields([

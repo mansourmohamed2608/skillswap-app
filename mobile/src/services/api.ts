@@ -315,6 +315,28 @@ export async function fetchMutualPairsMobile() {
   };
 }
 
+export type ListingMatch = {
+  myListingId: string;
+  myListingTitle: string;
+  theirListingId: string;
+  theirListing: {
+    id: string;
+    title?: string;
+    category?: string;
+    requestedCategory?: string;
+    location?: string;
+    userId?: string;
+  };
+  participant?: { uid: string; name?: string | null; photoURL?: string | null };
+};
+
+export async function fetchListingMatchesMobile() {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const res = await authedFetch(`/api/matchmaking/listing-matches`, { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { matches: ListingMatch[] };
+}
+
 // --------------- Admin moderation ---------------
 export async function fetchFlaggedContentMobile() {
   if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');

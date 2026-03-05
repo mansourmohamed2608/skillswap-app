@@ -13,6 +13,7 @@ import { serviceCategories } from '@/services/serviceCategories';
 export type GenerateServiceMatchInput = {
   userProfile: string;
   serviceRequests: string;
+  excludeUserId?: string;
 };
 
 export type GenerateServiceMatchOutput = {
@@ -144,7 +145,7 @@ function scoreListing(hit: any, requestTokens: string[], offerTokens: string[], 
   return score;
 }
 
-async function buildListingMatches(profileText: string, requestText: string) {
+async function buildListingMatches(profileText: string, requestText: string, excludeUserId?: string) {
   const offerTokens = uniqueTokens(normalizeTokens(profileText));
   const requestTokens = uniqueTokens(normalizeTokens(requestText));
   const requestCategories = extractCategories(requestText);
@@ -155,7 +156,13 @@ async function buildListingMatches(profileText: string, requestText: string) {
   // substring match (haystack.includes(q)) so a natural-language sentence never matches.
   // Let category + location narrow the candidate pool; the scoring function handles relevance.
   const hits = await fetchListings({ category, location: locationHint });
-  const scored = hits
+  const filtered = excludeUserId
+    ? hits.filter((hit: any) => {
+        const owner = hit.userId || hit.offeredByUserId || hit.ownerId || '';
+        return owner !== excludeUserId;
+      })
+    : hits;
+  const scored = filtered
     .map((hit: any) => ({ hit, score: scoreListing(hit, requestTokens, offerTokens, requestCategories, locationHint) }))
     .filter((row: { hit: any; score: number }) => row.score > 0)
     .sort((a: { hit: any; score: number }, b: { hit: any; score: number }) => b.score - a.score)
@@ -214,7 +221,7 @@ Suggest up to 6 matches, each in a single concise sentence:`,
 }
 
 export async function generateServiceMatch(input: GenerateServiceMatchInput): Promise<GenerateServiceMatchOutput> {
-  const { matches, listingContext, listingIds } = await buildListingMatches(input.userProfile, input.serviceRequests);
+  const { matches, listingContext, listingIds } = await buildListingMatches(input.userProfile, input.serviceRequests, input.excludeUserId);
 
   if (matchMode !== 'rule' && hasGeminiKey && listingContext.length) {
     const runner = await getGeminiRunner();
