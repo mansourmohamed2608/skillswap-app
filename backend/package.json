@@ -8,7 +8,7 @@
     "build": "tsc",
     "build:clean": "npm run clean && npm run build",
     "serve": "npm run build:clean && firebase emulators:start --only functions",
-    "deploy": "npm run build:clean && node -e \"process.env.FIREBASE_CONFIG=JSON.stringify({projectId:'skillswap-69yxi'});require('child_process').execSync('firebase deploy --only functions',{stdio:'inherit',env:process.env});\"",
+    "deploy": "npm run build && node --dns-result-order=ipv4first node_modules/firebase-tools/bin/firebase.js deploy --only functions --project skillswap-69yxi --non-interactive",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
     "test": "jest",

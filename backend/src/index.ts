@@ -18,14 +18,6 @@ const app = express();
 // Trust first proxy (Cloud Functions / Firebase) to get real client IP
 app.set('trust proxy', 1);
 
-// ── Firebase Functions CLI discovery short-circuit ────────────────────────────
-// During `firebase deploy`, the firebase-functions binary sends a GET to
-// /__/functions.yaml to discover exports. If this hits the NestJS/admin handler
-// below, ensureAdminApp() tries to reach the GCE metadata server, which hangs
-// (we're not on GCE during deploy analysis), causing a 10s timeout.
-// Return 404 immediately so the binary falls through to static export inspection.
-app.use('/__/', (_req, res) => res.status(404).end());
-
 app.use((req, _res, next) => {
   const xf = (req.headers['x-forwarded-for'] as string) || '';
   const candidate = xf.split(',')[0]?.trim();
