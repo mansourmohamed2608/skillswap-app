@@ -166,11 +166,11 @@ export default function VerifyProfilePage() {
             <div className="rounded-lg border bg-muted/30 p-4">
               <div className="flex items-center gap-2 font-medium mb-2">
                 {statusCode === 'VERIFIED' && <CheckCircle className="h-5 w-5 text-emerald-600" />}
-                {statusCode === 'FAILED' && <XCircle className="h-5 w-5 text-rose-600" />}
+                {['FAILED', 'CANCELLED', 'DECLINED'].includes(statusCode) && <XCircle className="h-5 w-5 text-rose-600" />}
                 {t('profile.verify.currentStatus')}{' '}
                 <span className={`uppercase ${
                   statusCode === 'VERIFIED' ? 'text-emerald-600' :
-                  statusCode === 'FAILED' ? 'text-rose-600' :
+                  ['FAILED', 'CANCELLED', 'DECLINED'].includes(statusCode) ? 'text-rose-600' :
                   'text-amber-600'
                 }`}>
                   {statusLabel}
@@ -190,7 +190,7 @@ export default function VerifyProfilePage() {
             </div>
           )}
 
-          {(!status || statusCode === 'FAILED') && (
+          {(!status || ['FAILED', 'CANCELLED', 'DECLINED'].includes(statusCode)) && (
             <>
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>{t('profile.verify.uploadHint')}</p>
