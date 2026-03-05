@@ -17,11 +17,11 @@ const IS_EMULATOR = !IS_PRODUCTION && Boolean(
   process.env.FIREBASE_EMULATOR_HUB
 );
 
-// SECURITY: Mock payments ONLY allowed in non-production emulator mode
-const USE_MOCK = !IS_PRODUCTION && (
+// USE_MOCK_PAYMENTS=1 is explicitly allowed even in production for demo/pre-launch mode.
+// Remove or set to 0 once Geidea is fully configured.
+const USE_MOCK =
   process.env.USE_MOCK_PAYMENTS === '1' ||
-  IS_EMULATOR
-);
+  (!IS_PRODUCTION && IS_EMULATOR);
 const ALLOW_UNCONFIGURED_PAYMENT_FALLBACK = process.env.ALLOW_UNCONFIGURED_PAYMENT_FALLBACK !== '0';
 
 const PRICING_EGP: Record<SubscriptionPlan, Record<'3_months' | '6_months' | '12_months', number>> = {

@@ -4,7 +4,7 @@
   "description": "Firebase Cloud Functions backend for the SkillSwap application.",
   "main": "lib/index.js",
   "scripts": {
-    "clean": "node -e \"require('fs').rmSync('lib', { recursive: true, force: true })\"",
+    "clean": "npx rimraf lib",
     "build": "tsc",
     "build:clean": "npm run clean && npm run build",
     "serve": "npm run build:clean && firebase emulators:start --only functions",
