@@ -19,6 +19,7 @@ import { updateUserProfile } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
 import { useTranslation } from 'react-i18next';
+import { useMembership } from '@/hooks/useMembership';
 
 export default function EditProfilePage() {
   const { user } = useAuth();
@@ -41,6 +42,16 @@ export default function EditProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const { plan } = useMembership();
+  const isBusinessPlan = plan === 'Business';
+  const [businessName, setBusinessName] = useState('');
+  const [businessDescription, setBusinessDescription] = useState('');
+  const [businessWebsite, setBusinessWebsite] = useState('');
+  const [businessBrandColor, setBusinessBrandColor] = useState('');
+  const [businessLogoUri, setBusinessLogoUri] = useState<string | null>(null);
+  const [businessLogoUrl, setBusinessLogoUrl] = useState<string | null>(null);
+  const [teamMembers, setTeamMembers] = useState('');
+  const [customCategories, setCustomCategories] = useState('');
   const autoLocationRequestedRef = useRef(false);
 
   async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
@@ -72,6 +83,14 @@ export default function EditProfilePage() {
           setGeo(data.geo ? { lat: Number(data.geo.lat), lng: Number(data.geo.lng) } : undefined);
           setUsername(data.profile?.username ?? '');
           setEmail(user.email ?? '');
+          const biz = data.businessProfile || {};
+          setBusinessName(biz.name ?? '');
+          setBusinessDescription(biz.description ?? '');
+          setBusinessWebsite(biz.website ?? '');
+          setBusinessBrandColor(biz.brandColor ?? '');
+          setBusinessLogoUrl(biz.logoUrl ?? null);
+          setTeamMembers(Array.isArray(biz.teamMembers) ? biz.teamMembers.join(', ') : '');
+          setCustomCategories(Array.isArray(biz.customCategories) ? biz.customCategories.join(', ') : '');
         }
       } catch (e: any) {
         setError(getErrorMessage(e, t('errors.generic')));
@@ -80,6 +99,13 @@ export default function EditProfilePage() {
       }
     })();
   }, [user?.uid]);
+
+  async function pickBusinessLogo() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return;
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
+    if (!res.canceled) setBusinessLogoUri(res.assets[0].uri);
+  }
 
   async function pickAvatar() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -128,6 +154,9 @@ export default function EditProfilePage() {
         { label: 'username', value: username },
         { label: 'location', value: location },
         { label: 'country', value: country },
+        { label: 'businessName', value: businessName },
+        { label: 'businessDescription', value: businessDescription },
+        { label: 'businessWebsite', value: businessWebsite },
       ]);
       if (banned) {
         setLoading(false);
@@ -150,11 +179,33 @@ export default function EditProfilePage() {
         await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
         coverUrl = await getDownloadURL(r);
       }
+      // Upload business logo if changed
+      let resolvedBusinessLogoUrl: string | null = businessLogoUrl;
+      if (businessLogoUri && storage) {
+        const buf = await (await fetch(businessLogoUri)).arrayBuffer();
+        const key = `business-logos/${user.uid}/${Date.now()}.jpg`;
+        const r = ref(storage, key);
+        await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
+        resolvedBusinessLogoUrl = await getDownloadURL(r);
+      }
       const update: any = { name: displayName, location, country };
       if (geo) update.geo = geo;
       if (username) update.profile = { ...(update.profile || {}), username };
       if (avatarUrl) update.avatarUrl = avatarUrl;
       if (coverUrl) update.profile = { ...(update.profile || {}), coverUrl };
+      if (isBusinessPlan) {
+        const biz: any = {};
+        if (businessName.trim()) biz.name = businessName.trim();
+        if (businessDescription.trim()) biz.description = businessDescription.trim();
+        if (businessWebsite.trim()) biz.website = businessWebsite.trim();
+        if (businessBrandColor.trim()) biz.brandColor = businessBrandColor.trim();
+        if (resolvedBusinessLogoUrl) biz.logoUrl = resolvedBusinessLogoUrl;
+        const teamList = teamMembers.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5);
+        if (teamList.length) biz.teamMembers = teamList;
+        const catList = customCategories.split(',').map(s => s.trim()).filter(Boolean).slice(0, 10);
+        if (catList.length) biz.customCategories = catList;
+        if (Object.keys(biz).length) update.businessProfile = biz;
+      }
       await updateUserProfile(update);
       // After profile update, change email/password if requested
       if (auth && email && email !== user.email) {
@@ -232,7 +283,84 @@ export default function EditProfilePage() {
             <CardTitle>{t('profile.edit.title')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {error ? <Text style={cn('text-destructive mb-2')}>{error}</Text> : null}
+            {error ? <Text style={cn('text-destructive mb-2')}>{error}</Text> : null}            {/* Business Profile Section — Business plan only */}
+            {isBusinessPlan ? (
+              <View style={cn('mt-4 rounded-md border border-border bg-muted/10 p-4 gap-3')}>
+                <Text style={cn('text-lg font-semibold text-foreground')}>{t('profile.edit.business.title')}</Text>
+                <Text style={cn('text-sm text-muted-foreground -mt-2')}>{t('profile.edit.business.subtitle')}</Text>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.nameLabel')}</Text>
+                  <Input value={businessName} onChangeText={setBusinessName} placeholder={t('profile.edit.business.namePlaceholder')} />
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.descriptionLabel')}</Text>
+                  <Input
+                    value={businessDescription}
+                    onChangeText={setBusinessDescription}
+                    placeholder={t('profile.edit.business.descriptionPlaceholder')}
+                    multiline
+                    numberOfLines={3}
+                    style={{ minHeight: 72, textAlignVertical: 'top' }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.websiteLabel')}</Text>
+                  <Input
+                    value={businessWebsite}
+                    onChangeText={setBusinessWebsite}
+                    placeholder={t('profile.edit.business.websitePlaceholder')}
+                    autoCapitalize="none"
+                    keyboardType="url"
+                  />
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.brandColorLabel')}</Text>
+                  <Input
+                    value={businessBrandColor}
+                    onChangeText={setBusinessBrandColor}
+                    placeholder={t('profile.edit.business.brandColorPlaceholder')}
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.logoLabel')}</Text>
+                  {(businessLogoUri || businessLogoUrl) ? (
+                    <Image
+                      source={{ uri: businessLogoUri || businessLogoUrl! }}
+                      style={{ width: 64, height: 64, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#ddd' }}
+                    />
+                  ) : null}
+                  <TouchableOpacity onPress={pickBusinessLogo} style={cn('rounded-md border border-dashed border-border px-3 py-2 mt-1')}>
+                    <Text style={cn('text-foreground text-center')}>{businessLogoUri || businessLogoUrl ? t('profile.edit.business.logoChange') : t('profile.edit.business.logoUpload')}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.teamLabel')}</Text>
+                  <Input
+                    value={teamMembers}
+                    onChangeText={setTeamMembers}
+                    placeholder={t('profile.edit.business.teamPlaceholder')}
+                  />
+                  <Text style={cn('text-xs text-muted-foreground mt-1')}>{t('profile.edit.business.teamHelp')}</Text>
+                </View>
+
+                <View>
+                  <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.business.categoriesLabel')}</Text>
+                  <Input
+                    value={customCategories}
+                    onChangeText={setCustomCategories}
+                    placeholder={t('profile.edit.business.categoriesPlaceholder')}
+                  />
+                  <Text style={cn('text-xs text-muted-foreground mt-1')}>{t('profile.edit.business.categoriesHelp')}</Text>
+                </View>
+              </View>
+            ) : null}
             <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.nameLabel')}</Text>
             <Input value={displayName} onChangeText={setDisplayName} className="mb-3" />
             <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.usernameLabel')}</Text>
