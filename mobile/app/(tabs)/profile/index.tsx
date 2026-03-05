@@ -338,6 +338,17 @@ export default function ProfileScreen() {
           ]}
         />
       </View>
+
+      {/* Legal links */}
+      <View style={cn('px-4 py-6 border-t border-border gap-2')}>
+        <Text style={cn('text-xs font-semibold text-muted-foreground uppercase mb-1')}>Legal</Text>
+        <View style={cn('flex-row flex-wrap gap-x-4 gap-y-1')}>
+          <Link href="/legal/terms"><Text style={cn('text-sm text-primary')}>Terms</Text></Link>
+          <Link href="/legal/privacy"><Text style={cn('text-sm text-primary')}>Privacy Policy</Text></Link>
+          <Link href="/legal/community"><Text style={cn('text-sm text-primary')}>Community Guidelines</Text></Link>
+          <Link href="/legal/refund"><Text style={cn('text-sm text-primary')}>Refund Policy</Text></Link>
+        </View>
+      </View>
     </ScrollView>
   );
 }

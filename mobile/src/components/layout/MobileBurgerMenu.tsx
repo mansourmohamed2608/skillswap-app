@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Alert, Modal, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Link } from 'expo-router';
-import { Home, List, Sparkles, Gem, LogIn, UserPlus, X, CalendarDays, MessageCircle, User, LifeBuoy } from 'lucide-react-native';
+import { Home, List, Sparkles, Gem, LogIn, UserPlus, X, CalendarDays, MessageCircle, User, LifeBuoy, CalendarCheck } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/cn';
@@ -28,6 +28,7 @@ export default function MobileBurgerMenu({ open, onClose }: MobileBurgerMenuProp
   const publicNav = [
     { href: '/', label: label('header.home', 'Home'), icon: Home },
     { href: '/listings', label: label('header.listings', 'Listings'), icon: List },
+    { href: '/events', label: label('events.title', 'Community Events'), icon: CalendarCheck },
     { href: '/matchmaking', label: label('header.matchmaking', 'AI Matchmaking'), icon: Sparkles },
     { href: '/pricing', label: label('header.pricing', 'Subscription Plans'), icon: Gem },
     { href: '/support', label: label('header.support', 'Support'), icon: LifeBuoy },

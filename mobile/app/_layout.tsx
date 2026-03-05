@@ -24,6 +24,10 @@ function LayoutWithHeaderPadding() {
         <Stack.Screen name="listings/new" />
         <Stack.Screen name="wishes/donate" />
         <Stack.Screen name="wishes/request" />
+        <Stack.Screen name="events/index" />
+        <Stack.Screen name="events/new" />
+        <Stack.Screen name="legal/community" />
+        <Stack.Screen name="legal/refund" />
       </Stack>
     </View>
   );
