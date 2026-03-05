@@ -16,10 +16,10 @@ import {
   Loader2,
   MapPinIcon,
   ArrowRightIcon,
+  RepeatIcon,
   SearchXIcon,
-  BriefcaseIcon,
-  WandIcon,
 } from 'lucide-react';
+import { CategoryPill } from '@/features/listings/components/CategoryPill';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -237,91 +237,67 @@ export function MatchmakingForm() {
           </div>
           <p className="mb-5 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
 
-          <ul className="space-y-3">
+          <ul className="grid gap-4 sm:grid-cols-2">
             {state.matches.map((match, index) => {
               const listingId = state.listingIds?.[index];
               const { offerTitle, category, location, wants } = parseMatch(match);
 
-              const cardContent = (
-                <div className="flex gap-4">
-                  {/* Left accent strip + number */}
-                  <div className="flex flex-col items-center gap-2 pt-0.5">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-primary-foreground">
-                      {index + 1}
-                    </span>
-                    <div className="w-px flex-1 bg-primary/20" />
-                  </div>
-
-                  {/* Card body */}
-                  <div className="flex-1 min-w-0 space-y-3 pb-1">
-                    {/* Category + location row */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {category && (
-                        <Badge variant="outline" className="text-xs font-medium border-primary/40 text-primary">
-                          {category}
-                        </Badge>
-                      )}
-                      {location && (
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPinIcon className="h-3 w-3 shrink-0" />
-                          {location}
+              return (
+                <li key={index} className="flex">
+                  <Card className="flex flex-col w-full shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors duration-300 rounded-lg overflow-hidden">
+                    <CardContent className="p-4 flex-grow space-y-2">
+                      {/* Number + category row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                          {index + 1}
                         </span>
-                      )}
-                    </div>
-
-                    {/* Exchange visualization */}
-                    <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-                      {/* They offer */}
-                      <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5 space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <BriefcaseIcon className="h-3 w-3 text-primary shrink-0" />
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-primary">Offers</span>
-                        </div>
-                        <p className="text-sm font-semibold text-foreground leading-tight">{offerTitle}</p>
+                        {category && <CategoryPill category={category as any} />}
                       </div>
 
-                      {/* Arrow divider */}
-                      <div className="flex flex-col items-center gap-0.5">
-                        <ArrowRightIcon className="h-4 w-4 text-muted-foreground" />
+                      {/* Offered title */}
+                      <p className="text-base font-semibold text-foreground leading-tight line-clamp-2 min-h-[3rem]">
+                        {offerTitle}
+                      </p>
+
+                      {/* Repeat divider */}
+                      <div className="py-0.5 text-center">
+                        <RepeatIcon className="h-5 w-5 text-primary/50 inline-block" />
                       </div>
 
-                      {/* They want */}
-                      <div className="rounded-lg border border-border/60 bg-accent/10 p-2.5 space-y-1">
-                        <div className="flex items-center gap-1.5">
-                          <WandIcon className="h-3 w-3 text-accent shrink-0" />
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-accent">Wants</span>
-                        </div>
-                        <p className="text-sm font-semibold text-foreground leading-tight">
-                          {wants ?? <span className="text-muted-foreground italic text-xs">Not specified</span>}
+                      {/* In exchange for */}
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-0.5">{t('listings.card.exchangeFor')}</p>
+                        <p className="text-sm font-medium text-primary line-clamp-2 min-h-[2.5rem]">
+                          {wants ?? <span className="italic text-muted-foreground text-xs">Not specified</span>}
                         </p>
                       </div>
-                    </div>
 
-                    {/* CTA */}
-                    {listingId && (
-                      <div className="pt-1">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary border border-primary/40 rounded-md px-3 py-1.5 bg-primary/5 group-hover:bg-primary/10 transition-colors">
-                          View listing
-                          <ArrowRightIcon className="h-3 w-3" />
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
+                      {/* Location */}
+                      {location && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground pt-0.5">
+                          <MapPinIcon className="h-3 w-3 shrink-0" />
+                          {location}
+                        </div>
+                      )}
+                    </CardContent>
 
-              return listingId ? (
-                <li key={index} className="group">
-                  <Link
-                    href={`/listings/${listingId}`}
-                    className="block rounded-xl border bg-card p-4 shadow-sm transition-all hover:border-primary/60 hover:shadow-md hover:-translate-y-0.5"
-                  >
-                    {cardContent}
-                  </Link>
-                </li>
-              ) : (
-                <li key={index} className="rounded-xl border bg-card p-4 shadow-sm">
-                  {cardContent}
+                    <CardFooter className="p-4 border-t">
+                      <Button
+                        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+                        size="sm"
+                        asChild={!!listingId}
+                        disabled={!listingId}
+                      >
+                        {listingId ? (
+                          <Link href={`/listings/${listingId}`}>
+                            {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-2 h-4 w-4" />
+                          </Link>
+                        ) : (
+                          <span>{t('listings.card.viewDetails')} <ArrowRightIcon className="ml-2 h-4 w-4 inline" /></span>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
                 </li>
               );
             })}
