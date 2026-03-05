@@ -24,7 +24,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDate } from '@/lib/utils';
 import { fetchReviewsForUser, markNotificationsRead } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
-import { cancelKyc, getKycApiBase } from '@/services/kyc';
+import { cancelKyc } from '@/services/kyc';
 
 function CurrentUserProfilePageContent() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -202,27 +202,7 @@ function CurrentUserProfilePageContent() {
     if (!authUser) return;
     setRetryBusy(true);
     setRetryError(null);
-    try {
-      const token = await authUser.getIdToken();
-      const base = getKycApiBase();
-      const resp = await fetch(`${base}/didit/session`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ vendor: authUser.uid }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok || !data?.url) {
-        throw new Error(data?.error || t('profile.kyc.startFailed'));
-      }
-      window.location.href = data.url as string;
-    } catch (e: any) {
-      setRetryError(getErrorMessage(e, t('profile.kyc.startFailed')));
-    } finally {
-      setRetryBusy(false);
-    }
+    router.push('/profile/verify');
   };
 
   const handleCancel = async () => {

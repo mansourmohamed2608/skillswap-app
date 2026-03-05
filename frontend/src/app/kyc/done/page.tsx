@@ -6,7 +6,7 @@ import { auth, db } from "@/services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { CheckCircle2, Clock3, AlertCircle } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
 import { getKycApiBase } from "@/services/kyc";
@@ -42,6 +42,7 @@ function StatusPill({ status }: { status: StatusKey }) {
 }
 
 function KycDonePageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useTranslation();
   const sessionIdFromQuery = searchParams.get("verificationSessionId") || undefined;
@@ -136,29 +137,13 @@ function KycDonePageContent() {
     if (!auth) return;
     setRetryBusy(true);
     setRetryError(null);
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error(t('kyc.done.errors.signInFirst'));
-      const token = await user.getIdToken();
-      const base = getKycApiBase();
-      const resp = await fetch(`${base}/didit/session`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ vendor: user.uid }),
-      });
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok || !data?.url) {
-        throw new Error(data?.error || t('kyc.done.errors.startFailed'));
-      }
-      window.location.href = data.url as string;
-    } catch (e: any) {
-      setRetryError(getErrorMessage(e, t('kyc.done.errors.startFailed')));
-    } finally {
+    const user = auth.currentUser;
+    if (!user) {
+      setRetryError(t('kyc.done.errors.signInFirst'));
       setRetryBusy(false);
+      return;
     }
+    router.push('/profile/verify');
   }
 
   return (
