@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useLocalSearchParams } from 'expo-router';
-import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { Link, useLocalSearchParams } from 'expo-router';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
 import { getUserById, getListings } from '@/services/data';
 import type { ServiceListing, User as SSUser } from '@/types';
 import { ServiceCard } from '@/components/ui/ServiceCard';
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import { fetchReviewsForUserMobile } from '@/services/api';
+import { fetchReviewsForUserMobile, submitReportMobile } from '@/services/api';
 import { useTranslation } from 'react-i18next';
 import { auth } from '@/services/firebase';
 import { blockUser, unblockUser, isUserBlocked } from '@/services/users';
@@ -24,6 +24,10 @@ export default function UserProfilePage() {
   const [blockBusy, setBlockBusy] = useState(false);
   const { setFade } = useHeaderFade();
   const currentUid = auth?.currentUser?.uid;
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportNote, setReportNote] = useState('');
 
   useEffect(() => { setFade(0); }, [setFade]);
 
@@ -112,6 +116,23 @@ export default function UserProfilePage() {
     }
   };
 
+  async function handleReport() {
+    if (!reportReason.trim()) { Alert.alert(t('reports.missingReason')); return; }
+    if (!userId) return;
+    setReportBusy(true);
+    try {
+      await submitReportMobile({ type: 'user', contentId: userId, reason: reportReason.trim(), note: reportNote.trim() || undefined });
+      setReportOpen(false);
+      setReportReason('');
+      setReportNote('');
+      Alert.alert(t('reports.submitted'));
+    } catch {
+      Alert.alert(t('reports.failed'));
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   const active = useMemo(() => listings.filter(l => l.status === 'open' || l.status === 'pending_exchange'), [listings]);
   const past = useMemo(() => listings.filter(l => l.status === 'completed'), [listings]);
 
@@ -136,25 +157,125 @@ export default function UserProfilePage() {
       }}
       scrollEventThrottle={16}
     >
-      <View style={cn('px-4 py-4')}>
+      {/* Cover photo */}
+      {user.coverUrl
+        ? <Image source={{ uri: user.coverUrl }} style={{ height: 128, width: '100%' }} resizeMode="cover" />
+        : <View style={{ height: 72, backgroundColor: '#4f7942' }} />}
+
+      {/* Profile header */}
+      <View style={cn('px-4 pb-4')}>
+        <View style={{ marginTop: -32, marginBottom: 8 }}>
+          <Image
+            source={{ uri: user.avatarUrl || undefined }}
+            style={{ width: 72, height: 72, borderRadius: 36, borderWidth: 3, borderColor: 'white', backgroundColor: '#e5e7eb' }}
+          />
+        </View>
         <Text style={cn('text-2xl font-bold text-foreground')}>{user.name}</Text>
-        {user.location && <Text style={cn('text-sm text-muted-foreground')}>{user.location}</Text>}
+        {(user as any).membershipActive && (user as any).membershipPlan && (
+          <View style={cn('self-start mt-1 px-2 py-0.5 rounded-full border border-border bg-muted/30')}>
+            <Text style={cn('text-xs text-muted-foreground')}>{(user as any).membershipPlan}</Text>
+          </View>
+        )}
+        {user.location && <Text style={cn('text-sm text-muted-foreground mt-0.5')}>{user.location}</Text>}
+        {user.bio ? <Text style={cn('mt-2 text-sm text-foreground')}>{user.bio}</Text> : null}
+        {typeof user.rating === 'number' && (
+          <Text style={cn('mt-1 text-sm text-muted-foreground')}>★ {user.rating.toFixed(1)} · {(user as any).reviewsCount ?? 0} {t('reviews.title')}</Text>
+        )}
         {currentUid && userId !== currentUid && (
-          <TouchableOpacity
-            onPress={handleBlockToggle}
-            disabled={blockBusy}
-            style={cn('mt-3 self-start rounded-full border border-destructive px-4 py-1.5')}
-          >
-            <Text style={cn('text-sm font-medium text-destructive')}>
-              {blockBusy
-                ? '...'
-                : isBlocked
-                  ? (t('reports.unblockUser') || 'Unblock User')
-                  : (t('reports.blockUser') || 'Block User')}
-            </Text>
-          </TouchableOpacity>
+          <View style={cn('mt-3 flex-row flex-wrap gap-2')}>
+            <Link href={`/chat/${userId}`} asChild>
+              <TouchableOpacity style={cn('rounded-full bg-primary px-4 py-1.5')}>
+                <Text style={cn('text-sm font-medium text-primary-foreground')}>
+                  {t('profile.public.messageUser', { name: user.name.split(' ')[0] })}
+                </Text>
+              </TouchableOpacity>
+            </Link>
+            <TouchableOpacity
+              onPress={handleBlockToggle}
+              disabled={blockBusy}
+              style={cn('rounded-full border border-destructive px-4 py-1.5')}
+            >
+              <Text style={cn('text-sm font-medium text-destructive')}>
+                {blockBusy ? '...' : isBlocked ? t('reports.unblockUser') : t('reports.blockUser')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setReportOpen(true)}
+              style={cn('rounded-full border border-border px-4 py-1.5')}
+            >
+              <Text style={cn('text-sm font-medium text-foreground')}>{t('reports.reportUser')}</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
+
+      {/* Report form */}
+      {reportOpen && currentUid && userId !== currentUid && (
+        <View style={cn('mx-4 mb-4 rounded-md border border-border bg-muted/10 p-4')}>
+          <Text style={cn('text-sm font-semibold text-foreground mb-1')}>{t('reports.reportUser')}</Text>
+          <Text style={cn('text-xs text-muted-foreground mb-3')}>{t('reports.reportUserHelp')}</Text>
+          <Text style={cn('text-xs text-foreground mb-1')}>{t('reports.reasonLabel')}</Text>
+          <TextInput
+            value={reportReason}
+            onChangeText={setReportReason}
+            placeholder={t('reports.reasonPlaceholder')}
+            style={{ borderWidth: 1, borderColor: '#d1d5db', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 10, color: '#111', backgroundColor: '#fff' }}
+          />
+          <Text style={cn('text-xs text-foreground mb-1')}>{t('reports.noteLabel')}</Text>
+          <TextInput
+            value={reportNote}
+            onChangeText={setReportNote}
+            placeholder={t('reports.notePlaceholder')}
+            multiline
+            numberOfLines={2}
+            style={{ borderWidth: 1, borderColor: '#d1d5db', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 7, marginBottom: 10, color: '#111', backgroundColor: '#fff', minHeight: 52, textAlignVertical: 'top' }}
+          />
+          <View style={cn('flex-row gap-2')}>
+            <TouchableOpacity
+              onPress={() => { setReportOpen(false); setReportReason(''); setReportNote(''); }}
+              style={cn('flex-1 rounded-md border border-border py-2')}
+              disabled={reportBusy}
+            >
+              <Text style={cn('text-center text-sm text-foreground')}>{t('common.cancel')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleReport}
+              style={cn('flex-1 rounded-md bg-primary py-2')}
+              disabled={reportBusy}
+            >
+              <Text style={cn('text-center text-sm text-primary-foreground')}>
+                {reportBusy ? t('reports.submitting') : t('reports.submit')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Services offered */}
+      {user.servicesOffered?.length > 0 && (
+        <View style={cn('px-4 pb-3')}>
+          <Text style={cn('text-lg font-semibold text-foreground mb-2')}>{t('profile.public.servicesOfferedTitle')}</Text>
+          {user.servicesOffered.map((s: any) => (
+            <View key={s.id} style={cn('mb-2 rounded-md border border-border bg-card p-3')}>
+              <Text style={cn('font-medium text-foreground')}>{s.title}</Text>
+              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{s.category}</Text>}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Services requested */}
+      {user.servicesRequested?.length > 0 && (
+        <View style={cn('px-4 pb-3')}>
+          <Text style={cn('text-lg font-semibold text-foreground mb-2')}>{t('profile.public.servicesRequestedTitle')}</Text>
+          {user.servicesRequested.map((s: any) => (
+            <View key={s.id} style={cn('mb-2 rounded-md border border-border bg-card p-3')}>
+              <Text style={cn('font-medium text-foreground')}>{s.title}</Text>
+              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{s.category}</Text>}
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={cn('px-4 py-3')}>
         <Text style={cn('text-xl font-semibold text-foreground mb-2')}>
