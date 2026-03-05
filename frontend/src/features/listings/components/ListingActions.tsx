@@ -38,6 +38,8 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
   const [deleting, setDeleting] = useState(false);
   const isOwner = user?.uid && ownerId && user.uid === ownerId;
   const safeOwnerName = ownerName || t('listings.actions.ownerFallback');
+  // Show only the first name in the button to avoid overflow on mobile
+  const chatDisplayName = safeOwnerName.split(' ')[0] || safeOwnerName;
   const { active, canCreateBooking, loading } = useMembership();
   const router = useRouter();
 
@@ -103,7 +105,7 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
       {ownerId && (
         <Button
           size="lg"
-          className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground"
+          className="flex-1 overflow-hidden bg-accent hover:bg-accent/90 text-accent-foreground"
           onClick={async (e) => {
             e.preventDefault();
             if (loading) return;
@@ -121,8 +123,8 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
             router.push(`/chat/${encodeURIComponent(chatTarget)}?name=${encodeURIComponent(safeOwnerName)}`);
           }}
         >
-          <MessageCircleIcon className="mr-2 h-5 w-5" />
-          {t('listings.actions.chatWith', { name: safeOwnerName })}
+          <MessageCircleIcon className="mr-2 h-5 w-5 shrink-0" />
+          <span className="truncate">{t('listings.actions.chatWith', { name: chatDisplayName })}</span>
         </Button>
       )}
       <RequestExchangeButton listingId={listingId} />

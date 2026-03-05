@@ -167,31 +167,9 @@ export function SignUpForm() {
         throw claimErr;
       }
 
-      // Create Didit session via backend and redirect
-      const url = `${base}/api/didit/session`;
-      const r = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vendor: uid }),
-      });
-      const raw = await r.text();
-      let resp: any = null;
-      try {
-        resp = raw ? JSON.parse(raw) : null;
-      } catch {
-        resp = null;
-      }
-      if (!r.ok || typeof resp?.url !== 'string') {
-        const msg = typeof resp?.error === 'string'
-          ? resp.error
-          : t('auth.signUp.errors.sessionFailed');
-        setState({ message: msg, success: false });
-        toast({ title: t('auth.signUp.errors.kycFailedTitle'), description: msg, variant: 'destructive' });
-        setLoading(false);
-        return;
-      }
-
-      window.location.href = resp.url as string;
+      // Redirect to identity verification page
+      toast({ title: t('auth.signUp.success', { defaultValue: 'Account created!' }), description: t('auth.signUp.verifyPrompt', { defaultValue: 'Please verify your identity to continue.' }) });
+      router.push('/profile/verify');
     } catch (err: any) {
       const msg = getErrorMessage(err, t('auth.signUp.errors.signupFailed'));
       setState({ message: msg, success: false });

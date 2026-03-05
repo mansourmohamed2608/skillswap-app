@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import * as admin from 'firebase-admin';
 import { getUserDocument } from '../../core/membership';
 
-type ReportType = 'listing' | 'wish' | 'review';
+type ReportType = 'listing' | 'wish' | 'review' | 'user';
 
 @Injectable()
 export class ReportsService {
@@ -14,7 +14,7 @@ export class ReportsService {
     const contentId = String(payload?.contentId || '').trim();
     const reason = String(payload?.reason || '').trim();
     const note = payload?.note ? String(payload.note).trim() : '';
-    if (!type || !['listing', 'wish', 'review'].includes(type)) {
+    if (!type || !['listing', 'wish', 'review', 'user'].includes(type)) {
       throw new BadRequestException('Invalid report type');
     }
     if (!contentId) throw new BadRequestException('Missing contentId');
@@ -50,6 +50,10 @@ export class ReportsService {
   }
 
   private async resolveOwnerId(type: ReportType, contentId: string): Promise<string | null> {
+    if (type === 'user') {
+      // For user reports, contentId IS the reported user's ID
+      return contentId;
+    }
     const db = admin.firestore();
     const ref = type === 'listing'
       ? db.collection('listings').doc(contentId)

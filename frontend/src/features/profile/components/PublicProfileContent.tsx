@@ -3,12 +3,28 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { RatingDisplay } from "@/components/RatingDisplay";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import type { ServiceListing, User } from "@/types";
 import { useTranslation } from "react-i18next";
-import { fetchReviewsForUser } from "@/services/api";
+import { fetchReviewsForUser, submitUserReport } from "@/services/api";
+import { blockUser, unblockUser, isUserBlocked } from "@/services/users";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
+import { FlagIcon, ShieldBanIcon, ShieldCheckIcon } from "lucide-react";
 
 type Props = {
   user: User;
@@ -18,9 +34,24 @@ type Props = {
 
 export function PublicProfileContent({ user, activeListings, pastExchanges }: Props) {
   const { t } = useTranslation();
+  const { user: authUser } = useAuth();
+  const { toast } = useToast();
   const name = user.name.split(' ')[0];
+
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  // Block state
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockBusy, setBlockBusy] = useState(false);
+
+  // Report state
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportNote, setReportNote] = useState('');
+
+  const isOwnProfile = authUser?.uid === user.id;
 
   useEffect(() => {
     let mounted = true;
@@ -39,8 +70,53 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
     return () => { mounted = false; };
   }, [user?.id]);
 
+  useEffect(() => {
+    if (!authUser || isOwnProfile) return;
+    isUserBlocked(user.id).then(setIsBlocked).catch(() => {});
+  }, [authUser, user.id, isOwnProfile]);
+
+  async function handleToggleBlock() {
+    if (!authUser || isOwnProfile) return;
+    setBlockBusy(true);
+    try {
+      if (isBlocked) {
+        await unblockUser(user.id);
+        setIsBlocked(false);
+        toast({ title: t('listings.reports.unblockSuccess') });
+      } else {
+        await blockUser(user.id);
+        setIsBlocked(true);
+        toast({ title: t('listings.reports.blockSuccess') });
+      }
+    } catch {
+      toast({ title: t('listings.reports.blockFailed'), variant: 'destructive' });
+    } finally {
+      setBlockBusy(false);
+    }
+  }
+
+  async function handleSubmitReport() {
+    if (!reportReason.trim()) {
+      toast({ title: t('listings.reports.missingReason'), variant: 'destructive' });
+      return;
+    }
+    setReportBusy(true);
+    try {
+      await submitUserReport({ userId: user.id, reason: reportReason.trim(), note: reportNote.trim() || undefined });
+      toast({ title: t('listings.reports.submitted') });
+      setReportOpen(false);
+      setReportReason('');
+      setReportNote('');
+    } catch {
+      toast({ title: t('listings.reports.failed'), variant: 'destructive' });
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   return (
-    <Tabs defaultValue="active-listings" className="w-full">
+    <div className="space-y-6">
+      <Tabs defaultValue="active-listings" className="w-full">
       <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-0 h-auto">
         <TabsTrigger value="active-listings">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
         <TabsTrigger value="past-exchanges">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
@@ -100,6 +176,75 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
           )}
         </div>
       </TabsContent>
-    </Tabs>
+      </Tabs>
+
+      {/* Block / Report bar – only visible to signed-in non-owners */}
+      {authUser && !isOwnProfile && (
+        <div className="flex flex-wrap gap-3 pt-2 border-t">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={blockBusy}
+            onClick={handleToggleBlock}
+            className="gap-2"
+          >
+            {isBlocked ? (
+              <><ShieldCheckIcon className="h-4 w-4" />{t('listings.reports.unblockUser')}</>
+            ) : (
+              <><ShieldBanIcon className="h-4 w-4" />{t('listings.reports.blockUser')}</>
+            )}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setReportOpen(true)}
+            className="gap-2"
+          >
+            <FlagIcon className="h-4 w-4" />
+            {t('listings.reports.reportUser')}
+          </Button>
+        </div>
+      )}
+
+      {/* Report dialog */}
+      <Dialog open={reportOpen} onOpenChange={setReportOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('listings.reports.reportUser')}</DialogTitle>
+            <DialogDescription>{t('listings.reports.reportUserHelp')}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="report-reason">{t('listings.reports.reasonLabel')}</Label>
+              <Input
+                id="report-reason"
+                placeholder={t('listings.reports.reasonPlaceholder')}
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="report-note">{t('listings.reports.noteLabel')}</Label>
+              <Textarea
+                id="report-note"
+                placeholder={t('listings.reports.notePlaceholder')}
+                value={reportNote}
+                onChange={(e) => setReportNote(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReportOpen(false)} disabled={reportBusy}>
+              {t('listings.reports.cancel')}
+            </Button>
+            <Button onClick={handleSubmitReport} disabled={reportBusy}>
+              {reportBusy ? t('listings.reports.submitting') : t('listings.reports.submit')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

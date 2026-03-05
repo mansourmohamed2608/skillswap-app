@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -57,6 +57,7 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('request.proposeTitle')}</DialogTitle>
+          <DialogDescription>{t('request.proposeDescription', { defaultValue: 'Set a preferred time and optional message for the exchange.' })}</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
           <div>

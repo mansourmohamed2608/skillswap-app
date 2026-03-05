@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useTranslation } from "react-i18next";
 
 type Props = {
@@ -55,6 +55,7 @@ export function RescheduleDialog({ triggerLabel, initialDate, onOpenGuard, onCon
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{t('bookings.rescheduleTitle')}</DialogTitle>
+          <DialogDescription>{t('bookings.rescheduleDescription', { defaultValue: 'Pick a new time to schedule this exchange.' })}</DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <label className="text-sm text-muted-foreground">{t('bookings.proposedTimeLabel')}</label>

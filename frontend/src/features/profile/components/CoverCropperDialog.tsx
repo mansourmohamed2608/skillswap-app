@@ -7,6 +7,7 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
+  AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
@@ -110,6 +111,7 @@ export default function CoverCropperDialog({
       <AlertDialogContent className="max-w-3xl w-[90vw]">
         <AlertDialogHeader>
           <AlertDialogTitle>{t('profile.cropper.title')}</AlertDialogTitle>
+          <AlertDialogDescription>{t('profile.cropper.description', { defaultValue: 'Adjust and crop your image, then click save.' })}</AlertDialogDescription>
         </AlertDialogHeader>
         <div className="relative w-full h-[50vh] bg-muted rounded-md overflow-hidden">
           <Cropper

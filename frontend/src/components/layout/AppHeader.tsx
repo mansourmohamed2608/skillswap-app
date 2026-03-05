@@ -73,7 +73,7 @@ function SignOutButton({ isMobile = false, onDone, iconOnly = false }: { isMobil
       variant="ghost"
       size={iconOnly ? "icon" : "default"}
       onClick={handleSignOut}
-      className={isMobile ? "justify-start text-lg py-3 w-full" : iconOnly ? "relative" : "w-auto"}
+      className={isMobile ? "justify-start text-base py-3 w-full" : iconOnly ? "relative" : "w-auto"}
       aria-label={iconOnly ? t('header.signOut') : undefined}
     >
       <LogOutIcon className={isMobile ? "h-5 w-5 mr-3" : "h-4 w-4"} />

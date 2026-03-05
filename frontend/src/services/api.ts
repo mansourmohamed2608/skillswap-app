@@ -560,6 +560,14 @@ export async function fetchAdminReports(limit = 50) {
   return (await res.json()) as { items: Array<{ id: string; type: string; contentId: string; reason: string; note?: string; reporterId: string; ownerId?: string; status: string; createdAt?: any }> };
 }
 
+export async function submitUserReport(args: { userId: string; reason: string; note?: string }) {
+  const res = await authedFetch('/api/reports', {
+    body: JSON.stringify({ type: 'user', contentId: args.userId, reason: args.reason, note: args.note }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { id: string };
+}
+
 export async function resolveAdminReport(reportId: string, action: 'dismiss' | 'remove' = 'dismiss') {
   const res = await authedFetch(`/api/admin/reports/${encodeURIComponent(reportId)}/resolve`, {
     body: JSON.stringify({ action }),
