@@ -50,7 +50,7 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg" variant="outline" className="flex-1">
+        <Button size="lg" variant="secondary" className="flex-1">
           {t('request.proposeTitle')}
         </Button>
       </DialogTrigger>

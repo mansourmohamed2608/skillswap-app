@@ -28,7 +28,7 @@ const mapUserFromDoc = (id: string, data: any): User => {
         id,
         username: String(data?.username || data?.profile?.username || '').trim() || undefined,
         name: data?.name || data?.fullName || data?.displayName || 'Anonymous User',
-        avatarUrl: data?.avatarUrl || 'https://placehold.co/128x128.png',
+        avatarUrl: String(data?.avatarUrl || '').trim(),
         coverUrl: (data?.profile && data.profile.coverUrl) || data?.coverUrl || undefined,
         bio: data?.bio || `A member of the SkillSwap community.`,
         servicesOffered: data?.servicesOffered || [],

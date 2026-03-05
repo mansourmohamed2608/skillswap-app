@@ -289,7 +289,7 @@ export function AppHeader() {
                 ))}
                 {isAuthenticated ? (
                   <>
-                    {privateNavItems.map((item) => (
+                    {privateNavItems.filter(item => item.href !== '/chat').map((item) => (
                       <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
                         <Link href={item.href} onClick={() => setMobileOpen(false)} className="flex items-center justify-between gap-2">
                           <span className="inline-flex items-center gap-2">
