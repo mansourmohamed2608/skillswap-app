@@ -77,14 +77,50 @@ body {
   }
 }
 
-/* RTL helpers */
+/* ─── RTL & Arabic language helpers ───────────────────────────────── */
+
+/* 1. RTL direction */
 html[dir="rtl"] {
   direction: rtl;
 }
+
+/* 2. Arabic font – Cairo covers the full Arabic script with good
+      line-height and weight range. Applied globally when lang="ar". */
+html[lang="ar"],
+html[lang="ar"] body {
+  font-family: var(--font-cairo), 'Cairo', sans-serif;
+  letter-spacing: 0; /* Arabic script doesn't use letter-spacing */
+  line-height: 1.8;  /* Arabic text needs slightly more vertical space */
+}
+
+/* 3. Icon mirroring for RTL (arrows, chevrons, etc.) */
 [dir="rtl"] .rtl-mirror {
   transform: scaleX(-1);
 }
 
+/* 4. CSS logical property helpers – these utility classes use
+      margin-inline / padding-inline so they automatically flip in RTL.
+      Use .ms-auto / .me-auto / .ps-* / .pe-* in JSX instead of
+      left/right-specific classes when building direction-agnostic UIs. */
+.ms-auto  { margin-inline-start: auto; }
+.me-auto  { margin-inline-end:   auto; }
+.ps-2     { padding-inline-start: 0.5rem; }
+.ps-3     { padding-inline-start: 0.75rem; }
+.ps-4     { padding-inline-start: 1rem; }
+.ps-6     { padding-inline-start: 1.5rem; }
+.pe-2     { padding-inline-end:   0.5rem; }
+.pe-3     { padding-inline-end:   0.75rem; }
+.pe-4     { padding-inline-end:   1rem; }
+.pe-6     { padding-inline-end:   1.5rem; }
+
+/* 5. Text-start / text-end aligned to reading direction */
+.text-start { text-align: start; }
+.text-end   { text-align: end; }
+
+/* 6. Scrollbar placement – in RTL the scrollbar should appear on the left */
+html[dir="rtl"] ::-webkit-scrollbar {
+  /* Browsers place the scrollbar automatically on the correct side
+     when direction:rtl is set; this ensures it stays visible. */
 @layer base {
   * {
     @apply border-border;

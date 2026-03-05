@@ -1,6 +1,6 @@
 // src/app/layout.tsx
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist, Geist_Mono, Cairo } from 'next/font/google';
 import './globals.css';
 import { LanguageController } from '@/components/i18n/LanguageController';
 import { AppHeader } from '@/components/layout/AppHeader';
@@ -20,6 +20,14 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+// Arabic script font — used when lang="ar" is active
+const cairofont = Cairo({
+  variable: '--font-cairo',
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'SkillSwap - Exchange Services',
   description: 'A platform to offer and request services in exchange for other services.',
@@ -34,7 +42,7 @@ export default function RootLayout({
   const dir = initialLang === 'ar' ? 'rtl' : 'ltr';
   return (
     <html lang={initialLang} dir={dir} suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex flex-col min-h-screen`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${cairofont.variable} font-sans antialiased flex flex-col min-h-screen`}>
         {/* Client-side controller keeps <html> lang/dir in sync with i18n */}
         <LanguageController />
         <AuthProvider>
