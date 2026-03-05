@@ -3,8 +3,10 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator,
 import { Link, useLocalSearchParams } from 'expo-router';
 import { cn } from '@/lib/cn';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { getRequestById } from '@/services/bookings';
 import { acceptRequestMobile, cancelRequestMobile, completeRequestMobile, declineRequestMobile, rescheduleRequest } from '@/services/api';
+import { getUserById, getListingById } from '@/services/data';
 import { useMembership } from '@/hooks/useMembership';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
@@ -19,10 +21,23 @@ export default function BookingDetailsScreen() {
   const [actionBusy, setActionBusy] = useState(false);
   const [data, setData] = useState<any | null>(null);
   const [proposedTime, setProposedTime] = useState<string>('');
+  const [listingTitle, setListingTitle] = useState<string>('');
+  const [ownerName, setOwnerName] = useState<string>('');
+  const [requesterName, setRequesterName] = useState<string>('');
   const { active, canCreateBooking } = useMembership();
   const { setFade } = useHeaderFade();
   const { user } = useAuth();
   const { t } = useTranslation();
+
+  const shortId = (v: string) => { const s = String(v || ''); return s.length > 12 ? `${s.slice(0, 6)}…${s.slice(-4)}` : s; };
+  const fmtDate = (raw: any) => {
+    if (!raw) return '';
+    try {
+      const d = raw?.toDate ? raw.toDate() : new Date(raw);
+      if (Number.isNaN(d.getTime())) return String(raw);
+      return d.toLocaleString();
+    } catch { return String(raw); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -33,6 +48,23 @@ export default function BookingDetailsScreen() {
       setLoading(false);
     })();
   }, [id]);
+
+  useEffect(() => {
+    if (!data) return;
+    (async () => {
+      const [l, o, r] = await Promise.allSettled([
+        data.listingId ? getListingById(data.listingId) : Promise.resolve(null),
+        data.ownerId ? getUserById(data.ownerId) : Promise.resolve(null),
+        data.requesterId ? getUserById(data.requesterId) : Promise.resolve(null),
+      ]);
+      if (l.status === 'fulfilled' && l.value) {
+        const v = l.value as any;
+        setListingTitle(v.offeredService?.title || v.title || data.listingId);
+      }
+      if (o.status === 'fulfilled' && o.value) setOwnerName((o.value as any).name || shortId(data.ownerId));
+      if (r.status === 'fulfilled' && r.value) setRequesterName((r.value as any).name || shortId(data.requesterId));
+    })();
+  }, [data]);
 
   async function onReschedule() {
     if (!id) return;
@@ -104,18 +136,56 @@ export default function BookingDetailsScreen() {
       scrollEventThrottle={16}
     >
       <View style={cn('px-4 py-6 gap-4')}>
-        <Text style={cn('text-2xl font-bold text-foreground')}>{t('bookings.detailsTitle') || 'Booking Details'}</Text>
+        <Text style={cn('text-2xl font-bold text-foreground')}>{t('bookings.detailsTitle')}</Text>
 
         <Card style={cn('mt-2')}>
           <CardHeader>
-            <CardTitle>{t('bookings.requestLabel') || 'Request'} #{data.id}</CardTitle>
+            {listingTitle ? (
+              <Link href={`/listings/${data.listingId}`} asChild>
+                <TouchableOpacity>
+                  <Text style={cn('text-lg font-semibold text-primary')}>{listingTitle}</Text>
+                </TouchableOpacity>
+              </Link>
+            ) : (
+              <CardTitle>{t('bookings.requestLabel')} #{shortId(data.id)}</CardTitle>
+            )}
+            <Badge variant={data.status === 'completed' ? 'secondary' : 'outline'} style={cn('self-start mt-1')}>
+              {String(data.status || 'pending').toUpperCase()}
+            </Badge>
           </CardHeader>
           <CardContent>
             <View style={cn('gap-2')}>
-              <Text style={cn('text-sm text-muted-foreground')}>{t('bookings.listingLabel') || 'Listing'}: {data.listingId}</Text>
-              <Text style={cn('text-sm text-muted-foreground')}>{t('bookings.statusLabel') || 'Status'}: {String(data.status).toUpperCase()}</Text>
-              {data.message ? <Text style={cn('text-sm')}>{t('bookings.messageLabel') || 'Message'}: {data.message}</Text> : null}
-              <Text style={cn('mt-2 font-medium')}>{t('bookings.proposedLabel') || 'Proposed time (ISO)'}</Text>
+              <View style={cn('flex-row gap-1')}>
+                <Text style={cn('text-sm font-medium text-muted-foreground')}>{t('bookings.owner')}:</Text>
+                <Text style={cn('text-sm text-foreground')}>
+                  {user?.uid === data.ownerId ? t('listings.card.you') : (ownerName || shortId(data.ownerId))}
+                </Text>
+              </View>
+              <View style={cn('flex-row gap-1')}>
+                <Text style={cn('text-sm font-medium text-muted-foreground')}>{t('bookings.requester')}:</Text>
+                <Text style={cn('text-sm text-foreground')}>
+                  {user?.uid === data.requesterId ? t('listings.card.you') : (requesterName || shortId(data.requesterId))}
+                </Text>
+              </View>
+              {data.createdAt && (
+                <View style={cn('flex-row gap-1')}>
+                  <Text style={cn('text-sm font-medium text-muted-foreground')}>{t('bookings.created')}:</Text>
+                  <Text style={cn('text-sm text-foreground')}>{fmtDate(data.createdAt)}</Text>
+                </View>
+              )}
+              {data.proposedTime && (
+                <View style={cn('flex-row gap-1')}>
+                  <Text style={cn('text-sm font-medium text-muted-foreground')}>{t('bookings.proposed')}:</Text>
+                  <Text style={cn('text-sm text-foreground')}>{fmtDate(data.proposedTime)}</Text>
+                </View>
+              )}
+              {data.message ? (
+                <View style={cn('rounded-md bg-muted/40 p-3 mt-1')}>
+                  <Text style={cn('text-sm font-medium text-muted-foreground')}>{t('bookings.messageLabel')}:</Text>
+                  <Text style={cn('text-sm text-foreground mt-0.5')}>{data.message}</Text>
+                </View>
+              ) : null}
+              <Text style={cn('mt-2 font-medium text-foreground')}>{t('bookings.rescheduleLabel')}</Text>
               <TextInput
                 style={cn('border border-input bg-background rounded-md px-3 py-2 w-full')}
                 placeholder={t('bookings.timePlaceholder')}
@@ -182,10 +252,10 @@ export default function BookingDetailsScreen() {
 
         <View style={cn('flex-row justify-between items-center')}>
           <Link href="/bookings">
-            <Text style={cn('text-primary')}>Back</Text>
+            <Text style={cn('text-primary')}>{t('bookings.back')}</Text>
           </Link>
           <Link href="/listings">
-            <Text style={cn('text-primary')}>Browse Listings</Text>
+            <Text style={cn('text-primary')}>{t('bookings.browseListing')}</Text>
           </Link>
         </View>
       </View>
