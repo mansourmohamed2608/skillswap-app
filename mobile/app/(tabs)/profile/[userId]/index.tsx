@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocalSearchParams } from 'expo-router';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { getUserById, getListings } from '@/services/data';
 import type { ServiceListing, User as SSUser } from '@/types';
 import { ServiceCard } from '@/components/ui/ServiceCard';
@@ -9,6 +9,8 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { fetchReviewsForUserMobile } from '@/services/api';
 import { useTranslation } from 'react-i18next';
+import { auth } from '@/services/firebase';
+import { blockUser, unblockUser, isUserBlocked } from '@/services/users';
 
 export default function UserProfilePage() {
   const { userId } = useLocalSearchParams<{ userId: string }>();
@@ -18,7 +20,10 @@ export default function UserProfilePage() {
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockBusy, setBlockBusy] = useState(false);
   const { setFade } = useHeaderFade();
+  const currentUid = auth?.currentUser?.uid;
 
   useEffect(() => { setFade(0); }, [setFade]);
 
@@ -58,6 +63,55 @@ export default function UserProfilePage() {
     return () => { mounted = false; };
   }, [userId]);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!userId || !currentUid || userId === currentUid) return;
+      try {
+        const blocked = await isUserBlocked(userId);
+        if (mounted) setIsBlocked(blocked);
+      } catch { /* ignore */ }
+    })();
+    return () => { mounted = false; };
+  }, [userId, currentUid]);
+
+  const handleBlockToggle = () => {
+    if (!userId) return;
+    const action = isBlocked ? 'unblock' : 'block';
+    const title = isBlocked ? (t('reports.unblockUser') || 'Unblock User') : (t('reports.blockUser') || 'Block User');
+    const message = isBlocked
+      ? undefined
+      : (t('reports.blockConfirm', { name: user?.name || 'this user' }) || `Block ${user?.name || 'this user'}? They won't be able to contact you.`);
+
+    const execute = async () => {
+      setBlockBusy(true);
+      try {
+        if (action === 'block') {
+          await blockUser(userId);
+          setIsBlocked(true);
+          Alert.alert(t('reports.blockSuccess') || 'User blocked.');
+        } else {
+          await unblockUser(userId);
+          setIsBlocked(false);
+          Alert.alert(t('reports.unblockSuccess') || 'User unblocked.');
+        }
+      } catch {
+        Alert.alert(t('reports.blockFailed') || 'Could not update block status.');
+      } finally {
+        setBlockBusy(false);
+      }
+    };
+
+    if (action === 'block') {
+      Alert.alert(title, message, [
+        { text: t('common.cancel') || 'Cancel', style: 'cancel' },
+        { text: title, style: 'destructive', onPress: execute },
+      ]);
+    } else {
+      execute();
+    }
+  };
+
   const active = useMemo(() => listings.filter(l => l.status === 'open' || l.status === 'pending_exchange'), [listings]);
   const past = useMemo(() => listings.filter(l => l.status === 'completed'), [listings]);
 
@@ -85,6 +139,21 @@ export default function UserProfilePage() {
       <View style={cn('px-4 py-4')}>
         <Text style={cn('text-2xl font-bold text-foreground')}>{user.name}</Text>
         {user.location && <Text style={cn('text-sm text-muted-foreground')}>{user.location}</Text>}
+        {currentUid && userId !== currentUid && (
+          <TouchableOpacity
+            onPress={handleBlockToggle}
+            disabled={blockBusy}
+            style={cn('mt-3 self-start rounded-full border border-destructive px-4 py-1.5')}
+          >
+            <Text style={cn('text-sm font-medium text-destructive')}>
+              {blockBusy
+                ? '...'
+                : isBlocked
+                  ? (t('reports.unblockUser') || 'Unblock User')
+                  : (t('reports.blockUser') || 'Block User')}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={cn('px-4 py-3')}>

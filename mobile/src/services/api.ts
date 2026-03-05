@@ -519,3 +519,54 @@ export async function acceptMatchMobile(payload: { type: 'triad' | 'mutual'; use
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { ok: boolean; key: string; acceptedCount: number };
 }
+
+// ---- Events ----
+export async function fetchEventsMobile(): Promise<Array<{
+  id: string;
+  title?: string;
+  description?: string;
+  location?: string;
+  startsAt?: string;
+  endsAt?: string;
+  capacity?: number;
+  registrationsCount?: number;
+  coverUrl?: string | null;
+}>> {
+  if (!FUNCTIONS_BASE) return [];
+  try {
+    const res = await fetch(`${FUNCTIONS_BASE}/api/events`);
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data?.items) ? data.items : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function registerForEventMobile(eventId: string) {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const res = await authedFetch(`/api/events/${encodeURIComponent(eventId)}/register`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { ok: boolean; alreadyRegistered?: boolean };
+}
+
+export async function createEventMobile(args: {
+  title: string;
+  description?: string;
+  location?: string;
+  startsAt: string;
+  endsAt?: string;
+  capacity?: number;
+}) {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const res = await authedFetch(`/api/events`, { body: JSON.stringify(args) });
+  if (res.status === 403) {
+    const msg = await res.text();
+    throw new ApiError(403, messageForStatus(403, msg, 'Business plan required'));
+  }
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { id: string };
+}

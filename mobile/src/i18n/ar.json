@@ -288,6 +288,38 @@
   "matchmaking.mobile.viewListing": "عرض الإعلان",
   "chat.subscriptionRequiredTitle": "الاشتراك مطلوب",
   "chat.subscriptionRequiredBody": "يرجى ترقية خطتك لإرسال الرسائل.",
+  "events.title": "الفعاليات",
+  "events.subtitle": "يمكن لأعضاء خطة الأعمال تنظيم ورش وفعاليات.",
+  "events.createCta": "إنشاء فعالية",
+  "events.loading": "جارِ تحميل الفعاليات...",
+  "events.empty": "لا توجد فعاليات بعد.",
+  "events.untitled": "فعالية بدون عنوان",
+  "events.locationLabel": "الموقع:",
+  "events.startsLabel": "تبدأ في:",
+  "events.capacityLabel": "السعة: {{count}} / {{capacity}}",
+  "events.registerCta": "سجّل",
+  "events.signInToRegister": "سجّل الدخول للتسجيل",
+  "events.registered": "تم تأكيد التسجيل.",
+  "events.alreadyRegistered": "أنت مسجل بالفعل.",
+  "events.registerFailed": "تعذر التسجيل.",
+  "events.full": "مكتملة",
+  "events.create.title": "إنشاء فعالية",
+  "events.create.businessRequired": "قم بالترقية إلى خطة الأعمال لإنشاء الفعاليات.",
+  "events.create.titleLabel": "عنوان الفعالية",
+  "events.create.titlePlaceholder": "مثال: ورشة تصميم",
+  "events.create.descriptionLabel": "الوصف",
+  "events.create.descriptionPlaceholder": "ماذا سيتعلم الحضور أو يفعلون؟",
+  "events.create.locationLabel": "الموقع",
+  "events.create.locationPlaceholder": "القاهرة، الرياض، أو عبر الإنترنت",
+  "events.create.startsLabel": "تاريخ ووقت البداية (ISO)",
+  "events.create.endsLabel": "تاريخ ووقت النهاية (ISO)",
+  "events.create.capacityLabel": "السعة",
+  "events.create.capacityPlaceholder": "اتركه فارغاً لعدد غير محدود",
+  "events.create.submit": "إنشاء الفعالية",
+  "events.create.submitting": "جارٍ الإنشاء...",
+  "events.create.success": "تم إنشاء الفعالية.",
+  "events.create.failed": "تعذر إنشاء الفعالية.",
+  "events.create.required": "العنوان ووقت البداية مطلوبان.",
   "header.signIn": "تسجيل الدخول",
   "header.support": "الدعم",
   "support.title": "الدعم",
@@ -381,6 +413,12 @@
   "reports.missingReason": "يرجى إدخال السبب.",
   "reports.signInRequired": "يرجى تسجيل الدخول للإبلاغ.",
   "reports.owner_blocked": "لا يمكنك الإبلاغ عن المحتوى الخاص بك.",
+  "reports.blockUser": "حظر المستخدم",
+  "reports.unblockUser": "إلغاء الحظر",
+  "reports.blockConfirm": "حظر {{name}}؟ لن يتمكن من التواصل معك.",
+  "reports.blockSuccess": "تم الحظر.",
+  "reports.unblockSuccess": "تم إلغاء الحظر.",
+  "reports.blockFailed": "تعذّر تحديث حالة الحظر.",
   "bookings.detailsTitle": "تفاصيل الحجز",
   "bookings.requestLabel": "طلب",
   "bookings.listingLabel": "العرض",
@@ -466,6 +504,7 @@
   "errors.wishRequest.pageBody": "واجهنا مشكلة أثناء تحميل صفحة طلب الأمنية. يرجى المحاولة مجددًا أو التواصل مع الدعم إذا استمر الخطأ.",
   "errors.wishDonate.pageBody": "واجهنا مشكلة أثناء تحميل صفحة التبرع. يرجى المحاولة مجددًا أو التواصل مع الدعم إذا استمر الخطأ.",
   "common.close": "إغلاق",
+  "common.cancel": "إلغاء",
   "auth.signup.title": "إنشاء حساب",
   "auth.signup.subtitle": "انضم إلى سكيل سواپ لبدء تبادل الخدمات.",
   "auth.signup.fullNameLabel": "الاسم الكامل",
@@ -679,6 +718,56 @@
         "contact": {
           "title": "التواصل",
           "body": "للاستفسارات المتعلقة بالخصوصية تواصل مع الدعم على support@skillswap.app."
+        }
+      }
+    },
+    "community": {
+      "title": "إرشادات المجتمع",
+      "updated": "آخر تحديث: 26 يوليو 2024",
+      "intro": "تم بناء SkillSwap على الثقة. يرجى الالتزام بهذه الإرشادات.",
+      "sections": {
+        "respect": {
+          "title": "الاحترام",
+          "body": "عامل الآخرين باحترام وتجنب المضايقات أو خطاب الكراهية أو التمييز."
+        },
+        "safety": {
+          "title": "السلامة والقانون",
+          "body": "لا تنشر خدمات غير قانونية أو غير آمنة أو محظورة. التزم بالقوانين المحلية."
+        },
+        "honesty": {
+          "title": "الصدق في العروض",
+          "body": "صف خدماتك بدقة وتجنب الادعاءات المضللة."
+        },
+        "reporting": {
+          "title": "الإبلاغ",
+          "body": "استخدم ميزة الإبلاغ للإبلاغ عن المحتوى المشبوه أو غير المناسب."
+        },
+        "enforcement": {
+          "title": "الإنفاذ",
+          "body": "قد تؤدي المخالفات إلى إزالة المحتوى أو تعليق الحساب أو الحظر."
+        }
+      }
+    },
+    "refund": {
+      "title": "سياسة الاسترداد",
+      "updated": "آخر تحديث: 26 يوليو 2024",
+      "intro": "توضح هذه السياسة كيفية التعامل مع استردادات الاشتراكات والتبرعات.",
+      "sections": {
+        "subscriptions": {
+          "title": "الاشتراكات",
+          "body": "تُدفع الاشتراكات مقدمًا. تُمنح الاستردادات فقط إذا كان ذلك مطلوبًا قانونيًا أو عند وجود خطأ في الفوترة."
+        },
+        "donations": {
+          "title": "التبرعات",
+          "body": "التبرعات نهائية بعد المعالجة، باستثناء حالات الاحتيال أو التكرار."
+        },
+        "cancellations": {
+          "title": "الإلغاء",
+          "body": "يمكنك إيقاف التجديد التلقائي في أي وقت، ويستمر الوصول حتى نهاية الفترة المدفوعة."
+        },
+        "contact": {
+          "title": "التواصل",
+          "body": "لطلبات الاسترداد تواصل مع الدعم على support@skillswap.app."
         }
       }
     }

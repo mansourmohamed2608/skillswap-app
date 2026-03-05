@@ -288,6 +288,38 @@
   "matchmaking.mobile.viewListing": "View Listing",
   "chat.subscriptionRequiredTitle": "Subscription required",
   "chat.subscriptionRequiredBody": "Please upgrade your plan to send messages.",
+  "events.title": "Community Events",
+  "events.subtitle": "Business plan members can host workshops and gatherings.",
+  "events.createCta": "Create Event",
+  "events.loading": "Loading events...",
+  "events.empty": "No events yet.",
+  "events.untitled": "Untitled event",
+  "events.locationLabel": "Location:",
+  "events.startsLabel": "Starts:",
+  "events.capacityLabel": "Capacity: {{count}} / {{capacity}}",
+  "events.registerCta": "Register",
+  "events.signInToRegister": "Sign in to register",
+  "events.registered": "Registration confirmed.",
+  "events.alreadyRegistered": "You're already registered.",
+  "events.registerFailed": "Failed to register.",
+  "events.full": "Full",
+  "events.create.title": "Create an Event",
+  "events.create.businessRequired": "Upgrade to Business plan to create events.",
+  "events.create.titleLabel": "Event title",
+  "events.create.titlePlaceholder": "e.g., SkillSwap design workshop",
+  "events.create.descriptionLabel": "Description",
+  "events.create.descriptionPlaceholder": "What will attendees learn or do?",
+  "events.create.locationLabel": "Location",
+  "events.create.locationPlaceholder": "Cairo, Riyadh, or online",
+  "events.create.startsLabel": "Start date & time (ISO)",
+  "events.create.endsLabel": "End date & time (ISO)",
+  "events.create.capacityLabel": "Capacity",
+  "events.create.capacityPlaceholder": "Leave blank for unlimited",
+  "events.create.submit": "Create Event",
+  "events.create.submitting": "Creating...",
+  "events.create.success": "Event created.",
+  "events.create.failed": "Failed to create event.",
+  "events.create.required": "Title and start time are required.",
   "header.signIn": "Sign In",
   "header.support": "Support",
   "support.title": "Support",
@@ -381,6 +413,12 @@
   "reports.missingReason": "Please provide a reason.",
   "reports.signInRequired": "Please sign in to report.",
   "reports.owner_blocked": "You cannot report your own content.",
+  "reports.blockUser": "Block User",
+  "reports.unblockUser": "Unblock User",
+  "reports.blockConfirm": "Block {{name}}? They won't be able to contact you.",
+  "reports.blockSuccess": "User blocked.",
+  "reports.unblockSuccess": "User unblocked.",
+  "reports.blockFailed": "Could not update block status.",
   "bookings.detailsTitle": "Booking Details",
   "bookings.requestLabel": "Request",
   "bookings.listingLabel": "Listing",
@@ -466,6 +504,7 @@
   "errors.wishRequest.pageBody": "We encountered an issue while trying to load the wish request page. Please try again or contact support if the problem persists.",
   "errors.wishDonate.pageBody": "We encountered an issue while trying to load the donation page. Please try again or contact support if the problem persists.",
   "common.close": "Close",
+  "common.cancel": "Cancel",
   "auth.signup.title": "Create an Account",
   "auth.signup.subtitle": "Join SkillSwap to start exchanging services.",
   "auth.signup.fullNameLabel": "Full Name",
@@ -679,6 +718,56 @@
         "contact": {
           "title": "Contact",
           "body": "Contact support at support@skillswap.app for privacy requests."
+        }
+      }
+    },
+    "community": {
+      "title": "Community Guidelines",
+      "updated": "Last Updated: July 26, 2024",
+      "intro": "SkillSwap is built on trust. Please follow these guidelines to keep the community safe.",
+      "sections": {
+        "respect": {
+          "title": "Be respectful",
+          "body": "Treat others with respect and avoid harassment, hate speech, or discrimination."
+        },
+        "safety": {
+          "title": "Safety and legality",
+          "body": "Do not post illegal, unsafe, or prohibited services. Follow local laws."
+        },
+        "honesty": {
+          "title": "Honest listings",
+          "body": "Describe your services accurately and avoid misleading claims."
+        },
+        "reporting": {
+          "title": "Report issues",
+          "body": "Use the report feature to flag suspicious or inappropriate content."
+        },
+        "enforcement": {
+          "title": "Enforcement",
+          "body": "Violations may result in content removal, account suspension, or bans."
+        }
+      }
+    },
+    "refund": {
+      "title": "Refund Policy",
+      "updated": "Last Updated: July 26, 2024",
+      "intro": "This policy explains how refunds are handled for subscriptions and donations.",
+      "sections": {
+        "subscriptions": {
+          "title": "Subscriptions",
+          "body": "Subscriptions are billed in advance. Refunds are granted only where required by law or if a billing error occurred."
+        },
+        "donations": {
+          "title": "Donations",
+          "body": "Donations are final once processed, except in cases of fraud or duplicate charges."
+        },
+        "cancellations": {
+          "title": "Cancellations",
+          "body": "You may cancel auto-renewal at any time. Access remains active until the end of the paid period."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "For refund requests, contact support at support@skillswap.app."
         }
       }
     }
