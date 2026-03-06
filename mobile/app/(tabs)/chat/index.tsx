@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, NativeSyntheticEvent, NativeScrollEvent, TextInput } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { cn } from '@/lib/cn';
@@ -9,6 +9,7 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import Button from '@/components/ui/Button';
 import { useTranslation } from 'react-i18next';
+import { getUserById } from '@/services/data';
 
 function ConversationRow({ id, title, last, unread }: { id: string; title: string; last?: string; unread?: number }) {
   return (
@@ -26,6 +27,26 @@ function ConversationRow({ id, title, last, unread }: { id: string; title: strin
       </View>
     </Link>
   );
+}
+
+function ConversationItem({ c, currentUid }: { c: any; currentUid: string }) {
+  const { t } = useTranslation();
+  const [partnerName, setPartnerName] = useState('');
+  const otherId = Object.keys(c.participants || {}).find((p: string) => p !== currentUid) || '';
+
+  useEffect(() => {
+    if (!otherId) return;
+    getUserById(otherId).then((u) => {
+      if (u) setPartnerName((u as any).name || '');
+    });
+  }, [otherId]);
+
+  const lastAt = c.lastMessageAt || 0;
+  const readAt = c.perUserLastReadAt?.[currentUid] || 0;
+  const unread = lastAt > readAt ? 1 : 0;
+  const title = partnerName || otherId || t('chat.list.conversationFallback');
+
+  return <ConversationRow id={otherId || c.id} title={title} last={c.lastMessage} unread={unread} />;
 }
 
 export default function ChatListScreen() {
@@ -78,17 +99,7 @@ export default function ChatListScreen() {
               {conversations.length === 0 ? (
                 <Text style={cn('text-muted-foreground')}>{t('chat.list.empty')}</Text>
               ) : (
-                conversations.map((c) => {
-                  const otherId = Object.keys(c.participants || {}).find((p) => p !== user?.uid) || t('chat.list.conversationFallback');
-                  const last = c.lastMessage;
-                  let unread = 0;
-                  const lastAt = c.lastMessageAt || 0;
-                  const readAt = user?.uid && c.perUserLastReadAt?.[user.uid] ? c.perUserLastReadAt[user.uid] : 0;
-                  if (lastAt && lastAt > readAt) unread = 1;
-                  return (
-                    <ConversationRow key={c.id} id={otherId} title={otherId} last={last} unread={unread} />
-                  );
-                })
+                conversations.map((c) => <ConversationItem key={c.id} c={c} currentUid={user?.uid || ''} />)
               )}
             </CardContent>
           </Card>

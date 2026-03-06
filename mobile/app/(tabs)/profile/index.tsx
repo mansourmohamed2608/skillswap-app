@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, FlatList, ActivityIndicator, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import React, { useEffect, useState, Fragment } from 'react';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useMembership } from '@/hooks/useMembership';
@@ -16,19 +16,22 @@ import { PlusCircle, Settings, MapPinIcon, Star, Package, Clock } from 'lucide-r
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import { fetchReviewsForUserMobile } from '@/services/api';
+import { fetchReviewsForUserMobile, cancelKycMobile } from '@/services/api';
 import NotificationList from '@/components/NotificationList';
 import { db } from '@/services/firebase';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 
 export default function ProfileScreen() {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
-  const { active, plan, loading: membershipLoading } = useMembership();
+  const { active, plan, loading: membershipLoading, listingCount, listingLimit, bookingCount, bookingLimit, messageCount, messageLimit } = useMembership();
+  const router = useRouter();
   const [profile, setProfile] = useState<any | null>(null);
   const [listings, setListings] = useState<ServiceListing[]>([]);
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [kycStatus, setKycStatus] = useState<string>('PENDING');
+  const [cancelBusy, setCancelBusy] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const { setFade } = useHeaderFade();
@@ -99,6 +102,18 @@ export default function ProfileScreen() {
       }
     })();
     return () => { mounted = false; };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!db || !user?.uid) return;
+    const ref = doc(db, 'users', user.uid, 'kyc', 'status');
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.data();
+      setKycStatus(data?.status || 'PENDING');
+    }, () => {
+      setKycStatus('PENDING');
+    });
+    return () => unsub();
   }, [user?.uid]);
 
   if (!user) {
@@ -240,6 +255,106 @@ export default function ProfileScreen() {
           <Text style={cn('mt-1 text-xs text-muted-foreground')}>
             {t('profile.rating') || 'Rating'}
           </Text>
+        </View>
+      </View>
+
+      {/* Membership Usage */}
+      <View style={cn('mx-4 mt-4 rounded-xl border border-border bg-muted/30 px-4 py-3')}>
+        <Text style={cn('text-xs font-semibold text-primary mb-1')}>
+          {t('profile.membership.planLabel')} <Text style={cn('font-bold text-foreground')}>{plan || t('membership.free')}</Text>
+        </Text>
+        <View style={cn('flex-row gap-4 mt-1')}>
+          <Text style={cn('text-xs text-muted-foreground')}>
+            {t('profile.membership.listingsUsed')} <Text style={cn('font-semibold text-foreground')}>{listingCount}</Text>/{listingLimit === Infinity ? '∞' : listingLimit}
+          </Text>
+          <Text style={cn('text-xs text-muted-foreground')}>
+            {t('profile.membership.bookingsUsed')} <Text style={cn('font-semibold text-foreground')}>{bookingCount}</Text>/{bookingLimit === Infinity ? '∞' : bookingLimit}
+          </Text>
+          <Text style={cn('text-xs text-muted-foreground')}>
+            {t('profile.membership.messagesUsed')} <Text style={cn('font-semibold text-foreground')}>{messageCount}</Text>/{messageLimit === Infinity ? '∞' : messageLimit}
+          </Text>
+        </View>
+      </View>
+
+      {/* Business Profile */}
+      {(plan === 'Business' || profile?.businessProfile) && (
+        <View style={cn('mx-4 mt-4 rounded-xl border border-border bg-muted/30 px-4 py-3')}>
+          <View style={cn('flex-row items-center justify-between mb-1')}>
+            <View>
+              <Text style={cn('text-sm font-semibold text-primary')}>{t('profile.business.title')}</Text>
+              <Text style={cn('text-xs text-muted-foreground')}>{t('profile.business.subtitle')}</Text>
+            </View>
+            <Link href="/profile/edit" asChild>
+              <TouchableOpacity>
+                <Text style={cn('text-xs text-primary')}>{t('profile.business.edit')}</Text>
+              </TouchableOpacity>
+            </Link>
+          </View>
+          {profile?.businessProfile ? (
+            <View style={cn('gap-1 mt-1')}>
+              {profile.businessProfile.name ? (
+                <Text style={cn('text-sm text-muted-foreground')}>
+                  <Text style={cn('font-medium text-foreground')}>{t('profile.business.nameLabel')} </Text>
+                  {profile.businessProfile.name}
+                </Text>
+              ) : null}
+              {profile.businessProfile.website ? (
+                <Text style={cn('text-sm text-muted-foreground')}>
+                  <Text style={cn('font-medium text-foreground')}>{t('profile.business.websiteLabel')} </Text>
+                  {profile.businessProfile.website}
+                </Text>
+              ) : null}
+              {profile.businessProfile.teamMembers?.length ? (
+                <Text style={cn('text-sm text-muted-foreground')}>
+                  <Text style={cn('font-medium text-foreground')}>{t('profile.business.teamLabel')} </Text>
+                  {profile.businessProfile.teamMembers.join(', ')}
+                </Text>
+              ) : null}
+            </View>
+          ) : (
+            <Text style={cn('text-sm text-muted-foreground mt-1')}>{t('profile.business.empty')}</Text>
+          )}
+        </View>
+      )}
+
+      {/* KYC Status */}
+      <View style={cn('mx-4 mt-4 mb-2 rounded-xl border border-border bg-muted/30 px-4 py-3')}>
+        <View style={cn('flex-row items-center justify-between')}>
+          <Text style={cn('text-sm font-semibold text-primary')}>{t('profile.kyc.title')}</Text>
+          <View style={[cn('px-2 py-1 rounded'), {
+            backgroundColor: kycStatus === 'VERIFIED' ? '#d1fae5' : kycStatus === 'FAILED' || kycStatus === 'DECLINED' ? '#fee2e2' : kycStatus === 'CANCELLED' ? '#f1f5f9' : '#fef3c7',
+          }]}>
+            <Text style={[cn('text-xs font-medium'), {
+              color: kycStatus === 'VERIFIED' ? '#065f46' : kycStatus === 'FAILED' || kycStatus === 'DECLINED' ? '#991b1b' : kycStatus === 'CANCELLED' ? '#475569' : '#92400e',
+            }]}>
+              {kycStatus === 'VERIFIED' ? t('profile.kyc.statusVerified') :
+               kycStatus === 'FAILED' || kycStatus === 'DECLINED' ? t('profile.kyc.statusFailed') :
+               kycStatus === 'CANCELLED' ? t('profile.kyc.statusCancelled') :
+               kycStatus === 'IN_REVIEW' ? t('profile.kyc.statusInReview') :
+               t('profile.kyc.statusPending')}
+            </Text>
+          </View>
+        </View>
+        <View style={cn('flex-row gap-2 mt-2')}>
+          {['FAILED', 'DECLINED', 'CANCELLED'].includes(kycStatus) && (
+            <TouchableOpacity
+              onPress={() => router.push('/profile/verify' as any)}
+              style={cn('px-3 py-1 rounded-md border border-border bg-card')}>
+              <Text style={cn('text-xs text-foreground')}>{t('profile.kyc.retry')}</Text>
+            </TouchableOpacity>
+          )}
+          {['PENDING', 'IN_REVIEW'].includes(kycStatus) && (
+            <TouchableOpacity
+              onPress={async () => {
+                setCancelBusy(true);
+                try { await cancelKycMobile(); setKycStatus('CANCELLED'); } catch {}
+                finally { setCancelBusy(false); }
+              }}
+              disabled={cancelBusy}
+              style={cn('px-3 py-1 rounded-md border border-border bg-card')}>
+              <Text style={cn('text-xs text-foreground')}>{cancelBusy ? '...' : t('profile.kyc.cancel')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 

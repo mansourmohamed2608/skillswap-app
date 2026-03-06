@@ -12,6 +12,7 @@ import { Clock, Search, Filter, CheckCircle, XCircle, AlertCircle, Package } fro
 import { cn } from '@/lib/cn';
 import { computeFade } from '@/components/layout/constants';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
+import { getListingById, getUserById } from '@/services/data';
 
 interface RequestDoc {
   id: string;
@@ -22,6 +23,84 @@ interface RequestDoc {
   proposedTime?: any;
   createdAt?: any;
   message?: string;
+}
+
+function getStatusBadge(status?: string, t?: (k: string) => string) {
+  const label = (k: string) => t ? t(k) : k.split('.').pop() || k;
+  switch (status) {
+    case 'accepted':
+      return <Badge variant="success"><View style={cn('flex-row items-center gap-1')}><CheckCircle size={12} color="#fff" /><Text style={cn('text-xs font-semibold text-white')}>{label('status.accepted')}</Text></View></Badge>;
+    case 'rejected':
+      return <Badge variant="destructive"><View style={cn('flex-row items-center gap-1')}><XCircle size={12} color="#fff" /><Text style={cn('text-xs font-semibold text-white')}>{label('status.rejected')}</Text></View></Badge>;
+    case 'completed':
+      return <Badge variant="default"><View style={cn('flex-row items-center gap-1')}><CheckCircle size={12} color="#fff" /><Text style={cn('text-xs font-semibold text-white')}>{label('status.completed')}</Text></View></Badge>;
+    default:
+      return <Badge variant="outline"><View style={cn('flex-row items-center gap-1')}><Clock size={12} color="#666" /><Text style={cn('text-xs font-semibold')}>{label('status.pending')}</Text></View></Badge>;
+  }
+}
+
+function RequestItem({ item }: { item: RequestDoc }) {
+  const { t } = useTranslation();
+  const [listingTitle, setListingTitle] = useState('');
+  const [partnerName, setPartnerName] = useState('');
+
+  useEffect(() => {
+    const uid = auth?.currentUser?.uid;
+    if (item.listingId) {
+      getListingById(item.listingId).then((l) => {
+        if (l) {
+          const v = l as any;
+          setListingTitle(v.offeredService?.title || v.title || '');
+        }
+      });
+    }
+    const partnerId = uid && item.requesterId === uid ? item.ownerId : item.requesterId;
+    if (partnerId) {
+      getUserById(partnerId).then((u) => {
+        if (u) setPartnerName((u as any).name || '');
+      });
+    }
+  }, [item.listingId, item.requesterId, item.ownerId]);
+
+  return (
+    <Link href={`/bookings/${item.id}`}>
+      <View>
+        <Card className="mb-3">
+          <CardContent className="p-4">
+            <View style={cn('mb-2 flex-row items-start justify-between')}>
+              <View style={cn('flex-1 mr-2')}>
+                <Text style={cn('text-base font-semibold text-foreground')} numberOfLines={1}>
+                  {listingTitle || `${t('requests.exchange_id') || 'Request'} #${item.id.slice(0, 8)}`}
+                </Text>
+                {partnerName ? (
+                  <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{partnerName}</Text>
+                ) : null}
+              </View>
+              {getStatusBadge(item.status, t)}
+            </View>
+            {item.message && (
+              <Text style={cn('mb-2 text-sm text-muted-foreground')} numberOfLines={2}>
+                {item.message}
+              </Text>
+            )}
+            {item.proposedTime && (
+              <View style={cn('mt-2 flex-row items-center gap-1')}>
+                <Clock size={14} color="#666" />
+                <Text style={cn('text-xs text-muted-foreground')}>
+                  {format(item.proposedTime.toDate(), 'MMM d, yyyy h:mm a')}
+                </Text>
+              </View>
+            )}
+            {item.createdAt && (
+              <Text style={cn('mt-2 text-xs text-muted-foreground')}>
+                {t('common.created') || 'Created'}: {format(item.createdAt.toDate(), 'MMM d, yyyy')}
+              </Text>
+            )}
+          </CardContent>
+        </Card>
+      </View>
+    </Link>
+  );
 }
 
 export default function RequestsScreen() {
@@ -75,47 +154,6 @@ export default function RequestsScreen() {
 
     setFilteredItems(filtered);
   }, [items, statusFilter, searchQuery]);
-
-  const getStatusBadge = (status?: string) => {
-    switch (status) {
-      case 'accepted':
-        return (
-          <Badge variant="success">
-            <View style={cn('flex-row items-center gap-1')}>
-              <CheckCircle size={12} color="#fff" />
-              <Text style={cn('text-xs font-semibold text-white')}>{t('status.accepted') || 'Accepted'}</Text>
-            </View>
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge variant="destructive">
-            <View style={cn('flex-row items-center gap-1')}>
-              <XCircle size={12} color="#fff" />
-              <Text style={cn('text-xs font-semibold text-white')}>{t('status.rejected') || 'Rejected'}</Text>
-            </View>
-          </Badge>
-        );
-      case 'completed':
-        return (
-          <Badge variant="default">
-            <View style={cn('flex-row items-center gap-1')}>
-              <CheckCircle size={12} color="#fff" />
-              <Text style={cn('text-xs font-semibold text-white')}>{t('status.completed') || 'Completed'}</Text>
-            </View>
-          </Badge>
-        );
-      default:
-        return (
-          <Badge variant="outline">
-            <View style={cn('flex-row items-center gap-1')}>
-              <Clock size={12} color="#666" />
-              <Text style={cn('text-xs font-semibold')}>{t('status.pending') || 'Pending'}</Text>
-            </View>
-          </Badge>
-        );
-    }
-  };
 
   const statusCounts = {
     all: items.length,
@@ -202,43 +240,7 @@ export default function RequestsScreen() {
               data={filteredItems}
               keyExtractor={(it) => it.id}
               scrollEnabled={false}
-              renderItem={({ item }) => (
-                <Link href={`/bookings/${item.id}`}>
-                  <View>
-                    <Card className="mb-3">
-                      <CardContent className="p-4">
-                        <View style={cn('mb-2 flex-row items-start justify-between')}>
-                          <Text style={cn('flex-1 text-base font-semibold text-foreground')}>
-                            {t('requests.exchange_id') || 'Request'} #{item.id.slice(0, 8)}
-                          </Text>
-                          {getStatusBadge(item.status)}
-                        </View>
-                        
-                        {item.message && (
-                          <Text style={cn('mb-2 text-sm text-muted-foreground')} numberOfLines={2}>
-                            {item.message}
-                          </Text>
-                        )}
-
-                        {item.proposedTime && (
-                          <View style={cn('mt-2 flex-row items-center gap-1')}>
-                            <Clock size={14} color="#666" />
-                            <Text style={cn('text-xs text-muted-foreground')}>
-                              {format(item.proposedTime.toDate(), 'MMM d, yyyy h:mm a')}
-                            </Text>
-                          </View>
-                        )}
-
-                        {item.createdAt && (
-                          <Text style={cn('mt-2 text-xs text-muted-foreground')}>
-                            {t('common.created') || 'Created'}: {format(item.createdAt.toDate(), 'MMM d, yyyy')}
-                          </Text>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </View>
-                </Link>
-              )}
+              renderItem={({ item }) => <RequestItem item={item} />}
             />
           )}
         </View>

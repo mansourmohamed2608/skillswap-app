@@ -11,6 +11,7 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { getErrorMessage } from '@/lib/errors';
 import { useTranslation } from 'react-i18next';
+import { getUserById } from '@/services/data';
 
 export default function ChatThreadScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -31,6 +32,7 @@ export default function ChatThreadScreen() {
   const { active, canSendMessage } = useMembership();
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const [partnerName, setPartnerName] = useState('');
   const { setFade } = useHeaderFade();
   const { t } = useTranslation();
 
@@ -39,6 +41,13 @@ export default function ChatThreadScreen() {
       markConversationReadMobile(convId).catch(() => {});
     }
   }, [convId, user?.uid]);
+
+  useEffect(() => {
+    if (!otherUserId) return;
+    getUserById(otherUserId).then((u) => {
+      if (u) setPartnerName((u as any).name || '');
+    });
+  }, [otherUserId]);
 
   async function onSend() {
     if (!otherUserId || !user?.uid) return;
@@ -69,7 +78,9 @@ export default function ChatThreadScreen() {
         }}
         scrollEventThrottle={16}
       >
-        <Text style={cn('text-2xl font-bold text-foreground mb-4')}>{t('chat.thread.title')}</Text>
+        <Text style={cn('text-2xl font-bold text-foreground mb-4')}>
+          {partnerName || otherUserId || t('chat.thread.title')}
+        </Text>
         <Card>
           <CardContent>
             {msgs.length === 0 ? (
