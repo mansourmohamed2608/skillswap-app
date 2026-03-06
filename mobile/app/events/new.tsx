@@ -9,6 +9,8 @@ import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { getErrorMessage } from '@/lib/errors';
+import { db } from '@/services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function NewEventScreen() {
   const { t } = useTranslation();
@@ -24,8 +26,27 @@ export default function NewEventScreen() {
   const [endsAt, setEndsAt] = useState('');
   const [capacity, setCapacity] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [kycStatus, setKycStatus] = useState('');
+  const [kycLoading, setKycLoading] = useState(false);
 
   useEffect(() => { setFade(0); }, [setFade]);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!user?.uid || !db) return;
+    setKycLoading(true);
+    getDoc(doc(db, 'users', user.uid))
+      .then((snap) => {
+        if (!mounted) return;
+        const data = snap.data();
+        setKycStatus(String(data?.kyc?.status || '').toUpperCase());
+      })
+      .catch(() => { if (mounted) setKycStatus(''); })
+      .finally(() => { if (mounted) setKycLoading(false); });
+    return () => { mounted = false; };
+  }, [user?.uid]);
+
+  const kycVerified = kycStatus === 'VERIFIED';
 
   const isBusiness = membership?.plan === 'Business' && active;
 
@@ -52,6 +73,10 @@ export default function NewEventScreen() {
   const handleCreate = async () => {
     if (!title.trim() || !startsAt.trim()) {
       Alert.alert(t('events.create.required') || 'Title and start time are required.');
+      return;
+    }
+    if (!kycVerified) {
+      Alert.alert(t('events.create.kycRequiredTitle'), t('events.create.kycRequiredBody'));
       return;
     }
     setSubmitting(true);
@@ -87,6 +112,15 @@ export default function NewEventScreen() {
           <Text style={cn('text-xl font-bold text-foreground')}>
             {t('events.create.title') || 'Create an Event'}
           </Text>
+
+          {kycLoading ? (
+            <Text style={cn('text-sm text-muted-foreground')}>{t('events.create.kycLoading')}</Text>
+          ) : !kycVerified ? (
+            <View style={cn('rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2')}>
+              <Text style={cn('font-semibold text-destructive')}>{t('events.create.kycRequiredTitle')}</Text>
+              <Text style={cn('text-sm text-destructive/80 mt-1')}>{t('events.create.kycRequiredBody')}</Text>
+            </View>
+          ) : null}
 
           <Text style={cn('text-sm text-muted-foreground')}>
             {t('events.create.titleLabel') || 'Event title'}
@@ -155,8 +189,8 @@ export default function NewEventScreen() {
 
           <TouchableOpacity
             onPress={handleCreate}
-            disabled={submitting}
-            style={cn('mt-2 rounded-lg bg-primary px-4 py-3 items-center', submitting && 'opacity-50')}
+            disabled={submitting || !kycVerified}
+            style={cn('mt-2 rounded-lg bg-primary px-4 py-3 items-center', (submitting || !kycVerified) && 'opacity-50')}
           >
             <Text style={cn('text-base font-medium text-primary-foreground')}>
               {submitting

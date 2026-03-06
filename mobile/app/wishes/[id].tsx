@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Linking, Image } from 'react-native';
 import { db } from '@/services/firebase';
 import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
 import { donateToWishPublicMobile, mockCompletePaymentPublicMobile, submitReportMobile } from '@/services/api';
@@ -142,6 +142,21 @@ export default function WishDetailScreen() {
     <ScrollView contentContainerStyle={cn('p-4 gap-4 bg-background')}> 
       <View style={cn('rounded-lg border border-border bg-card p-3')}>
         <Text style={cn('text-xl font-semibold text-foreground')}>{wish.title}</Text>
+        {wish.imageUrl ? (
+          <Image
+            source={{ uri: wish.imageUrl }}
+            style={{ width: '100%', height: 192, borderRadius: 8, marginTop: 8 }}
+            resizeMode="cover"
+          />
+        ) : null}
+        {wish.videoUrl ? (
+          <TouchableOpacity
+            onPress={() => Linking.openURL(wish.videoUrl)}
+            style={cn('mt-2 self-start rounded-lg border border-border px-3 py-1')}
+          >
+            <Text style={cn('text-sm text-primary')}>{t('wishes.watchVideo')}</Text>
+          </TouchableOpacity>
+        ) : null}
         {wish.description ? (<Text style={cn('mt-2 text-sm text-muted-foreground')}>{wish.description}</Text>) : null}
         {wish.category ? (<Text style={cn('mt-2 text-sm text-muted-foreground')}>{t('wishes.category') || 'Category (optional)'}: {wish.category}</Text>) : null}
         {wish.deadline ? (
