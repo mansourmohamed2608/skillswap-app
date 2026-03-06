@@ -50,7 +50,18 @@ const EXTRA_ORIGINS = String(process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((v) => v.trim())
   .filter(Boolean);
-for (const origin of EXTRA_ORIGINS) ALLOWED_ORIGINS.add(origin);
+for (const origin of EXTRA_ORIGINS) {
+  try {
+    const parsed = new URL(origin);
+    if (parsed.protocol === 'https:' || (!IS_PRODUCTION && parsed.protocol === 'http:')) {
+      ALLOWED_ORIGINS.add(origin);
+    } else {
+      logger.warn({ origin, event: 'cors_invalid_origin' }, 'Skipping non-https extra CORS origin');
+    }
+  } catch {
+    logger.warn({ origin, event: 'cors_invalid_origin' }, 'Skipping malformed extra CORS origin');
+  }
+}
 
 function isHostedAppOrigin(origin: string) {
   return /^https:\/\/[a-z0-9-]+(?:\.[a-z0-9-]+)*\.hosted\.app$/i.test(origin);
@@ -79,7 +90,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Adjust based on your needs
+      scriptSrc: ["'self'"], // No unsafe-inline; use nonce-based CSP if inline scripts are needed
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:", "blob:"],
       connectSrc: ["'self'", "https://*.googleapis.com", "https://*.firebaseio.com", "wss://*.firebaseio.com"],

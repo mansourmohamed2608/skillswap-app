@@ -275,7 +275,8 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
   }
 
   const sessionId: string | undefined = parsed.sessionId || parsed.id;
-  const isMockSession = typeof sessionId === 'string' && sessionId.startsWith('mock_');
+  // SECURITY: mock sessions must never bypass signature verification in production
+  const isMockSession = !IS_PRODUCTION && typeof sessionId === 'string' && sessionId.startsWith('mock_');
   const sigResult = isMockSession
     ? { verified: false, skipped: true }
     : verifyGeideaSignature(rawBody, headers || {});

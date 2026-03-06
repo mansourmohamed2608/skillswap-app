@@ -50,9 +50,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    /** Listings — server-only writes */
+    /** Listings — server-only writes; client reads exclude removed items */
     match /listings/{id} {
-      allow read: if true;
+      allow read: if resource == null || resource.data.get('status', '') != 'removed';
       allow create, update, delete: if false;
     }
 
@@ -75,9 +75,9 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
-    /** Temporary KYC status for pre-signup flow: public read, server-only writes */
+    /** Temporary KYC status for pre-signup flow: authenticated read, server-only writes */
     match /kyc_temp/{vendor} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow create, update, delete: if false;
     }
 

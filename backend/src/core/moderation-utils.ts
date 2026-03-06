@@ -206,7 +206,7 @@ async function loadKeywords(): Promise<string[]> {
 }
 
 export async function findBannedKeyword(input: string): Promise<string | null> {
-  const text = String(input || '').toLowerCase();
+  const text = String(input || '').toLowerCase().slice(0, 5000); // cap to prevent ReDoS on long inputs
   if (!text) return null;
   
   const keywords = await loadKeywords();

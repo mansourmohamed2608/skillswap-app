@@ -12,7 +12,7 @@ jest.mock('firebase-admin', () => ({
     collection: jest.fn(() => ({
       add: jest.fn(),
       doc: jest.fn(() => ({
-        get: jest.fn(),
+        get: jest.fn().mockResolvedValue({ exists: true }),
         update: jest.fn(),
         delete: jest.fn(),
         set: jest.fn(),
@@ -21,6 +21,9 @@ jest.mock('firebase-admin', () => ({
     FieldValue: {
       serverTimestamp: jest.fn(() => new Date()),
     },
+  })),
+  auth: jest.fn(() => ({
+    listUsers: jest.fn().mockResolvedValue({ users: [] }),
   })),
 }));
 
@@ -56,9 +59,9 @@ describe('HealthController', () => {
   });
 
   describe('getHealth', () => {
-    it('should return ok: true', () => {
-      const result = controller.getHealth();
-      expect(result).toEqual({ ok: true });
+    it('should return ok: true', async () => {
+      const result = await controller.getHealth();
+      expect(result).toEqual(expect.objectContaining({ ok: true }));
     });
   });
 });
@@ -79,11 +82,15 @@ describe('ListingsService', () => {
     (admin.firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({
         add: mockAdd,
+        where: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        get: jest.fn().mockResolvedValue({ empty: true, docs: [] }),
         doc: jest.fn(() => ({
+          id: 'new-listing-123',
           get: mockGet,
           update: mockUpdate,
           delete: jest.fn(),
-          set: jest.fn(),
+          set: jest.fn().mockResolvedValue({}),
         })),
       })),
       FieldValue: {
@@ -155,7 +162,12 @@ describe('ListingsService', () => {
       });
 
       await expect(service.createListing('user-123', {
-        listing: { title: 'New Listing' },
+        listing: {
+          requestedKind: 'service',
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Tech' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Art' },
+          location: 'Cairo, Egypt',
+        },
       })).rejects.toThrow(ForbiddenException);
     });
 
@@ -163,31 +175,34 @@ describe('ListingsService', () => {
       const result = await service.createListing('user-123', {
         listing: {
           title: 'Web Development',
-          description: 'Professional services',
-          category: 'Technology',
+          description: 'Professional web development services',
+          requestedKind: 'service',
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Technology' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Creative' },
+          location: 'Cairo, Egypt',
         },
       });
 
-      expect(result).toEqual({ id: 'new-listing-123' });
+      expect(result).toEqual(expect.objectContaining({ id: 'new-listing-123' }));
       expect(incrementListingCount).toHaveBeenCalledWith('user-123');
     });
 
     it('should check content moderation for all relevant fields', async () => {
       await service.createListing('user-123', {
         listing: {
-          title: 'Test',
-          description: 'Desc',
-          category: 'Cat',
-          location: 'NYC',
+          title: 'Web Development Service',
+          description: 'Professional web development services for clients',
+          requestedKind: 'service',
+          location: 'Cairo, Egypt',
           offeredService: {
-            title: 'Offered',
-            description: 'Offered desc',
-            category: 'Offered cat',
+            title: 'Web Development',
+            description: 'Professional web development services',
+            category: 'Technology',
           },
           requestedService: {
-            title: 'Requested',
-            description: 'Requested desc',
-            category: 'Requested cat',
+            title: 'Graphic Design',
+            description: 'Looking for graphic design help',
+            category: 'Creative',
           },
         },
       });

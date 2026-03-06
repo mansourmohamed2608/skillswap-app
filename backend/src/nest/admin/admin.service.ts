@@ -20,10 +20,9 @@ export class AdminService {
 
   // In-process TTL cache: avoids a Firestore read on every admin action within the same
   // Cloud Functions instance.  A cache miss (first call, or after TTL) still hits Firestore.
-  // TTL is 30 sec — a revoked admin retains access for at most 30 sec on a warm instance,
-  // which is acceptable for internal tooling.
+  // TTL is 5 sec — a revoked admin retains access for at most 5 sec on a warm instance.
   private readonly adminCache = new Map<string, number>(); // uid → expiresAt ms
-  private readonly ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
+  private readonly ADMIN_CACHE_TTL_MS = 5 * 1000; // 5 seconds
 
   private async assertAdmin(uid: string) {
     const now = Date.now();
@@ -60,7 +59,7 @@ export class AdminService {
 
   async dismissFlag(uid: string, type: FlagType, id: string) {
     await this.assertAdmin(uid);
-    if (!id) throw new BadRequestException('Missing content id');
+    if (!id || id.length > 256) throw new BadRequestException('Missing or invalid content id');
     const docRef = this.getDocRef(type, id);
     const snap = await docRef.get();
     if (!snap.exists) throw new NotFoundException('Content not found');
@@ -99,7 +98,7 @@ export class AdminService {
 
   async removeFlagged(uid: string, type: FlagType, id: string) {
     await this.assertAdmin(uid);
-    if (!id) throw new BadRequestException('Missing content id');
+    if (!id || id.length > 256) throw new BadRequestException('Missing or invalid content id');
     const docRef = this.getDocRef(type, id);
     const snap = await docRef.get();
     if (!snap.exists) throw new NotFoundException('Content not found');
@@ -185,9 +184,12 @@ export class AdminService {
     const snap = await userRef.get();
     if (!snap.exists) throw new NotFoundException('User not found');
 
+    // Invalidate local caches BEFORE the Firestore write to close the race window
+    // where a concurrent request could read the old cached value between write and invalidate.
+    this.adminCache.delete(targetUid);
+    AdminGuard.invalidate(targetUid);
+
     // Write Firestore first (source of truth), then propagate to Firebase Custom Claims
-    // so that the user's next issued token carries the role (eliminates DB read in assertAdmin
-    // for other admin users whose tokens already have the claim).
     await userRef.set({
       role,
       roleUpdatedAt: this.timestampValue(),
@@ -197,7 +199,7 @@ export class AdminService {
     // Propagate to Firebase Custom Claims for fast token-based role checks
     try {
       await admin.auth().setCustomUserClaims(targetUid, { role });
-      // Invalidate local admin caches (AdminService + AdminGuard) so revoked access takes effect immediately
+      // Re-invalidate in case the async claims update raced with a new cache population
       this.adminCache.delete(targetUid);
       AdminGuard.invalidate(targetUid);
     } catch (e: any) {

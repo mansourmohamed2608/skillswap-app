@@ -42,12 +42,18 @@ export function correlationIdMiddleware(req: Request, res: Response, next: NextF
   // Attach to response headers for client debugging
   res.setHeader(CORRELATION_ID_HEADER, correlationId);
   
-  // Log request start
+  // Log request start — omit sensitive query parameters
+  const SENSITIVE_QUERY_PARAMS = new Set(['token', 'secret', 'key', 'password', 'reset', 'code', 'apikey', 'api_key']);
+  const safeQuery = Object.fromEntries(
+    Object.entries(req.query).map(([k, v]) =>
+      SENSITIVE_QUERY_PARAMS.has(k.toLowerCase()) ? [k, '[REDACTED]'] : [k, v]
+    )
+  );
   req.log.info({
     event: 'request_start',
     method: req.method,
     path: req.path,
-    query: req.query,
+    query: safeQuery,
     ip: req.ip,
     userAgent: req.headers['user-agent'],
   });

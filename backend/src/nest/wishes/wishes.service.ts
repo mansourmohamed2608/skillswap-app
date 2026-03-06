@@ -70,7 +70,7 @@ export class WishesService {
     if (!wishSnap.exists) throw new NotFoundException('Wish not found');
     const wish = wishSnap.data() as any;
     const ownerId = String(wish?.userId || '').trim();
-    if (donorUserId && ownerId && donorUserId === ownerId) {
+    if (donorUserId && donorUserId === ownerId) {
       throw new ForbiddenException('Cannot donate to your own wish');
     }
     if (String(wish?.status || '').toLowerCase() !== 'open') {

@@ -7,6 +7,7 @@ import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
 import { AdminGuard } from '../common/admin.guard';
 
 const IS_EMULATOR = Boolean(process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB);
+const ALLOWED_KYC_VENDORS = new Set(['didit', 'verified']);
 
 @Controller('kyc')
 export class KycController {
@@ -17,6 +18,9 @@ export class KycController {
 
   @Get('status')
   async status(@Query('vendor') vendor: string, @Req() req: Request) {
+    if (vendor && !ALLOWED_KYC_VENDORS.has(vendor.toLowerCase())) {
+      throw new BadRequestException('Invalid vendor');
+    }
     let uid = (req as any)?.user?.uid || null;
     if (!uid) {
       const authHeader = (req.headers.authorization || '').toString();

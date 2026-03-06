@@ -9,7 +9,7 @@ import {
 import * as admin from 'firebase-admin';
 import axios from 'axios';
 import FormData from 'form-data';
-import { createHash } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { getKycStatus, clean } from '../../core/kyc';
 
 @Injectable()
@@ -22,6 +22,17 @@ export class KycService {
 
   private sha256(value: string): string {
     return createHash('sha256').update(value).digest('hex');
+  }
+
+  // HMAC-SHA256 with server secret makes the hash infeasible to brute-force without the key
+  private hmacSha256(value: string): string {
+    const secret = process.env.KYC_HMAC_SECRET;
+    if (!secret) {
+      // Fallback to plain SHA256 if secret is not configured (logs a warning on first use)
+      this.logger.warn('[KYC] KYC_HMAC_SECRET not set; falling back to plain SHA256 for document index');
+      return createHash('sha256').update(value).digest('hex');
+    }
+    return createHmac('sha256', secret).update(value).digest('hex');
   }
 
   async verifyIdDocument(uid: string, frontFile: Express.Multer.File, backFile: Express.Multer.File) {
@@ -89,7 +100,7 @@ export class KycService {
 
       const rawDocumentNumber = verification.document_number || verification.personal_number;
       const normalizedDocumentNumber = this.normalizeDocumentNumber(rawDocumentNumber);
-      const documentNumberHash = normalizedDocumentNumber ? this.sha256(normalizedDocumentNumber) : undefined;
+      const documentNumberHash = normalizedDocumentNumber ? this.hmacSha256(normalizedDocumentNumber) : undefined;
 
       if (status === 'VERIFIED' && documentNumberHash) {
         const indexRef = admin.firestore().collection('kycDocumentIndex').doc(documentNumberHash);
