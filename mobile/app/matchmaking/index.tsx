@@ -31,6 +31,9 @@ export default function MatchmakingScreen() {
   const [acceptingKey, setAcceptingKey] = useState<string | null>(null);
   const [acceptedKeys, setAcceptedKeys] = useState<Set<string>>(new Set());
   const [progress, setProgress] = useState<Record<string, { accepted: number; total: number; conversationId?: string; title?: string }>>({});
+  const [findingMatches, setFindingMatches] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<ServiceListing[]>([]);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -71,6 +74,33 @@ export default function MatchmakingScreen() {
     ]);
     setInputError(banned ? t('errors.codes.content/banned') : null);
   }, [offered, lookingFor, t]);
+
+  const STOP_WORDS = new Set(['the','a','an','and','or','but','if','then','with','for','to','of','in','on','at','from','by','about','as','is','are','am','i','you','we','they','he','she','it','this','that','these','those','my','your','our','their','me','us','them','need','want','looking','help','please','can','able','also','would','like']);
+  const normalizeTokens = (text: string) =>
+    text.split(/[^A-Za-z0-9]+/).map(tok => tok.trim()).filter(tok => tok.length >= 3 && !STOP_WORDS.has(tok.toLowerCase()));
+  const scoreListingLocal = (l: ServiceListing, reqTokens: string[], offTokens: string[]) => {
+    const offText = `${l.offeredService.title} ${l.offeredService.description} ${l.offeredService.category}`.toLowerCase();
+    const reqText = `${l.requestedService.title} ${l.requestedService.description} ${l.requestedService.category}`.toLowerCase();
+    let score = 0;
+    for (const tok of reqTokens) if (offText.includes(tok.toLowerCase())) score += 2;
+    for (const tok of offTokens) if (reqText.includes(tok.toLowerCase())) score += 2;
+    return score;
+  };
+  const handleFindMatches = () => {
+    if (inputError) return;
+    setFindingMatches(true);
+    const offTokens = normalizeTokens(offered);
+    const reqTokens = normalizeTokens(lookingFor);
+    const scored = allListings
+      .map(l => ({ l, score: scoreListingLocal(l, reqTokens, offTokens) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6)
+      .map(({ l }) => l);
+    setAiSuggestions(scored);
+    setHasSearched(true);
+    setFindingMatches(false);
+  };
 
   const triadKey = (users: string[]) => {
     const [a,b,c] = users as [string,string,string];
@@ -189,17 +219,42 @@ export default function MatchmakingScreen() {
                   value={lookingFor}
                   onChangeText={setLookingFor}
                 />
+                <TouchableOpacity
+                  onPress={handleFindMatches}
+                  disabled={findingMatches || !!inputError || (!offered.trim() && !lookingFor.trim())}
+                  style={cn('mt-1 rounded-lg bg-accent px-4 py-3 items-center', (findingMatches || !!inputError) && 'opacity-50')}
+                >
+                  <Text style={cn('text-base font-medium text-accent-foreground')}>
+                    {findingMatches ? t('matchmaking.mobile.finding') : t('matchmaking.mobile.findMatches')}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>{t('matchmaking.mobile.suggestionsTitle')}</CardTitle>
+              <CardTitle>{hasSearched ? t('matchmaking.mobile.aiResultsTitle') : t('matchmaking.mobile.suggestionsTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               {inputError ? (
                 <Text style={cn('text-destructive')}>{inputError}</Text>
+              ) : hasSearched ? (
+                aiSuggestions.length === 0 ? (
+                  <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.noResults')}</Text>
+                ) : (
+                  aiSuggestions.map((l) => (
+                    <Link key={l.id} href={`/listings/${l.id}`} asChild>
+                      <View style={cn('mb-3 rounded-md border border-border bg-card p-3')}>
+                        <Text style={cn('font-semibold text-foreground')}>{l.offeredService.title}</Text>
+                        <Text style={cn('text-sm text-muted-foreground')} numberOfLines={2}>{l.offeredService.description}</Text>
+                        <Text style={cn('mt-1 text-xs text-muted-foreground')} numberOfLines={1}>
+                          {t('matchmaking.mobile.wantsLabel')} {l.requestedService.title}
+                        </Text>
+                      </View>
+                    </Link>
+                  ))
+                )
               ) : suggestions.length === 0 ? (
                 <Text style={cn('text-muted-foreground')}>{t('matchmaking.mobile.suggestionsEmpty')}</Text>
               ) : (

@@ -560,6 +560,7 @@ export async function createEventMobile(args: {
   startsAt: string;
   endsAt?: string;
   capacity?: number;
+  coverUrl?: string;
 }) {
   if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
   const res = await authedFetch(`/api/events`, { body: JSON.stringify(args) });

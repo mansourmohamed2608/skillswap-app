@@ -25,6 +25,7 @@ export default function NewEventScreen() {
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [capacity, setCapacity] = useState('');
+  const [coverUrl, setCoverUrl] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [kycStatus, setKycStatus] = useState('');
   const [kycLoading, setKycLoading] = useState(false);
@@ -88,6 +89,7 @@ export default function NewEventScreen() {
         startsAt: startsAt.trim(),
         endsAt: endsAt.trim() || undefined,
         capacity: capacity.trim() ? Number(capacity) : undefined,
+        coverUrl: coverUrl.trim() || undefined,
       });
       Alert.alert(t('events.create.success') || 'Event created.');
       router.replace('/events');
@@ -184,6 +186,18 @@ export default function NewEventScreen() {
             onChangeText={setCapacity}
             placeholder={t('events.create.capacityPlaceholder') || 'Leave blank for unlimited'}
             keyboardType="number-pad"
+            style={cn('rounded-lg border border-border bg-card px-3 py-2 text-foreground')}
+          />
+
+          <Text style={cn('text-sm text-muted-foreground')}>
+            {t('events.create.coverImageLabel')}
+          </Text>
+          <TextInput
+            value={coverUrl}
+            onChangeText={setCoverUrl}
+            placeholder={t('events.create.coverImagePlaceholder')}
+            autoCapitalize="none"
+            keyboardType="url"
             style={cn('rounded-lg border border-border bg-card px-3 py-2 text-foreground')}
           />
 
