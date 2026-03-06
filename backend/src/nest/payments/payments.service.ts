@@ -1,15 +1,22 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { createGeideaSession, handleGeideaWebhook, mockComplete } from '../../core/payments';
-import { DURATION_IN_MONTHS, SubscriptionPlan } from '../../core/constants';
+import { DURATION_IN_MONTHS, PLAN_LISTING_LIMITS, SubscriptionPlan } from '../../core/constants';
 import { savePaymentRecord } from '../../core/postgres';
 import { getUserDocument } from '../../core/membership';
 
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
+
   async createSubscriptionSession(userId: string, plan: string, duration: string, currency?: string) {
     if (!userId) throw new BadRequestException('Missing userId');
     if (!plan || !duration) throw new BadRequestException('Missing plan or duration');
+    // Validate against the canonical constant maps before any Firestore or gateway call.
+    const validPlans = new Set(Object.keys(PLAN_LISTING_LIMITS) as SubscriptionPlan[]);
+    const validDurations = new Set(Object.keys(DURATION_IN_MONTHS));
+    if (!validPlans.has(plan as SubscriptionPlan)) throw new BadRequestException('Invalid plan');
+    if (!validDurations.has(duration)) throw new BadRequestException('Invalid duration');
     const userSnap = await getUserDocument(userId);
     this.ensureKycVerified(userSnap);
     const planKey = plan as SubscriptionPlan;
@@ -21,14 +28,8 @@ export class PaymentsService {
         ? (admin.firestore.FieldValue as any).serverTimestamp()
         : new Date();
 
-    await admin.firestore().collection('payments').add({
-      userId,
-      plan: planKey,
-      duration: durationKey,
-      geideaSessionId: sessionId,
-      status: 'PENDING',
-      createdAt: createdAtVal,
-    });
+    // Write to Postgres first (source of truth for billing). If it fails, do not
+    // create a Firestore record so both stores remain consistent.
     await savePaymentRecord({
       userId,
       plan: planKey,
@@ -37,6 +38,22 @@ export class PaymentsService {
       status: 'PENDING',
       createdAt: new Date(),
     });
+
+    // Write to Firestore for real-time client sync. Log divergence if this fails.
+    try {
+      await admin.firestore().collection('payments').add({
+        userId,
+        plan: planKey,
+        duration: durationKey,
+        geideaSessionId: sessionId,
+        status: 'PENDING',
+        createdAt: createdAtVal,
+      });
+    } catch (fsErr) {
+      this.logger.error('[Payments] Firestore write failed after Postgres write succeeded — reconciliation needed', {
+        userId, sessionId, error: String((fsErr as any)?.message || fsErr),
+      });
+    }
 
     return { paymentUrl, sessionId };
   }

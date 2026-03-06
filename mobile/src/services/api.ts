@@ -216,24 +216,19 @@ export async function cancelKycMobile() {
   return (await res.json()) as { ok: boolean; status?: string };
 }
 
-// Public KYC submit (pre-signup) using base64 images and a vendor identifier
-export async function submitKycPublicMobile(args: { fullName: string; vendor: string; idFrontBase64: string; idBackBase64: string; nationalId?: string; }) {
+// Bootstrap a new user account after Firebase Auth signup
+export async function bootstrapUserAccountMobile(profile: {
+  fullName: string;
+  username: string;
+  phoneNumber: string;
+  phoneNumberNormalized: string;
+  occupation?: string;
+  country: string;
+  city?: string;
+  email?: string;
+}) {
   if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
-  const res = await fetch(`${FUNCTIONS_BASE}/api/kyc/submit-public`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(args),
-  });
-  if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as { result: any };
-}
-
-// Finalize pre-signup KYC by binding kyc_temp/{vendor} to the authenticated user
-export async function finalizeKycMobile(vendor: string) {
-  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
-  const res = await authedFetch(`/api/kyc/finalize`, {
-    body: JSON.stringify({ vendor }),
-  });
+  const res = await authedFetch(`/api/user/bootstrap`, { body: JSON.stringify(profile) });
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { success: boolean };
 }

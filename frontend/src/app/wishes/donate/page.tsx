@@ -110,12 +110,12 @@ function DonatePageContent() {
         <CardContent className="space-y-6">
           {wish ? (
             <div className="space-y-3">
-              {wish.imageUrl ? (
+              {wish.imageUrl && wish.imageUrl.startsWith('https://') ? (
                 <div className="relative h-44 w-full overflow-hidden rounded-md border">
                   <Image src={wish.imageUrl} alt={wish.title || "wish"} fill style={{ objectFit: "cover" }} />
                 </div>
               ) : null}
-              {wish.videoUrl ? (
+              {wish.videoUrl && wish.videoUrl.startsWith('https://') ? (
                 <div className="w-full overflow-hidden rounded-md border">
                   <video className="w-full max-h-[320px] object-cover" src={wish.videoUrl} controls preload="metadata" />
                 </div>
@@ -236,7 +236,7 @@ function DonatePageContent() {
 
 export default function DonatePage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
       <DonatePageContent />
     </Suspense>
   );

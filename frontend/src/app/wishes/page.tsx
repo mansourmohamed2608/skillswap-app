@@ -81,11 +81,11 @@ export default function WishesListPage() {
         const isOwner = Boolean(user?.uid && w.userId && user.uid === w.userId);
         return (
           <Card key={w.id} className="shadow-sm overflow-hidden">
-            {(w.imageUrl || w.videoUrl) ? (
+            {(w.imageUrl && w.imageUrl.startsWith('https://')) || (w.videoUrl && w.videoUrl.startsWith('https://')) ? (
               <div className="relative h-52 w-full border-b bg-muted/40">
-                {w.videoUrl ? (
+                {w.videoUrl && w.videoUrl.startsWith('https://') ? (
                   <video className="h-full w-full object-cover" src={w.videoUrl} controls preload="metadata" />
-                ) : w.imageUrl ? (
+                ) : w.imageUrl && w.imageUrl.startsWith('https://') ? (
                   <Image src={w.imageUrl} alt={w.title || 'wish'} fill style={{ objectFit: 'cover' }} />
                 ) : null}
               </div>

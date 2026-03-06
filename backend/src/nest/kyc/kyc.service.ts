@@ -241,8 +241,25 @@ export class KycService {
     const { idFrontUrl, idBackUrl } = params;
     if (!idFrontUrl || !idBackUrl) throw new BadRequestException('Both idFrontUrl and idBackUrl are required');
 
+    const validateStorageUrl = (url: string) => {
+      try {
+        const parsed = new URL(url);
+        const validHosts = ['storage.googleapis.com', 'firebasestorage.googleapis.com'];
+        if (!validHosts.some((h) => parsed.hostname === h || parsed.hostname.endsWith(`.${h}`))) {
+          throw new BadRequestException('Image URL must be a Firebase Storage URL');
+        }
+      } catch (e: any) {
+        if (e instanceof BadRequestException) throw e;
+        throw new BadRequestException('Invalid image URL');
+      }
+    };
+    validateStorageUrl(idFrontUrl);
+    validateStorageUrl(idBackUrl);
+
     const downloadAsFile = async (url: string, fieldname: string): Promise<Express.Multer.File> => {
-      const resp = await axios.get(url, { responseType: 'arraybuffer', timeout: 20_000 });
+      // maxRedirects:0 prevents SSRF via open-redirect chains: the URL was already
+      // validated as a Firebase Storage host above, so no legitimate redirect should occur.
+      const resp = await axios.get(url, { responseType: 'arraybuffer', timeout: 20_000, maxRedirects: 0 });
       const contentType = String(resp.headers['content-type'] || 'image/jpeg');
       const ext = contentType.split('/')[1]?.split(';')[0]?.trim() || 'jpg';
       const buffer = Buffer.from(resp.data as ArrayBuffer);

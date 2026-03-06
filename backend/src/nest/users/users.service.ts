@@ -180,15 +180,40 @@ export class UsersService {
       const logoUrl = String(bp.logoUrl || '').trim();
       if (name) cleaned.name = name;
       if (description) cleaned.description = description;
-      if (website) cleaned.website = website;
+      if (website) {
+        try {
+          const parsedWebsite = new URL(website);
+          if (!['http:', 'https:'].includes(parsedWebsite.protocol)) {
+            throw new StatusError(400, 'Business website must use http or https protocol');
+          }
+        } catch (e: any) {
+          if (e instanceof StatusError) throw e;
+          throw new StatusError(400, 'Invalid business website URL');
+        }
+        cleaned.website = website;
+      }
       if (brandColor) cleaned.brandColor = brandColor;
       if (logoUrl) cleaned.logoUrl = logoUrl;
       const teamMembers = Array.isArray(bp.teamMembers)
-        ? bp.teamMembers.map((item: any) => String(item || '').trim()).filter(Boolean).slice(0, 5)
+        ? bp.teamMembers
+            .map((item: any) => String(item || '').trim())
+            .filter(Boolean)
+            .map((item: string) => {
+              if (item.length > 100) throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
+              return item;
+            })
+            .slice(0, 5)
         : [];
       if (teamMembers.length) cleaned.teamMembers = teamMembers;
       const customCategories = Array.isArray(bp.customCategories)
-        ? bp.customCategories.map((item: any) => String(item || '').trim()).filter(Boolean).slice(0, 10)
+        ? bp.customCategories
+            .map((item: any) => String(item || '').trim())
+            .filter(Boolean)
+            .map((item: string) => {
+              if (item.length > 50) throw new StatusError(400, 'Each customCategories entry must be 50 characters or fewer');
+              return item;
+            })
+            .slice(0, 10)
         : [];
       if (customCategories.length) cleaned.customCategories = customCategories;
       if (Object.keys(cleaned).length > 0) {
@@ -513,11 +538,13 @@ export class UsersService {
     } catch {}
 
     // 3b) Backward compatibility for publicProfiles created before nameSlug existed.
+    // Cap at 100 to prevent a DOS via unbounded collection scan; this path should
+    // only trigger for very old documents that predate the nameSlug index.
     if (fallbackSlugMatch) {
       try {
         const sample = await admin.firestore()
           .collection('publicProfiles')
-          .limit(2000)
+          .limit(100)
           .get();
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
@@ -580,12 +607,12 @@ export class UsersService {
     } catch {}
 
     // 5) Last-resort fallback for legacy links when publicProfiles is stale/missing.
-    // This is intentionally bounded and only attempted for slug-like identifiers.
+    // Cap at 100 to prevent a DOS via unbounded collection scan.
     if (fallbackSlugMatch) {
       try {
         const sample = await admin.firestore()
           .collection('users')
-          .limit(2000)
+          .limit(100)
           .get();
         if (!sample.empty) {
           const matched = sample.docs.find((d) => {
@@ -781,6 +808,25 @@ export class UsersService {
       await batch.commit();
     }
     return updated;
+  }
+
+  async blockUser(userId: string, targetUid: string): Promise<void> {
+    if (!userId) throw new StatusError(401, 'Unauthenticated request');
+    if (!targetUid) throw new StatusError(400, 'Missing targetUid');
+    if (userId === targetUid) throw new StatusError(400, 'Cannot block yourself');
+    await admin.firestore()
+      .collection('users').doc(userId)
+      .collection('blockedUsers').doc(targetUid)
+      .set({ targetUid, blockedAt: this.serverTimestamp() }, { merge: true });
+  }
+
+  async unblockUser(userId: string, targetUid: string): Promise<void> {
+    if (!userId) throw new StatusError(401, 'Unauthenticated request');
+    if (!targetUid) throw new StatusError(400, 'Missing targetUid');
+    await admin.firestore()
+      .collection('users').doc(userId)
+      .collection('blockedUsers').doc(targetUid)
+      .delete();
   }
 
 }

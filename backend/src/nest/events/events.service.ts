@@ -71,22 +71,15 @@ export class EventsService {
     if (!eventId) throw new BadRequestException('Missing event id');
 
     const eventRef = admin.firestore().collection('events').doc(eventId);
-    const regRef = admin.firestore().collection('eventRegistrations').doc();
+    const regRef = admin.firestore().collection('eventRegistrations').doc(`${eventId}_${userId}`);
 
     let alreadyRegistered = false;
     await admin.firestore().runTransaction(async (tx) => {
-      const eventSnap = await tx.get(eventRef);
+      const [eventSnap, existingSnap] = await Promise.all([tx.get(eventRef), tx.get(regRef)]);
       if (!eventSnap.exists) throw new NotFoundException('Event not found');
       const data: any = eventSnap.data() || {};
       if (String(data.status || 'active') !== 'active') throw new BadRequestException('Event is not active');
-      const existingSnap = await tx.get(
-        admin.firestore()
-          .collection('eventRegistrations')
-          .where('eventId', '==', eventId)
-          .where('userId', '==', userId)
-          .limit(1)
-      );
-      if (!existingSnap.empty) {
+      if (existingSnap.exists) {
         alreadyRegistered = true;
         return;
       }

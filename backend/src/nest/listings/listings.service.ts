@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { getUserDocument, canCreateListing, incrementListingCount, decrementListingCount, isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
@@ -7,6 +7,7 @@ import { createListingPublicId } from '../../core/public-ids';
 
 @Injectable()
 export class ListingsService {
+  private readonly logger = new Logger(ListingsService.name);
   private normalizeText(value: unknown): string {
     return String(value || '').trim();
   }
@@ -312,6 +313,23 @@ export class ListingsService {
     }
 
     await listingRef.set({ ...safeUpdates, updatedAt: updatedAtVal }, { merge: true });
+
+    // Audit log: non-critical, do not fail the update if this write fails
+    try {
+      await admin.firestore().collection('listingAuditLog').add({
+        listingId,
+        actorId: userId,
+        ownerId,
+        action: 'update',
+        fields: Object.keys(safeUpdates),
+        createdAt: updatedAtVal,
+      });
+    } catch (e) {
+      this.logger.error('[Listings] Audit log write failed — reconciliation may be needed', {
+        listingId, userId, error: String((e as any)?.message || e),
+      });
+    }
+
     return { success: true };
   }
 

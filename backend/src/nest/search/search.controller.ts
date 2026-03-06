@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { SearchService } from './search.service';
 
 @Controller('search')
@@ -16,6 +16,9 @@ export class SearchController {
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
   ) {
+    if ((q || '').length > 500) throw new BadRequestException('Search query too long (max 500 characters)');
+    if ((category || '').length > 100) throw new BadRequestException('Category filter too long (max 100 characters)');
+    if ((location || '').length > 200) throw new BadRequestException('Location filter too long (max 200 characters)');
     return this.searchService.searchListings({
       q: q || '',
       category: category || '',

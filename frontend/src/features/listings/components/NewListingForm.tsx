@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, LocateFixedIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-import { ApiError, createListing, updateListing } from '@/services/api';
+import { ApiError, createListing, updateListing, recordAnalyticsEvent } from '@/services/api';
 import { db, storage } from '@/services/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, getDoc } from 'firebase/firestore';
@@ -428,6 +428,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       } else {
         // Call backend endpoint which enforces membership and bypasses Firestore rules
         const created = await createListing(listing);
+        recordAnalyticsEvent('listing_created', { category: offeredServiceCategory, requestedKind });
         toast({ title: t('listings.form.successTitle'), description: t('listings.form.successDescription') });
         router.push(getListingPath({ id: created.id, publicId: created.publicId, offeredService: listing.offeredService }));
         // Reset form

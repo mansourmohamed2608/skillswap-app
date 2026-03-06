@@ -3,13 +3,20 @@
 
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
-import { auth, db } from '@/services/firebase';
+import { auth } from '@/services/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getErrorMessage } from '@/lib/errors';
 
+/** Resolve the backend base URL without depending on browser globals (server action context). */
+function getBackendBase(): string {
+  if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
+  const pid = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+  if (pid) return `http://127.0.0.1:5001/${pid}/us-central1`;
+  return 'https://skillswap-69yxi.web.app';
+}
+
 function ensureFirebaseServices() {
-    if (!auth || !db) {
+    if (!auth) {
         throw new Error("Firebase services are not available. Please check your configuration.");
     }
 }
@@ -96,26 +103,39 @@ export async function signupAction(
     return { message: `Sign up failed: ${errorMessage}`, success: false, errors: { server: [errorMessage] } };
   }
 
-  // 3. Create a user document in Firestore
+  // 3. Bootstrap the user document via the backend (validates and creates server-side)
   try {
-    await setDoc(doc(db!, "users", user.uid), {
-      uid: user.uid,
-      fullName,
-      email,
-      phoneNumber,
-      occupation: occupation || '',
-      country,
-      city: city || '',
-      createdAt: serverTimestamp(),
-      avatarUrl: 'https://placehold.co/128x128.png',
-      bio: '',
-      rating: 0,
-      reviewsCount: 0,
-      servicesOffered: [],
-      servicesRequested: [],
+    const idToken = await user.getIdToken();
+    // Auto-generate a unique username from the display name + time-based suffix so
+    // bootstrapAccount's uniqueness check succeeds without asking the user.
+    const namePart = (fullName.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9._-]/g, '').slice(0, 14) || 'user');
+    const suffix = Date.now().toString(36).slice(-6);
+    const autoUsername = `${namePart}${suffix}`;
+    const phoneNumberNormalized = phoneNumber.replace(/[^\d+]/g, '').replace(/^00/, '+');
+    const bootstrapRes = await fetch(`${getBackendBase()}/api/user/bootstrap`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        fullName,
+        username: autoUsername,
+        phoneNumber,
+        phoneNumberNormalized,
+        occupation: occupation || '',
+        country,
+        city: city || '',
+        email,
+      }),
     });
+    if (!bootstrapRes.ok) {
+      console.error('[Auth] Bootstrap call failed', bootstrapRes.status);
+    }
   } catch (_error) {
-    // user doc creation failed; auth already succeeded so continue
+    console.error('[Auth] Bootstrap call threw', _error);
+    // Auth already succeeded; continue to profile/verify so the user is not blocked.
+    // The profile can be completed through the normal onboarding flow.
   }
 
   redirect('/profile/verify');

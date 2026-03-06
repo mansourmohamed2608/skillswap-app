@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundEx
 import * as admin from 'firebase-admin';
 import { decrementListingCount } from '../../core/membership';
 import { BANNED_KEYWORDS } from '../../core/banned-keywords';
+import { AdminGuard } from '../common/admin.guard';
 
 type FlagType = 'listing' | 'wish' | 'review';
 type UserRole = 'admin' | 'moderator' | 'user';
@@ -19,7 +20,7 @@ export class AdminService {
 
   // In-process TTL cache: avoids a Firestore read on every admin action within the same
   // Cloud Functions instance.  A cache miss (first call, or after TTL) still hits Firestore.
-  // TTL is 5 min — a revoked admin retains access for at most 5 min on a warm instance,
+  // TTL is 30 sec — a revoked admin retains access for at most 30 sec on a warm instance,
   // which is acceptable for internal tooling.
   private readonly adminCache = new Map<string, number>(); // uid → expiresAt ms
   private readonly ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
@@ -40,9 +41,9 @@ export class AdminService {
     await this.assertAdmin(uid);
     const db = admin.firestore();
     const [listingSnap, wishSnap, reviewSnap] = await Promise.all([
-      db.collection('listings').where('flagged', '==', true).get(),
-      db.collection('wishes').where('flagged', '==', true).get(),
-      db.collection('reviews').where('flagged', '==', true).get(),
+      db.collection('listings').where('flagged', '==', true).limit(200).get(),
+      db.collection('wishes').where('flagged', '==', true).limit(200).get(),
+      db.collection('reviews').where('flagged', '==', true).limit(200).get(),
     ]);
     const items = [
       ...listingSnap.docs.map((d) => ({ id: d.id, type: 'listing' as const, data: d.data() })),
@@ -196,8 +197,9 @@ export class AdminService {
     // Propagate to Firebase Custom Claims for fast token-based role checks
     try {
       await admin.auth().setCustomUserClaims(targetUid, { role });
-      // Invalidate any local admin cache for this user in case role was demoted
+      // Invalidate local admin caches (AdminService + AdminGuard) so revoked access takes effect immediately
       this.adminCache.delete(targetUid);
+      AdminGuard.invalidate(targetUid);
     } catch (e: any) {
       // Log but do NOT fail — Firestore is the authoritative source
       this.logger.warn({ event: 'set_custom_claims_failed', targetUid, role, error: e?.message }, 'Failed to set custom claims');
@@ -373,15 +375,25 @@ export class AdminService {
     return normalizeKeywords(list);
   }
 
+  // In-process TTL cache for the moderation keywords document.
+  // New banned words added by an admin take effect on the next cache miss (after TTL).
+  private keywordsCache: { keywords: string[]; hasCustom: boolean; expiresAt: number } | null = null;
+  private readonly KEYWORDS_CACHE_TTL_MS = 60 * 1000; // 1 minute
+
   private async readKeywords() {
+    const now = Date.now();
+    if (this.keywordsCache && this.keywordsCache.expiresAt > now) {
+      return { keywords: this.keywordsCache.keywords, hasCustom: this.keywordsCache.hasCustom };
+    }
     const docRef = this.keywordsDocRef();
     const snap = await docRef.get();
     const data = snap.exists ? snap.data() : null;
     const raw = Array.isArray(data?.keywords) ? (data?.keywords as string[]) : null;
-    if (!raw) {
-      return { keywords: DEFAULT_KEYWORDS, hasCustom: false };
-    }
-    return { keywords: normalizeKeywords(raw), hasCustom: true };
+    const result = raw
+      ? { keywords: normalizeKeywords(raw), hasCustom: true }
+      : { keywords: DEFAULT_KEYWORDS, hasCustom: false };
+    this.keywordsCache = { ...result, expiresAt: now + this.KEYWORDS_CACHE_TTL_MS };
+    return result;
   }
 
   private async writeKeywords(uid: string, keywords: string[]) {
@@ -390,6 +402,8 @@ export class AdminService {
       updatedAt: this.timestampValue(),
       updatedBy: uid,
     }, { merge: true });
+    // Invalidate cache so the next moderation check picks up the new keywords.
+    this.keywordsCache = null;
   }
 
   private async applyReviewCounts(tx: FirebaseFirestore.Transaction, reviewData: any) {

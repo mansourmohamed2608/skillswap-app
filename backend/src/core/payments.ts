@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as admin from 'firebase-admin';
-import { createHash, createHmac } from 'crypto';
+import { createHash, createHmac, randomBytes } from 'crypto';
 import { DURATION_IN_MONTHS, SubscriptionPlan } from './constants';
 import { saveDonationRecord, savePaymentRecord, updateDonationStatus, updatePaymentStatus } from './postgres';
 import { sendEmail, sendEmailNotification, sendInAppNotification, sendPushNotification } from './notifications';
@@ -23,6 +23,14 @@ const USE_MOCK =
   process.env.USE_MOCK_PAYMENTS === '1' ||
   (!IS_PRODUCTION && IS_EMULATOR);
 const ALLOW_UNCONFIGURED_PAYMENT_FALLBACK = process.env.ALLOW_UNCONFIGURED_PAYMENT_FALLBACK !== '0';
+
+// Security: Startup safety checks — warn loudly if insecure modes are active in production
+if (IS_PRODUCTION && USE_MOCK) {
+  logger.warn('[Payments] SECURITY WARNING: Mock payment mode is ENABLED in production (USE_MOCK_PAYMENTS=1). Set USE_MOCK_PAYMENTS=0 to enforce real Geidea payments.');
+}
+if (IS_PRODUCTION && ALLOW_UNCONFIGURED_PAYMENT_FALLBACK && !process.env.GEIDEA_MERCHANT_ID) {
+  logger.warn('[Payments] SECURITY WARNING: ALLOW_UNCONFIGURED_PAYMENT_FALLBACK is enabled but GEIDEA_MERCHANT_ID is not configured in production. Real payments will fall back to mock.');
+}
 
 const PRICING_EGP: Record<SubscriptionPlan, Record<'3_months' | '6_months' | '12_months', number>> = {
   Basic: { '3_months': 30, '6_months': 50, '12_months': 80 },
@@ -47,6 +55,31 @@ function toPriceKey(duration: DurationKey): KnownDuration {
 
 function getGeideaWebhookSecret(): string | undefined {
   return process.env.GEIDEA_WEBHOOK_SECRET;
+}
+
+const ALLOWED_GEIDEA_BASE_URLS = new Set([
+  'https://api.geidea.net',
+  'https://sandbox.geidea.net',
+]);
+
+function getGeideaBaseUrl(): string {
+  const url = (process.env.GEIDEA_BASE_URL || 'https://api.geidea.net').replace(/\/$/, '');
+  if (!ALLOWED_GEIDEA_BASE_URLS.has(url)) {
+    throw new Error(`Invalid GEIDEA_BASE_URL: must be one of ${[...ALLOWED_GEIDEA_BASE_URLS].join(', ')}`);
+  }
+  return url;
+}
+
+/** Wrap an axios gateway call so that the full response body is never leaked into logs/stack traces. */
+async function callGateway<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    const status: number | undefined = err?.response?.status;
+    const message: string = String(err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Payment gateway error').slice(0, 200);
+    logger.error(`[Payments] Gateway call failed — HTTP ${status ?? 'unknown'}: ${message}`);
+    throw new Error(`Payment gateway error (HTTP ${status ?? 'unknown'}): ${message}`);
+  }
 }
 
 function normalizeSignature(sig: string): string {
@@ -81,11 +114,17 @@ function verifyGeideaSignature(rawBody: Buffer, headers?: Record<string, any>): 
   );
 
   if (!secret) {
-    if (allowUnsigned) return { verified: false, skipped: true };
+    if (allowUnsigned) {
+      logger.warn('[Payments] Webhook secret not configured; skipping signature verification (non-production mode).');
+      return { verified: false, skipped: true };
+    }
     throw new Error('Geidea webhook secret not configured');
   }
   if (!signatureRaw) {
-    if (allowUnsigned) return { verified: false, skipped: true };
+    if (allowUnsigned) {
+      logger.warn('[Payments] Webhook signature absent; skipping verification (non-production mode).');
+      return { verified: false, skipped: true };
+    }
     throw new Error('Missing Geidea webhook signature');
   }
 
@@ -113,7 +152,7 @@ export async function createGeideaSession(
   const price = table[plan][toPriceKey(duration)];
 
   if (USE_MOCK) {
-    const sessionId = `mock_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const sessionId = `mock_${Date.now()}_${randomBytes(4).toString('hex')}`;
     const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${currency}`;
     return { paymentUrl, sessionId };
   }
@@ -121,11 +160,11 @@ export async function createGeideaSession(
   const merchantId = process.env.GEIDEA_MERCHANT_ID;
   const apiPassword = process.env.GEIDEA_API_PASSWORD;
   const callbackUrl = process.env.GEIDEA_CALLBACK_URL;
-  const baseUrl = process.env.GEIDEA_BASE_URL || 'https://api.geidea.net';
+  const baseUrl = getGeideaBaseUrl();
 
   if (!merchantId || !apiPassword || !callbackUrl) {
     if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
-      const sessionId = `mock_fallback_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const sessionId = `mock_fallback_${Date.now()}_${randomBytes(4).toString('hex')}`;
       const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${currency}`;
       logger.warn('[Payments] Geidea config missing. Using mock checkout fallback session.');
       return { paymentUrl, sessionId };
@@ -142,15 +181,15 @@ export async function createGeideaSession(
     customer: { id: userId },
   };
 
-  const resp = await axios.post(url, payload, {
+  const resp = await callGateway(() => axios.post(url, payload, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `APIKey ${apiPassword}`,
     },
     timeout: 10000,
-  });
+  }));
 
-  const data = resp.data;
+  const data = (resp as any).data;
   const paymentUrl = data.redirectUrl || data.paymentUrl;
   const sessionId = data.id || data.sessionId;
   if (!paymentUrl || !sessionId) {
@@ -172,7 +211,7 @@ export async function createGeideaDonationSession(args: {
   if (!(amount > 0)) throw new Error('Invalid donation amount');
 
   if (USE_MOCK) {
-    const sessionId = `mock_donation_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    const sessionId = `mock_donation_${Date.now()}_${randomBytes(4).toString('hex')}`;
     const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${amount}&currency=${currency}`;
     return { paymentUrl, sessionId };
   }
@@ -180,11 +219,11 @@ export async function createGeideaDonationSession(args: {
   const merchantId = process.env.GEIDEA_MERCHANT_ID;
   const apiPassword = process.env.GEIDEA_API_PASSWORD;
   const callbackUrl = process.env.GEIDEA_CALLBACK_URL;
-  const baseUrl = process.env.GEIDEA_BASE_URL || 'https://api.geidea.net';
+  const baseUrl = getGeideaBaseUrl();
 
   if (!merchantId || !apiPassword || !callbackUrl) {
     if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
-      const sessionId = `mock_fallback_donation_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      const sessionId = `mock_fallback_donation_${Date.now()}_${randomBytes(4).toString('hex')}`;
       const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${amount}&currency=${currency}`;
       logger.warn('[Payments] Geidea config missing. Using donation mock checkout fallback session.');
       return { paymentUrl, sessionId };
@@ -207,15 +246,15 @@ export async function createGeideaDonationSession(args: {
   }
   if (args.referenceId) payload.merchantReferenceId = args.referenceId;
 
-  const resp = await axios.post(`${baseUrl}/v2/payments`, payload, {
+  const resp = await callGateway(() => axios.post(`${baseUrl}/v2/payments`, payload, {
     headers: {
       'Content-Type': 'application/json',
       Authorization: `APIKey ${apiPassword}`,
     },
     timeout: 10000,
-  });
+  }));
 
-  const data = resp.data || {};
+  const data = (resp as any).data || {};
   const paymentUrl = data.redirectUrl || data.paymentUrl;
   const sessionId = data.id || data.sessionId;
   if (!paymentUrl || !sessionId) {

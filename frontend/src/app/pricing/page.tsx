@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckIcon, GemIcon, StarIcon, BriefcaseIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Label } from '@/components/ui/label';
-import { createSubscriptionSession, mockCompletePayment } from '@/services/api';
+import { createSubscriptionSession, mockCompletePayment, recordAnalyticsEvent } from '@/services/api';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -235,6 +235,7 @@ function PricingPageInner() {
         duration: durationToBackend[finalDuration],
         currency: currency.toUpperCase() as 'EGP' | 'SAR',
       });
+      recordAnalyticsEvent('subscribe_initiated', { plan: planKey, duration: finalDuration, currency });
 
       const m = /sessionId=([^&]+)/.exec(res.paymentUrl);
       const isMockUrl = res.paymentUrl.includes('mock.local');

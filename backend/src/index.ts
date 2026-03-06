@@ -93,7 +93,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
-const rawWebhookPaths = ['/payments/webhook', '/kyc/webhook'];
+const rawWebhookPaths = ['/payments/webhook'];
 const rawMiddleware = express.raw({ type: '*/*', limit: '10mb' });
 const matchesWebhookPath = (req: express.Request, p: string) => {
   const original = req.originalUrl || '';
@@ -120,7 +120,6 @@ const isMultipartRoute = (req: express.Request) => {
     original.includes(p) || path.includes(p)
   );
 };
-const isKycWebhookRequest = (req: express.Request) => matchesWebhookPath(req, '/kyc/webhook');
 const isPaymentsWebhookRequest = (req: express.Request) => matchesWebhookPath(req, '/payments/webhook');
 const getWebhookSignature = (req: express.Request) =>
   (req.headers['x-signature'] as string) ||
@@ -170,12 +169,6 @@ app.use((req, res, next) => {
 
 const webhookHeaderGate = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   if (!isWebhookRequest(req)) return next();
-  if (isKycWebhookRequest(req)) {
-    const sig = String(req.headers['x-signature'] || '');
-    const ts = String(req.headers['x-timestamp'] || '');
-    if (!sig || !ts) return res.status(400).send('Missing webhook signature headers');
-    return next();
-  }
   if (isPaymentsWebhookRequest(req)) {
     const signature = getPaymentsSignature(req);
     if (signature) return next();

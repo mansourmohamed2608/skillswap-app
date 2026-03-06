@@ -14,7 +14,7 @@ import { AlertCircleIcon, UserPlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { auth, db } from '@/services/firebase';
-import { bootstrapUserAccount, getFunctionsBase } from '@/services/api';
+import { bootstrapUserAccount, getFunctionsBase, recordAnalyticsEvent } from '@/services/api';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { deleteDoc, doc } from 'firebase/firestore';
 import { useTranslation } from 'react-i18next';
@@ -168,6 +168,7 @@ export function SignUpForm() {
       }
 
       // Redirect to identity verification page
+      recordAnalyticsEvent('user_signed_up', { country });
       toast({ title: t('auth.signUp.success', { defaultValue: 'Account created!' }), description: t('auth.signUp.verifyPrompt', { defaultValue: 'Please verify your identity to continue.' }) });
       router.push('/profile/verify');
     } catch (err: any) {

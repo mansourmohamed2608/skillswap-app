@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { useMembership } from "@/hooks/useMembership";
-import { registerForEvent, getFunctionsBase } from "@/services/api";
+import { registerForEvent, getFunctionsBase, recordAnalyticsEvent } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,6 +106,7 @@ export default function EventsPage() {
                         onClick={async () => {
                           try {
                             const res = await registerForEvent(event.id);
+                            if (!res.alreadyRegistered) recordAnalyticsEvent('event_registered', { eventId: event.id });
                             const msgKey = res.alreadyRegistered ? "events.alreadyRegistered" : "events.registered";
                             toast({ title: t(msgKey) });
                           } catch (e: any) {

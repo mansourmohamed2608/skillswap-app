@@ -84,7 +84,7 @@ export class MatchmakingService {
       userGeo = geocoded?.point;
     }
 
-    const snap = await this.fetchPendingRequests(500);
+    const snap = await this.fetchPendingRequests(200);
 
     type Edge = { from: string; to: string; requestId: string; listingId: string; createdAt: number };
     const edgesByFrom = new Map<string, Edge[]>();
@@ -111,7 +111,8 @@ export class MatchmakingService {
       edgesKeyed.set(`${from}|${to}`, e);
     }
 
-    const listingDocs = await Promise.all(Array.from(listingIds).map(id => admin.firestore().collection('listings').doc(id).get()));
+    const listingRefs = Array.from(listingIds).map(id => admin.firestore().collection('listings').doc(id));
+    const listingDocs = listingRefs.length ? await admin.firestore().getAll(...listingRefs) : [];
     const isListingFulfilled = new Map<string, boolean>();
     for (const doc of listingDocs) {
       const ld = (doc.data() as any) || {};
@@ -143,7 +144,8 @@ export class MatchmakingService {
       }
     }
 
-    const userDocs = await Promise.all(Array.from(userIds).map(id => admin.firestore().collection('users').doc(id).get()));
+    const userRefs = Array.from(userIds).map(id => admin.firestore().collection('users').doc(id));
+    const userDocs = userRefs.length ? await admin.firestore().getAll(...userRefs) : [];
     const usersMap = new Map<string, any>();
     for (const doc of userDocs) {
       const ud = (doc.data() as any) || {};
@@ -242,7 +244,7 @@ export class MatchmakingService {
       userGeo = geocoded?.point;
     }
 
-    const snap = await this.fetchPendingRequests(500);
+    const snap = await this.fetchPendingRequests(200);
 
     type Edge = { from: string; to: string; requestId: string; listingId: string; createdAt: number };
     const edgesKeyed = new Map<string, Edge>();
@@ -266,7 +268,8 @@ export class MatchmakingService {
       if (!existing || existing.createdAt < e.createdAt) edgesKeyed.set(key, e);
     }
 
-    const listingDocs = await Promise.all(Array.from(listingIds).map(id => admin.firestore().collection('listings').doc(id).get()));
+    const listingRefs2 = Array.from(listingIds).map(id => admin.firestore().collection('listings').doc(id));
+    const listingDocs = listingRefs2.length ? await admin.firestore().getAll(...listingRefs2) : [];
     const isListingFulfilled = new Map<string, boolean>();
     const listingTs = new Map<string, number>();
     const listingSummary = new Map<string, { id: string; title?: string; category?: string }>();
@@ -299,7 +302,8 @@ export class MatchmakingService {
       pairs.push({ users: [a, b], edges: [e1, rev] });
     }
 
-    const userDocs = await Promise.all(Array.from(userIds).map(id => admin.firestore().collection('users').doc(id).get()));
+    const userRefs2 = Array.from(userIds).map(id => admin.firestore().collection('users').doc(id));
+    const userDocs = userRefs2.length ? await admin.firestore().getAll(...userRefs2) : [];
     const usersMap = new Map<string, any>();
     for (const doc of userDocs) usersMap.set(doc.id, (doc.data() as any) || {});
     const getCityCountry = (u: string) => this.readLocationMeta(usersMap.get(u) || {});

@@ -1,6 +1,6 @@
-import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { getUserDocument } from '../../core/membership';
+import { getUserDocument, isMembershipActive } from '../../core/membership';
 import { findBannedKeyword, findBannedKeywordInFields } from '../../core/moderation-utils';
 
 type ReviewInput = {
@@ -97,10 +97,30 @@ export class ReviewsService {
           throw new ForbiddenException('Complete your profile before posting a review');
         }
         this.ensureKycVerified(userSnap);
+        const membership = userSnap.get('membership');
+        if (!isMembershipActive(membership)) {
+          throw new ForbiddenException('Active membership required to post reviews');
+        }
         const userData: any = userSnap.data() || {};
         reviewerName = reviewerName || userData.name || userData.fullName || userData.displayName || 'Member';
+      } else {
+        throw new UnauthorizedException('Sign in to post reviews');
       }
       if (!reviewerName) reviewerName = 'Guest';
+
+      // Prevent duplicate reviews: one review per (reviewer, listing) pair
+      if (reviewerId) {
+        const dupSnap = await admin.firestore()
+          .collection('reviews')
+          .where('reviewerId', '==', reviewerId)
+          .where('listingId', '==', listingId)
+          .limit(1)
+          .get();
+        if (!dupSnap.empty) {
+          throw new BadRequestException({ code: 'reviews/already_reviewed' });
+        }
+      }
+
       const nameBanned = await findBannedKeywordInFields([
         { label: 'reviewerName', value: reviewerName },
       ]);
@@ -333,15 +353,16 @@ export class ReviewsService {
           .limit(lim)
           .get();
         return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      } catch {
+      } catch (e) {
         // Fallback for missing composite index in production.
+        this.logger.warn('[Reviews] Composite index missing for listForListing — using client-side fallback filter', { listingId });
         const snap = await admin.firestore()
           .collection('reviews')
           .where('listingId', '==', listingId)
           .limit(300)
           .get();
         return snap.docs
-          .map((d) => ({ id: d.id, ...(d.data() as any) }))
+          .map((d: FirebaseFirestore.QueryDocumentSnapshot) => ({ id: d.id, ...(d.data() as any) }))
           .filter((r: any) => String(r.status || '').toLowerCase() === 'approved')
           .sort((a: any, b: any) => this.toMillis(b.createdAt) - this.toMillis(a.createdAt))
           .slice(0, lim);
@@ -365,7 +386,8 @@ export class ReviewsService {
           .limit(lim)
           .get();
         return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-      } catch {
+      } catch (e) {
+        this.logger.warn('[Reviews] Composite index missing for listForUser — using client-side fallback filter', { userId });
         const snap = await admin.firestore()
           .collection('reviews')
           .where('ownerId', '==', userId)

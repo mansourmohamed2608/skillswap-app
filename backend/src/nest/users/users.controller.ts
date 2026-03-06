@@ -100,4 +100,39 @@ export class UsersController {
       throw err;
     }
   }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('block')
+  async blockUser(@Body() body: { targetUid?: string }, @Req() req: Request) {
+    const anyReq: any = req as any;
+    const userId: string | undefined = anyReq?.user?.uid;
+    if (!userId) throw new BadRequestException('Unauthenticated');
+    const targetUid = String(body?.targetUid || '').trim();
+    if (!targetUid) throw new BadRequestException('Missing targetUid');
+    if (targetUid === userId) throw new BadRequestException('Cannot block yourself');
+    try {
+      await this.usersService.blockUser(userId, targetUid);
+      return { success: true };
+    } catch (err) {
+      if (err instanceof StatusError) throw new HttpException(err.message, err.status);
+      throw err;
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('unblock')
+  async unblockUser(@Body() body: { targetUid?: string }, @Req() req: Request) {
+    const anyReq: any = req as any;
+    const userId: string | undefined = anyReq?.user?.uid;
+    if (!userId) throw new BadRequestException('Unauthenticated');
+    const targetUid = String(body?.targetUid || '').trim();
+    if (!targetUid) throw new BadRequestException('Missing targetUid');
+    try {
+      await this.usersService.unblockUser(userId, targetUid);
+      return { success: true };
+    } catch (err) {
+      if (err instanceof StatusError) throw new HttpException(err.message, err.status);
+      throw err;
+    }
+  }
 }

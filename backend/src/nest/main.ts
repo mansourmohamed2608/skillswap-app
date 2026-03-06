@@ -12,7 +12,18 @@ async function bootstrap() {
   // Security headers (only for standalone NestJS runs; index.ts handles production via Express)
   app.use(helmet());
 
-  // Rate limiting for standalone requests
+  // Stricter rate limiting for sensitive endpoints (payments, KYC, admin)
+  const strictLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+  app.use('/api/payments', strictLimiter);
+  app.use('/api/kyc', strictLimiter);
+  app.use('/admin', strictLimiter);
+
+  // General rate limiting for all other requests
   app.use(
     rateLimit({
       windowMs: 15 * 60 * 1000, // 15 minutes
@@ -33,7 +44,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((o) => origin.startsWith(o))) {
+      if (!origin || allowedOrigins.some((o) => origin === o)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));

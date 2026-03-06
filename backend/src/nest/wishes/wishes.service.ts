@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import { isEmail } from 'class-validator';
 import { getUserDocument } from '../../core/membership';
 import { createGeideaDonationSession } from '../../core/payments';
 import { saveDonationRecord } from '../../core/postgres';
@@ -12,6 +13,8 @@ export class WishesService {
     if (!userId) throw new UnauthorizedException('Unauthenticated request');
     const { title, description, goalAmount, currency, category, deadline, imageUrl, videoUrl } = body || {};
     if (!title || !description) throw new BadRequestException('Missing title or description');
+    if (String(title).length > 200) throw new BadRequestException('Title too long (max 200 characters)');
+    if (String(description).length > 5000) throw new BadRequestException('Description too long (max 5000 characters)');
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: title },
       { label: 'description', value: description },
@@ -58,8 +61,9 @@ export class WishesService {
     const amt = Number(amount || 0);
     if (!wishId) throw new BadRequestException('Missing wishId');
     if (!(amt > 0)) throw new BadRequestException('Invalid amount');
+    if (amt > 100000) throw new BadRequestException('Donation amount exceeds maximum allowed (100,000)');
     const email = String(donorEmail || '').trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new BadRequestException('Invalid email');
+    if (!isEmail(email)) throw new BadRequestException('Invalid email address');
 
     const wishRef = admin.firestore().collection('wishes').doc(wishId);
     const wishSnap = await wishRef.get();
@@ -120,17 +124,12 @@ export class WishesService {
     const snap = await admin.firestore()
       .collection('wishDonations')
       .where('wishId', '==', targetWishId)
-      .limit(50)
+      .where('status', 'in', ['PAID', 'SUCCESS'])
+      .orderBy('createdAt', 'desc')
+      .limit(lim)
       .get();
     return snap.docs
       .map((doc) => ({ id: doc.id, ...(doc.data() as any) }))
-      .filter((item: any) => ['PAID', 'SUCCESS'].includes(String(item.status || '').toUpperCase()))
-      .sort((a: any, b: any) => {
-        const left = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime();
-        const right = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime();
-        return right - left;
-      })
-      .slice(0, lim)
       .map((item: any) => ({
         id: item.id,
         donorName: item.anonymous ? 'Anonymous' : String(item.donorName || '').trim() || 'Anonymous',

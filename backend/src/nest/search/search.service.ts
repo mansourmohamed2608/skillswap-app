@@ -14,20 +14,18 @@ export class SearchService {
   private async getOwnerMetaMap(ownerIds: string[]) {
     const ids = Array.from(new Set(ownerIds.map((id) => String(id || '').trim()).filter(Boolean)));
     const map: Record<string, { name?: string; username?: string; location?: string; country?: string }> = {};
-    await Promise.all(ids.map(async (uid) => {
-      try {
-        const snap = await admin.firestore().collection('publicProfiles').doc(uid).get();
-        const data: any = snap.exists ? snap.data() || {} : {};
-        map[uid] = {
-          name: String(data?.name || '').trim() || undefined,
-          username: String(data?.username || '').trim() || undefined,
-          location: String(data?.location || '').trim() || undefined,
-          country: String(data?.country || '').trim() || undefined,
-        };
-      } catch {
-        map[uid] = {};
-      }
-    }));
+    if (!ids.length) return map;
+    const refs = ids.map((uid) => admin.firestore().collection('publicProfiles').doc(uid));
+    const snaps = await admin.firestore().getAll(...refs);
+    for (const snap of snaps) {
+      const data: any = snap.exists ? snap.data() || {} : {};
+      map[snap.id] = {
+        name: String(data?.name || '').trim() || undefined,
+        username: String(data?.username || '').trim() || undefined,
+        location: String(data?.location || '').trim() || undefined,
+        country: String(data?.country || '').trim() || undefined,
+      };
+    }
     return map;
   }
 
@@ -70,8 +68,9 @@ export class SearchService {
         const client = algoliasearch(appId, apiKey);
         const index = client.initIndex(indexName);
         const filters: string[] = [];
-        if (category) filters.push(`category:"${category}"`);
-        if (location) filters.push(`location:"${location}"`);
+        const escAlgolia = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+        if (category) filters.push(`category:"${escAlgolia(category)}"`);
+        if (location) filters.push(`location:"${escAlgolia(location)}"`);
         const result = await index.search(q || '', {
           page,
           hitsPerPage: pageSize,

@@ -52,8 +52,17 @@ export class ChatService {
       if (!recipientInput) throw new BadRequestException('Missing recipientId');
       const recipientId = await this.resolveRecipientUid(recipientInput);
       if (recipientId === uid) throw new BadRequestException('Cannot message yourself');
+
+      // Check if recipient has blocked the sender before writing anything.
+      const blockSnap = await admin.firestore()
+        .collection('users').doc(recipientId)
+        .collection('blockedUsers').doc(uid)
+        .get().catch(() => null);
+      if (blockSnap?.exists) throw new ForbiddenException('This user is not available for messaging');
+
       const text = String(payload?.text || '').trim();
       if (!text) throw new BadRequestException('Missing text');
+      if (text.length > 5000) throw new BadRequestException('Message too long (max 5000 characters)');
       const banned = await findBannedKeywordInFields([{ label: 'text', value: text }]);
       if (banned) throw new BadRequestException({ code: 'content/banned', field: banned.field });
 
@@ -136,10 +145,25 @@ export class ChatService {
     }
   }
 
+  // In-process TTL cache: avoids N+1 Firestore queries for repeated username lookups.
+  // TTL is 5 minutes — stale after a username change, acceptable for internal routing.
+  private readonly uidCache = new Map<string, { uid: string; expiresAt: number }>();
+
   private async resolveRecipientUid(identifier: string): Promise<string> {
     const raw = String(identifier || '').trim();
     if (!raw) throw new BadRequestException('Missing recipientId');
 
+    // Check TTL cache first (works for both UID and username inputs)
+    const now = Date.now();
+    const cached = this.uidCache.get(raw);
+    if (cached && cached.expiresAt > now) return cached.uid;
+
+    const resolved = await this._resolveRecipientUidUncached(raw);
+    this.uidCache.set(raw, { uid: resolved, expiresAt: now + 5 * 60 * 1000 });
+    return resolved;
+  }
+
+  private async _resolveRecipientUidUncached(raw: string): Promise<string> {
     // Fast path for direct UID
     if (UID_RE.test(raw)) {
       const [userDoc, publicDoc] = await Promise.all([
@@ -152,43 +176,18 @@ export class ChatService {
 
     const usernameLower = raw.toLowerCase();
 
-    // Preferred lookup from synced public profile
-    try {
-      const byUsernameLower = await admin.firestore()
-        .collection('publicProfiles')
-        .where('usernameLower', '==', usernameLower)
-        .limit(1)
-        .get();
-      if (!byUsernameLower.empty) return byUsernameLower.docs[0].id;
-    } catch {}
+    // Query all four username/profile paths in parallel to avoid N+1 round-trips.
+    const [byUsernameLower, byUsername, byUserUsernameLower, byUserUsername] = await Promise.allSettled([
+      admin.firestore().collection('publicProfiles').where('usernameLower', '==', usernameLower).limit(1).get(),
+      admin.firestore().collection('publicProfiles').where('username', '==', raw).limit(1).get(),
+      admin.firestore().collection('users').where('profile.usernameLower', '==', usernameLower).limit(1).get(),
+      admin.firestore().collection('users').where('profile.username', '==', raw).limit(1).get(),
+    ]);
 
-    // Backward compatibility for older docs that store plain username
-    try {
-      const byUsername = await admin.firestore()
-        .collection('publicProfiles')
-        .where('username', '==', raw)
-        .limit(1)
-        .get();
-      if (!byUsername.empty) return byUsername.docs[0].id;
-    } catch {}
-
-    try {
-      const byUserUsernameLower = await admin.firestore()
-        .collection('users')
-        .where('profile.usernameLower', '==', usernameLower)
-        .limit(1)
-        .get();
-      if (!byUserUsernameLower.empty) return byUserUsernameLower.docs[0].id;
-    } catch {}
-
-    try {
-      const byUserUsername = await admin.firestore()
-        .collection('users')
-        .where('profile.username', '==', raw)
-        .limit(1)
-        .get();
-      if (!byUserUsername.empty) return byUserUsername.docs[0].id;
-    } catch {}
+    if (byUsernameLower.status === 'fulfilled' && !byUsernameLower.value.empty) return byUsernameLower.value.docs[0].id;
+    if (byUsername.status === 'fulfilled' && !byUsername.value.empty) return byUsername.value.docs[0].id;
+    if (byUserUsernameLower.status === 'fulfilled' && !byUserUsernameLower.value.empty) return byUserUsernameLower.value.docs[0].id;
+    if (byUserUsername.status === 'fulfilled' && !byUserUsername.value.empty) return byUserUsername.value.docs[0].id;
 
     // Fallback slug path: first-last-<uidSuffix>
     const fallbackSlugMatch = /^(.+)-([a-z0-9]{6})$/.exec(usernameLower);

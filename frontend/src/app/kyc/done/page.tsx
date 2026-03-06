@@ -194,7 +194,7 @@ function KycDonePageContent() {
 
 export default function KycDonePage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center min-h-screen">Loading...</div>}>
+    <Suspense fallback={<div className="flex justify-center items-center min-h-screen"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>}>
       <KycDonePageContent />
     </Suspense>
   );

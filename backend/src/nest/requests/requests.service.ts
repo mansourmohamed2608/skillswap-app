@@ -69,7 +69,7 @@ export class RequestsService {
       await sendPushNotification(ownerId, 'New exchange request', 'You received a new request.', cleanLink);
       await sendEmailNotification(ownerId, 'New exchange request', 'You have a new exchange request on your listing.');
     } catch (e) {
-      this.logger.warn('Failed to send notifications for owner', e);
+      this.logger.error('Failed to send notifications for owner', e);
     }
 
     return { id: docRef.id, publicId };
@@ -137,25 +137,35 @@ export class RequestsService {
       throw new BadRequestException('Listing is no longer active');
     }
 
-    const acceptedSnap = await admin.firestore()
-      .collection('requests')
-      .where('listingId', '==', listingId)
-      .where('status', '==', 'accepted')
-      .limit(1)
-      .get();
-    if (!acceptedSnap.empty && acceptedSnap.docs[0].id !== requestId) {
-      throw new BadRequestException('Another request is already accepted for this listing');
+    // Verify requester also has an active membership before accepting on their behalf
+    const requesterSnap = await getUserDocument(requesterId);
+    this.ensureKycVerified(requesterSnap);
+    const requesterMembership = requesterSnap.get('membership');
+    const requesterCheck = canCreateBooking(requesterMembership);
+    if (!requesterCheck.allowed) {
+      throw new ForbiddenException(`Requester membership inactive: ${requesterCheck.reason}`);
     }
 
-    const nowVal =
-      (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
-        ? (admin.firestore.FieldValue as any).serverTimestamp()
-        : new Date();
-    await reqRef.update({
-      status: 'accepted',
-      acceptedAt: nowVal,
-      acceptedBy: userId,
-      updatedAt: nowVal,
+    // Use a sentinel document in a transaction to prevent double-accept race conditions.
+    // Firestore transactions only support document reads, not collection queries,
+    // so we track the accepted requestId in a dedicated document.
+    const sentinelRef = admin.firestore().collection('listingBookings').doc(listingId);
+    const nowVal = new Date();
+    await admin.firestore().runTransaction(async (tx) => {
+      const sentinelSnap = await tx.get(sentinelRef);
+      const existingAcceptedId: string | undefined = sentinelSnap.exists
+        ? (sentinelSnap.data() as any)?.acceptedRequestId
+        : undefined;
+      if (existingAcceptedId && existingAcceptedId !== requestId) {
+        throw new BadRequestException('Another request is already accepted for this listing');
+      }
+      tx.set(sentinelRef, { acceptedRequestId: requestId, acceptedAt: nowVal }, { merge: true });
+      tx.update(reqRef, {
+        status: 'accepted',
+        acceptedAt: nowVal,
+        acceptedBy: userId,
+        updatedAt: nowVal,
+      });
     });
     await incrementBookingCount(ownerId);
 
@@ -172,7 +182,7 @@ export class RequestsService {
       await sendPushNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.', cleanLink);
       await sendEmailNotification(requesterId, 'Request accepted', 'Your exchange request was accepted.');
     } catch (e) {
-      this.logger.warn('Failed to send accept notifications', e);
+      this.logger.error('Failed to send accept notifications', e);
     }
 
     return { success: true };

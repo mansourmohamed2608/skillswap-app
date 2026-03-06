@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createServiceRequest } from "@/services/api";
+import { createServiceRequest, recordAnalyticsEvent } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
 import { Input } from "@/components/ui/input";
@@ -36,6 +36,7 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
     try {
       const proposedTime = when ? new Date(when).toISOString() : undefined;
       const res = await createServiceRequest({ listingId, proposedTime, message });
+      recordAnalyticsEvent('exchange_requested', { listingId });
       setOpen(false);
       toast({ title: t('request.requestSent'), description: t('listings.request.toastId', { id: res.id }) });
     } catch (e: any) {

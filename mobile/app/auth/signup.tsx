@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, Modal, Pressable, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Image, KeyboardAvoidingView, Platform, Modal, Pressable, FlatList, Dimensions, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import { Link } from 'expo-router';
 // @ts-ignore - Expo Router types may not expose useRouter in this project, but it's available at runtime
 import { useRouter } from 'expo-router';
@@ -12,21 +12,17 @@ import { AppLogo } from '@/components/ui/AppLogo';
 import { countries } from '@/lib/countries';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import * as ImagePicker from 'expo-image-picker';
-import { auth, db } from '@/services/firebase';
+import { auth } from '@/services/firebase';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { finalizeKycMobile, submitKycPublicMobile, updateUserProfile as updateUserProfileApi } from '@/services/api';
+import { bootstrapUserAccountMobile } from '@/services/api';
 import { isLatinName, requiresLatinName } from '@/lib/validation';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
 import { useTranslation } from 'react-i18next';
 
-// Countries list now imported from '@/lib/countries'
-
 type FormState = {
   fullName: string;
+  username: string;
   email: string;
   phoneNumber: string;
   occupation?: string;
@@ -36,14 +32,22 @@ type FormState = {
   confirmPassword: string;
 };
 
-type Errors = Partial<Record<keyof FormState | 'nationalIdFront' | 'nationalIdBack' | 'server', string>>;
+type Errors = Partial<Record<keyof FormState | 'server', string>>;
 
 const REQUIRE_LATIN_NAME = requiresLatinName();
+
+function normalizePhoneNumber(value: string): string {
+  const raw = String(value || '').trim();
+  const normalized = raw.replace(/[^\d+]/g, '');
+  if (normalized.startsWith('00')) return `+${normalized.slice(2)}`;
+  return normalized;
+}
 
 export default function SignupScreen() {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<FormState>({
     fullName: '',
+    username: '',
     email: '',
     phoneNumber: '',
     occupation: '',
@@ -53,11 +57,6 @@ export default function SignupScreen() {
     confirmPassword: '',
   });
   const [errors, setErrors] = useState<Errors>({});
-  const [frontBase64, setFrontBase64] = useState<string | null>(null);
-  const [backBase64, setBackBase64] = useState<string | null>(null);
-  const [vendor, setVendor] = useState<string | null>(null);
-  const [kycStatus, setKycStatus] = useState<'IDLE' | 'PENDING' | 'VERIFIED' | 'FAILED'>('IDLE');
-  const [finalizing, setFinalizing] = useState(false);
   const router = useRouter();
   const { t } = useTranslation();
   const [countryPickerOpen, setCountryPickerOpen] = useState(false);
@@ -78,25 +77,6 @@ export default function SignupScreen() {
 
   const setField = (k: keyof FormState, v: string) => setForm((s) => ({ ...s, [k]: v }));
 
-  async function pickImage(which: 'front' | 'back') {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(t('auth.signup.errors.permissionTitle'), t('auth.signup.errors.permissionBody'));
-      return;
-    }
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9, base64: true });
-    if (!res.canceled) {
-      const asset = res.assets[0];
-      const b64 = asset.base64 || null;
-      if (!b64) {
-        Alert.alert(t('common.error') || 'Error', t('auth.signup.errors.imageReadFailed'));
-        return;
-      }
-      if (which === 'front') setFrontBase64(`data:${asset.mimeType || 'image/jpeg'};base64,${b64}`);
-      else setBackBase64(`data:${asset.mimeType || 'image/jpeg'};base64,${b64}`);
-    }
-  }
-
   function validate(): boolean {
     const e: Errors = {};
     const trimmedName = form.fullName.trim();
@@ -108,111 +88,50 @@ export default function SignupScreen() {
       const banned = findBannedKeywordInFields([{ label: 'fullName', value: trimmedName }]);
       if (banned) e.fullName = t('errors.codes.content/banned');
     }
+    const trimmedUsername = form.username.trim();
+    if (!trimmedUsername || trimmedUsername.length < 3) {
+      e.username = t('auth.signup.errors.usernameTooShort');
+    } else if (!/^[\p{L}\p{N}._-]{3,32}$/u.test(trimmedUsername)) {
+      e.username = t('auth.signup.errors.usernameInvalid');
+    }
     if (!form.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = t('auth.signup.errors.invalidEmail');
     if (!form.phoneNumber || form.phoneNumber.trim().length < 9) e.phoneNumber = t('auth.signup.errors.invalidPhone');
     if (!form.country) e.country = t('auth.signup.errors.countryRequired');
     if (!form.password || form.password.length < 6) e.password = t('auth.signup.errors.passwordTooShort');
     if (form.confirmPassword !== form.password) e.confirmPassword = t('auth.signup.errors.passwordMismatch');
-    if (!frontBase64) e.nationalIdFront = t('auth.signup.errors.frontRequired');
-    if (!backBase64) e.nationalIdBack = t('auth.signup.errors.backRequired');
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
-  async function ensureVendor(): Promise<string> {
-    let v = vendor;
-    if (v) return v;
-    // Try restore from storage to survive restarts
-    try {
-      const existing = await AsyncStorage.getItem('kyc_vendor');
-      if (existing) {
-        setVendor(existing);
-        return existing;
-      }
-    } catch {}
-    // Generate a simple unique-ish vendor id
-    v = `didit-mobile-${Date.now().toString(36)}-${Math.random().toString(16).slice(2, 8)}`;
-    setVendor(v);
-    try { await AsyncStorage.setItem('kyc_vendor', v); } catch {}
-    return v;
-  }
-
-  // Submit KYC to backend (public) and attach a Firestore listener to kyc_temp/{vendor}
-  async function submitKycAndListen() {
+  async function handleSubmit() {
+    if (!validate()) return;
     setLoading(true);
     setErrors({});
     try {
-      if (!auth || !db) throw new Error(t('auth.signup.errors.configError'));
-      if (!validate()) return;
-      const v = await ensureVendor();
-      const { fullName, nationalId } = { fullName: form.fullName.trim(), nationalId: undefined as string | undefined };
-      await submitKycPublicMobile({ fullName, vendor: v, idFrontBase64: frontBase64 as string, idBackBase64: backBase64 as string, nationalId });
-      setKycStatus('PENDING');
-
-      // Attach listener once
-      onSnapshot(doc(db, 'kyc_temp', v), (snap) => {
-        const data: any = snap.data() || {};
-        const status = String(data?.status || '').toUpperCase();
-        if (!status) return;
-        if (status === 'PENDING' && kycStatus !== 'PENDING') setKycStatus('PENDING');
-        if (status === 'FAILED') setKycStatus('FAILED');
-        if (status === 'VERIFIED') {
-          setKycStatus('VERIFIED');
-        }
-      });
+      if (!auth) throw new Error(t('auth.signup.errors.configError'));
+      const fullName = form.fullName.trim();
+      const username = form.username.trim();
+      const { email, password, phoneNumber, occupation, country, city } = form;
+      const phoneNumberNormalized = normalizePhoneNumber(phoneNumber);
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, { displayName: fullName });
+      try {
+        await bootstrapUserAccountMobile({ fullName, username, phoneNumber, phoneNumberNormalized, occupation: occupation || '', country, city: city || '', email });
+      } catch (err: any) {
+        try { await cred.user.delete(); } catch {}
+        throw err;
+      }
+      Alert.alert(t('auth.signup.successTitle'), t('auth.signup.successBody'), [
+        { text: t('common.continue'), onPress: () => router.replace('/profile/verify') },
+      ]);
     } catch (err: any) {
-      const msg = getErrorMessage(err, t('auth.signup.errors.kycFailedFallback'));
+      const msg = getErrorMessage(err, t('auth.signup.errors.signupFailedFallback'));
       setErrors((s) => ({ ...s, server: msg }));
-      Alert.alert(t('auth.signup.errors.kycFailedTitle'), msg);
+      Alert.alert(t('auth.signup.errors.signupFailedTitle'), msg);
     } finally {
       setLoading(false);
     }
   }
-
-  // Once KYC is VERIFIED, create the account and finalize KYC binding
-  useEffect(() => {
-    const maybeFinalize = async () => {
-      if (kycStatus !== 'VERIFIED' || finalizing) return;
-      setFinalizing(true);
-      try {
-        const { email, password, fullName, phoneNumber, occupation, country, city } = form;
-        const cred = await createUserWithEmailAndPassword(auth!, email, password);
-        await updateProfile(cred.user, { displayName: fullName });
-        // Bind verified KYC temp record to this uid
-        const v = await ensureVendor();
-        await finalizeKycMobile(v);
-        // Create user profile via backend (enforced by server to require KYC VERIFIED)
-        await updateUserProfileApi({
-          uid: cred.user.uid,
-          fullName,
-          email,
-          phoneNumber,
-          occupation: occupation || '',
-          country,
-          city: city || '',
-          avatarUrl: 'https://placehold.co/128x128.png',
-          bio: '',
-          rating: 0,
-          reviewsCount: 0,
-          servicesOffered: [],
-          servicesRequested: [],
-        });
-        try { await AsyncStorage.removeItem('kyc_vendor'); } catch {}
-        Alert.alert(t('auth.signup.successTitle'), t('auth.signup.successBody'), [
-          { text: t('common.continue'), onPress: () => router.replace('/') },
-        ]);
-      } catch (err: any) {
-        const msg = getErrorMessage(err, t('auth.signup.errors.signupFailedFallback'));
-        setErrors((s) => ({ ...s, server: msg }));
-        Alert.alert(t('auth.signup.errors.signupFailedTitle'), msg);
-      } finally {
-        setFinalizing(false);
-      }
-    };
-    // no await in effect
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    maybeFinalize();
-  }, [kycStatus]);
 
   const Bg = useMemo(() => (
     <Image
@@ -258,6 +177,13 @@ export default function SignupScreen() {
                 <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.fullNameLabel')}</Text>
                 <Input value={form.fullName} onChangeText={(t) => setField('fullName', t)} placeholder={t('auth.signup.fullNamePlaceholder')} />
                 {errors.fullName ? (<Text style={cn('mt-1 text-sm text-destructive')}>{errors.fullName}</Text>) : null}
+              </View>
+
+              {/* Username */}
+              <View>
+                <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.usernameLabel')}</Text>
+                <Input value={form.username} onChangeText={(t) => setField('username', t)} autoCapitalize="none" placeholder={t('auth.signup.usernamePlaceholder')} />
+                {errors.username ? (<Text style={cn('mt-1 text-sm text-destructive')}>{errors.username}</Text>) : null}
               </View>
 
               {/* Email */}
@@ -316,65 +242,17 @@ export default function SignupScreen() {
                 {errors.confirmPassword ? (<Text style={cn('mt-1 text-sm text-destructive')}>{errors.confirmPassword}</Text>) : null}
               </View>
 
-              {/* National ID Front */}
-              <View>
-                <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.idFrontLabel')}</Text>
-                {frontBase64 ? (
-                  <Image source={{ uri: frontBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#e5e7eb' }} />
-                ) : null}
-                <Button
-                  variant="outline"
-                  className="w-full h-10 items-start justify-center px-3"
-                  onPress={() => pickImage('front')}
-                >
-                  {t('auth.signup.uploadFront')}
-                </Button>
-                {errors.nationalIdFront ? (<Text style={cn('mt-1 text-sm text-destructive')}>{errors.nationalIdFront}</Text>) : null}
-              </View>
 
-              {/* National ID Back */}
-              <View>
-                <Text style={cn('mb-1 text-sm text-foreground')}>{t('auth.signup.idBackLabel')}</Text>
-                {backBase64 ? (
-                  <Image source={{ uri: backBase64 }} style={{ width: 150, height: 90, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: '#e5e7eb' }} />
-                ) : null}
-                <Button
-                  variant="outline"
-                  className="w-full h-10 items-start justify-center px-3"
-                  onPress={() => pickImage('back')}
-                >
-                  {t('auth.signup.uploadBack')}
-                </Button>
-                {errors.nationalIdBack ? (<Text style={cn('mt-1 text-sm text-destructive')}>{errors.nationalIdBack}</Text>) : null}
-              </View>
-
-              {/* Privacy note */}
-              <View style={cn('mt-2 rounded-md border border-primary/30 bg-muted/50 p-3')}>
-                <Text style={cn('text-primary font-medium')}>{t('auth.signup.privacyTitle')}</Text>
-                <Text style={cn('text-muted-foreground mt-1')}>{t('auth.signup.privacyBody')}</Text>
-              </View>
             </CardContent>
 
             <CardFooter className="flex-col items-stretch gap-4">
-              <Button onPress={submitKycAndListen} disabled={loading || kycStatus === 'PENDING' || kycStatus === 'VERIFIED'}>
+              <Button onPress={handleSubmit} disabled={loading}>
                 {loading ? (
                   <Text>{t('auth.signup.submitting')}</Text>
                 ) : (
-                  <Text>{kycStatus === 'PENDING' ? t('auth.signup.waiting') : (kycStatus === 'VERIFIED' ? t('auth.signup.verified') : t('auth.signup.submit'))}</Text>
+                  <Text>{t('auth.signup.submit')}</Text>
                 )}
               </Button>
-              {kycStatus === 'PENDING' ? (
-                <View style={cn('rounded-md border border-primary/30 bg-primary/10 p-3')}>
-                  <Text style={cn('font-medium text-primary')}>{t('auth.signup.pendingTitle')}</Text>
-                  <Text style={cn('text-muted-foreground mt-1')}>{t('auth.signup.pendingBody')}</Text>
-                </View>
-              ) : null}
-              {kycStatus === 'FAILED' ? (
-                <View style={cn('rounded-md border border-destructive/30 bg-destructive/10 p-3')}>
-                  <Text style={cn('font-medium text-destructive')}>{t('auth.signup.failedTitle')}</Text>
-                  <Text style={cn('text-destructive mt-1')}>{t('auth.signup.failedBody')}</Text>
-                </View>
-              ) : null}
               {errors.server ? (
                 <View style={cn('rounded-md border border-destructive/30 bg-destructive/10 p-3')}>
                   <Text style={cn('font-medium text-destructive')}>{t('auth.signup.errorTitle')}</Text>

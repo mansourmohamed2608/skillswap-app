@@ -2,7 +2,6 @@
 
 // src/app/auth/signin/page.tsx
 import { SignInForm } from '@/features/auth/components/SignInForm';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 
@@ -30,16 +29,7 @@ export default function SignInPage() {
   const { t } = useTranslation();
   return (
     <div className="relative overflow-hidden flex flex-col items-center justify-center min-h-[calc(100vh-10rem-5rem)] py-8">
-       <div className="absolute inset-0 opacity-5 -z-10">
-        <Image 
-            src="https://placehold.co/1920x1080.png" 
-            alt={t('auth.backgroundAlt')} 
-            fill 
-            style={{objectFit: 'cover'}} 
-            data-ai-hint="abstract pattern"
-            priority={false}
-        />
-      </div>
+      <div className="absolute inset-0 -z-10 [background-image:radial-gradient(circle_at_1px_1px,hsl(var(--primary)/0.12)_1px,transparent_0)] [background-size:24px_24px]" />
       <Link href="/" className="flex items-center gap-2 text-primary mb-8">
         <AuthLogo />
         <span className="font-bold text-2xl">{t('common.appName')}</span>

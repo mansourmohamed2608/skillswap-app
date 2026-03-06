@@ -159,6 +159,13 @@ async function authedFetch(path: string, init?: RequestInit) {
   return res;
 }
 
+/** Convenience wrapper: POST `path` with a JSON body and return the parsed response. */
+export async function authedPost<T = unknown>(path: string, body?: unknown): Promise<T> {
+  const res = await authedFetch(path, { body: JSON.stringify(body) });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
+}
+
 export async function createSubscriptionSession(args: {
   plan: "Basic" | "Standard" | "Pro" | "Business";
   duration: "3_months" | "6_months" | "12_months";
@@ -707,4 +714,17 @@ export async function deleteReview(reviewId: string) {
   }
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { success: boolean };
+}
+
+// --------------- Analytics ---------------
+/**
+ * Fire-and-forget analytics event. Never throws — analytics must not block user flows.
+ */
+export function recordAnalyticsEvent(name: string, properties?: Record<string, unknown>): void {
+  if (!auth?.currentUser) return;
+  authedFetch('/api/analytics/event', {
+    body: JSON.stringify({ name, properties: properties ?? {} }),
+  }).catch(() => {
+    // silently ignore analytics failures
+  });
 }
