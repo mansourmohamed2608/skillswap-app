@@ -1,5 +1,5 @@
 import { View, Text, ScrollView, FlatList, ActivityIndicator, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import React, { useEffect, useState, Fragment } from 'react';
+import React, { useEffect, useState, useRef, Fragment } from 'react';
 import { Link, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -16,7 +16,7 @@ import { PlusCircle, Settings, MapPinIcon, Star, Package, Clock } from 'lucide-r
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import { fetchReviewsForUserMobile, cancelKycMobile } from '@/services/api';
+import { fetchReviewsForUserMobile, cancelKycMobile, markNotificationsReadMobile } from '@/services/api';
 import NotificationList from '@/components/NotificationList';
 import { db } from '@/services/firebase';
 import { collection, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
@@ -34,6 +34,8 @@ export default function ProfileScreen() {
   const [cancelBusy, setCancelBusy] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeProfileTab, setActiveProfileTab] = useState('profile');
+  const notificationsMarkingRef = useRef(false);
   const { setFade } = useHeaderFade();
 
   useEffect(() => {
@@ -115,6 +117,23 @@ export default function ProfileScreen() {
     });
     return () => unsub();
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (activeProfileTab !== 'notifications') return;
+    if (notificationsMarkingRef.current) return;
+    const unread = notifications.filter((n) => !n.isRead);
+    if (!unread.length) return;
+    notificationsMarkingRef.current = true;
+    const ids = unread.map((n) => n.id);
+    // Optimistically mark as read locally
+    setNotifications((prev) => prev.map((n) => (!n.isRead ? { ...n, isRead: true } : n)));
+    markNotificationsReadMobile(ids).catch(() => {
+      // Revert on failure
+      setNotifications((prev) => prev.map((n) => (ids.includes(n.id) ? { ...n, isRead: false } : n)));
+    }).finally(() => {
+      notificationsMarkingRef.current = false;
+    });
+  }, [activeProfileTab, notifications]);
 
   if (!user) {
     return (
@@ -451,6 +470,7 @@ export default function ProfileScreen() {
               ),
             },
           ]}
+          onTabChange={setActiveProfileTab}
         />
       </View>
 

@@ -621,3 +621,12 @@ export async function fetchAdminAnalyticsMobile(limit = 200) {
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { summary: Array<{ name: string; count: number }>; items: Array<{ id: string; name: string; userId?: string; properties?: any; createdAt?: any }> };
 }
+
+export async function markNotificationsReadMobile(ids: string[]) {
+  if (!ids.length) return;
+  const res = await authedFetch(`/api/user/notifications/read`, {
+    body: JSON.stringify({ ids }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { updated: number };
+}

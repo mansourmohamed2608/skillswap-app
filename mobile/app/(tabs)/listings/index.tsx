@@ -1,4 +1,4 @@
-import { View, Text, FlatList, ActivityIndicator, TextInput, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TextInput, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getListingsWithUsers } from '@/services/data';
@@ -21,6 +21,7 @@ export default function ListingsScreen() {
   const [items, setItems] = useState<ListingWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'completed'>('all');
   const { setFade } = useHeaderFade();
 
   useEffect(() => {
@@ -37,11 +38,13 @@ export default function ListingsScreen() {
 
   const filteredItems = items.filter((item) => {
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       item.listing.offeredService?.title?.toLowerCase().includes(query) ||
       item.listing.requestedService?.title?.toLowerCase().includes(query) ||
       item.user?.name?.toLowerCase().includes(query)
     );
+    const matchesStatus = statusFilter === 'all' || item.listing.status === statusFilter;
+    return matchesSearch && matchesStatus;
   });
 
   return (
@@ -76,6 +79,19 @@ export default function ListingsScreen() {
                   onChangeText={setSearchQuery}
                   style={cn('ml-2 flex-1 text-foreground')}
                 />
+              </View>
+              <View style={cn('mt-2 flex-row gap-2')}>
+                {(['all', 'open', 'completed'] as const).map((s) => (
+                  <TouchableOpacity
+                    key={s}
+                    onPress={() => setStatusFilter(s)}
+                    style={cn(`rounded-full border px-3 py-1 ${statusFilter === s ? 'border-primary bg-primary/10' : 'border-border'}`)}
+                  >
+                    <Text style={cn(`text-xs ${statusFilter === s ? 'text-primary font-medium' : 'text-foreground'}`)}>
+                      {t(`listings.filter_${s}`) || s.charAt(0).toUpperCase() + s.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </View>
           </View>

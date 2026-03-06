@@ -59,7 +59,18 @@ export default function VerifyProfileScreen() {
     }
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.9 });
     if (!res.canceled) {
-      const uri = res.assets[0].uri;
+      const asset = res.assets[0];
+      const FIVE_MB = 5 * 1024 * 1024;
+      if (asset.fileSize && asset.fileSize > FIVE_MB) {
+        Alert.alert(t('kyc.fileTooLargeTitle'), t('kyc.fileTooLargeBody'));
+        return;
+      }
+      const mime = asset.mimeType ?? '';
+      if (mime && !['image/jpeg', 'image/jpg', 'image/png', 'image/heic', 'image/webp'].includes(mime)) {
+        Alert.alert(t('kyc.invalidFileTypeTitle'), t('kyc.invalidFileTypeBody'));
+        return;
+      }
+      const uri = asset.uri;
       if (which === 'front') setFrontUri(uri);
       else setBackUri(uri);
     }

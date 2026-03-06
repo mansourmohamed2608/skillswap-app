@@ -10,6 +10,7 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { getErrorMessage } from '@/lib/errors';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
 
 type Currency = 'EGP' | 'SAR';
 type Duration = '3mo' | '6mo' | '12mo';
@@ -103,8 +104,13 @@ export default function PricingScreen() {
   const checkIconColor = colorScheme === 'dark' ? '#4ade80' : '#16A34A';
   const useMockPayments = (Constants.expoConfig?.extra as any)?.EXPO_PUBLIC_USE_MOCK_PAYMENTS === 'true';
   const { t } = useTranslation();
+  const { user } = useAuth();
 
   async function choosePlan(plan: PlanKey) {
+    if (!user) {
+      Alert.alert(t('auth.sign_in_required') || 'Sign in required', t('auth.sign_in_to_subscribe') || 'Please sign in to subscribe to a plan.');
+      return;
+    }
     try {
       setLoadingPlan(plan);
       const res = await createSubscriptionSession({ plan: plan.charAt(0).toUpperCase() + plan.slice(1) as any, duration: durationToBackend[duration], currency });

@@ -1,6 +1,15 @@
-  import { View, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image } from 'react-native';
+  import { View, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
   import React, { useEffect, useRef, useState } from 'react';
+  import { useRouter } from 'expo-router';
   import { createListing } from '@/services/api';
+
+  const SERVICE_CATEGORIES = [
+    'Graphic Design', 'Gardening', 'Web Development', 'Home Repair',
+    'Tech Support', 'Tutoring', 'Pet Care', 'Photography', 'Videography',
+    'Repair Services', 'Cooking', 'Writing', 'Music Lessons', 'Fitness Training',
+    'Event Planning', 'Consulting', 'Language Lessons', 'Arts & Crafts',
+    'Moving Help', 'Beauty Services', 'Personal Care', 'Transportation',
+  ];
   import { useAuth } from '@/context/AuthContext';
   import { useTranslation } from 'react-i18next';
   import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +25,7 @@
   export default function NewListingScreen() {
     const { user } = useAuth();
     const { t } = useTranslation();
+    const router = useRouter();
     const [title, setTitle] = useState('');
     const [requestedTitle, setRequestedTitle] = useState('');
     const [offeredCategory, setOfferedCategory] = useState('');
@@ -135,7 +145,9 @@
           geo,
           status: 'open'
         });
-        Alert.alert(t('common.success') || 'Success', t('listings.created', { id: res.id }));
+        Alert.alert(t('common.success') || 'Success', t('listings.created', { id: res.id }), [
+          { text: t('common.ok') || 'OK', onPress: () => router.push('/listings') },
+        ]);
       } catch (e: any) {
         Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('errors.generic')));
       }
@@ -194,7 +206,17 @@
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.offer_title')}</Text>
         <Input className="mb-3" value={title} onChangeText={setTitle} />
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.offer_category') || 'Offer category'}</Text>
-        <Input className="mb-3" value={offeredCategory} onChangeText={setOfferedCategory} placeholder={t('listings.categoryPlaceholder')} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+          {SERVICE_CATEGORIES.map((cat) => (
+            <TouchableOpacity
+              key={cat}
+              onPress={() => setOfferedCategory(cat)}
+              style={cn(`rounded-full border px-3 py-1 ${offeredCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
+            >
+              <Text style={cn(`text-xs ${offeredCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{cat}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.request_title')}</Text>
         <View style={cn('mb-3 flex-row gap-2')}>
           {(['service', 'product', 'money'] as const).map((kind) => (
@@ -214,7 +236,17 @@
           <>
             <Input className="mb-3" value={requestedTitle} onChangeText={setRequestedTitle} />
             <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
-            <Input className="mb-3" value={requestedCategory} onChangeText={setRequestedCategory} placeholder={t('listings.categoryPlaceholder')} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {SERVICE_CATEGORIES.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  onPress={() => setRequestedCategory(cat)}
+                  style={cn(`rounded-full border px-3 py-1 ${requestedCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
+                >
+                  <Text style={cn(`text-xs ${requestedCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{cat}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
           </>
         ) : null}
         {requestedKind === 'product' ? (
