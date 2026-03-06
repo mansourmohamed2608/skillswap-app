@@ -118,41 +118,7 @@ export async function signupAction(
     // user doc creation failed; auth already succeeded so continue
   }
 
-  // 4. Create Didit session and redirect to hosted flow
-  try {
-    if (!process.env.DIDIT_API_KEY || !process.env.DIDIT_WORKFLOW_ID) {
-      throw new Error('Missing DIDIT_API_KEY or DIDIT_WORKFLOW_ID');
-    }
-    const base = process.env.DIDIT_BASE_URL || 'https://verification.didit.me';
-    const r = await fetch(`${base}/v2/session/`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': process.env.DIDIT_API_KEY as string,
-      },
-      body: JSON.stringify({
-        workflow_id: process.env.DIDIT_WORKFLOW_ID,
-        vendor_data: user.uid,
-        ...(process.env.DIDIT_CALLBACK_URL ? { callback: process.env.DIDIT_CALLBACK_URL } : {}),
-      }),
-    });
-    const data = await r.json();
-    if (!r.ok) {
-      throw new Error('Failed to create Didit session');
-    }
-
-    // Persist mapping and initial PENDING state
-    await setDoc(doc(db!, "kycReferences", String(data.session_id)), {
-      uid: user.uid, provider: 'didit', createdAt: serverTimestamp(),
-    }, { merge: true });
-    await setDoc(doc(db!, "users", user.uid, "kyc", "status"), {
-      status: 'PENDING', provider: 'didit', referenceId: data.session_id, updatedAt: serverTimestamp(),
-    }, { merge: true });
-
-    redirect(data.url as string);
-  } catch (_e) {
-    redirect('/auth/signin');
-  }
+  redirect('/profile/verify');
 }
 
 // Sign In Schema and State

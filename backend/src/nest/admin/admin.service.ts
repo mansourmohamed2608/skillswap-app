@@ -22,7 +22,7 @@ export class AdminService {
   // TTL is 5 min — a revoked admin retains access for at most 5 min on a warm instance,
   // which is acceptable for internal tooling.
   private readonly adminCache = new Map<string, number>(); // uid → expiresAt ms
-  private readonly ADMIN_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+  private readonly ADMIN_CACHE_TTL_MS = 30 * 1000; // 30 seconds
 
   private async assertAdmin(uid: string) {
     const now = Date.now();

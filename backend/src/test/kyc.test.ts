@@ -21,19 +21,11 @@ jest.mock('firebase-admin', () => ({
   })),
 }));
 
-jest.mock('firebase-functions', () => ({
-  config: jest.fn(() => ({
-    didit: {},
-  })),
-}));
-
 jest.mock('axios');
 
 import * as admin from 'firebase-admin';
-import axios from 'axios';
-import { getKycStatus, fetchDiditDecision, clean } from '../core/kyc';
+import { getKycStatus, clean } from '../core/kyc';
 
-const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('KYC Service', () => {
   let mockSet: jest.Mock;
@@ -131,50 +123,4 @@ describe('KYC Service', () => {
   });
 
 
-  describe('fetchDiditDecision', () => {
-    it('should fetch decision for a session', async () => {
-      mockedAxios.get.mockResolvedValue({
-        data: {
-          status: 'approved',
-          decision: {
-            document_valid: true,
-            selfie_match: true,
-          },
-        },
-        status: 200,
-      });
-
-      const result = await fetchDiditDecision('session-123');
-
-      expect(result.status).toBe(200);
-      expect(result.data.status).toBe('approved');
-
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        'https://verification.didit.me/v2/session/session-123/decision/',
-        expect.objectContaining({
-          headers: { 'x-api-key': 'test-api-key' },
-          timeout: 10000,
-        })
-      );
-    });
-
-    it('should handle non-2xx responses without throwing', async () => {
-      mockedAxios.get.mockResolvedValue({
-        status: 404,
-        data: { error: 'Session not found' },
-      });
-
-      const result = await fetchDiditDecision('invalid-session');
-
-      expect(result.status).toBe(404);
-      expect(result.data.error).toBe('Session not found');
-    });
-
-    it('should throw error when API key is missing', async () => {
-      delete process.env.DIDIT_API_KEY;
-
-      await expect(fetchDiditDecision('session-123'))
-        .rejects.toThrow('Missing DIDIT_API_KEY');
-    });
-  });
 });

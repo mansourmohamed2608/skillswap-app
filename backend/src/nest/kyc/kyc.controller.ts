@@ -2,7 +2,6 @@ import { BadRequestException, Body, Controller, Get, Logger, NotFoundException, 
 import { Request } from 'express';
 import Busboy from 'busboy';
 import * as admin from 'firebase-admin';
-import { FinalizeKycDto } from './dto/finalize-kyc.dto';
 import { KycService } from './kyc.service';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
 
@@ -33,26 +32,6 @@ export class KycController {
     }
     const result = await this.kycService.status(uid, vendor || null);
     return { result };
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Post('finalize')
-  async finalize(@Body() body: FinalizeKycDto, @Req() req: Request) {
-    const uid = (req as any)?.user?.uid || '';
-    const result = await this.kycService.finalize(uid, body.vendor);
-    return result;
-  }
-
-  @UseGuards(FirebaseAuthGuard)
-  @Get('sync')
-  async sync(@Query('sessionId') sessionId: string, @Query('uid') uid: string | undefined, @Req() req: Request) {
-    if (!sessionId) throw new BadRequestException('Missing sessionId');
-    const user = (req as any)?.user;
-    const callerUid = user?.uid;
-    const isAdmin = Boolean(user?.admin || user?.claims?.admin);
-    if (!callerUid) throw new UnauthorizedException('Authentication required');
-    const targetUid = isAdmin && uid ? uid : callerUid;
-    return this.kycService.sync(sessionId, targetUid, { isAdmin, callerUid });
   }
 
   @UseGuards(FirebaseAuthGuard)
@@ -190,43 +169,5 @@ export class KycController {
     });
   }
 
-  /**
-   * POST /kyc/submit-public
-   * Pre-signup / unauthenticated flow: accept base64-encoded images with a
-   * `vendor` identifier.  Results are stored in kyc_temp/{vendor} and can
-   * be finalised via POST /kyc/finalize once the user has an account.
-   */
-  @Post('submit-public')
-  async submitPublic(
-    @Body() body: {
-      fullName?: string;
-      vendor?: string;
-      idFrontBase64?: string;
-      idBackBase64?: string;
-      nationalId?: string;
-    },
-  ) {
-    const vendor = String(body?.vendor || '').trim();
-    if (!vendor) throw new BadRequestException('vendor is required');
-    if (!body?.idFrontBase64 || !body?.idBackBase64) {
-      throw new BadRequestException('idFrontBase64 and idBackBase64 are required');
-    }
-    return this.kycService.submitFromBase64(vendor, {
-      fullName: String(body.fullName || ''),
-      idFrontBase64: body.idFrontBase64,
-      idBackBase64: body.idBackBase64,
-      nationalId: body.nationalId ? String(body.nationalId) : undefined,
-    });
-  }
-
-  @Post('webhook')
-  async webhook(@Req() req: any) {
-    const raw = req.rawBody;
-    if (!raw || !Buffer.isBuffer(raw)) {
-      throw new BadRequestException('Missing raw body for signature verification');
-    }
-    const headers = req.headers || {};
-    return this.kycService.webhook(raw, headers);
-  }
-
 }
+

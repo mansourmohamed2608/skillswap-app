@@ -6,10 +6,9 @@ import { auth, db } from "@/services/firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { CheckCircle2, Clock3, AlertCircle } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
-import { getKycApiBase } from "@/services/kyc";
 
 type StatusKey = "approved" | "declined" | "inReview" | "pending";
 
@@ -43,9 +42,7 @@ function StatusPill({ status }: { status: StatusKey }) {
 
 function KycDonePageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { t } = useTranslation();
-  const sessionIdFromQuery = searchParams.get("verificationSessionId") || undefined;
   const [liveStatus, setLiveStatus] = useState<StatusKey>("pending");
   const [uid, setUid] = useState<string | null>(null);
   const [bypassBusy, setBypassBusy] = useState(false);
@@ -82,29 +79,6 @@ function KycDonePageContent() {
     };
   }, []);
 
-  // One-shot decision sync in case webhooks didn't land yet
-  useEffect(() => {
-    const sessionId = sessionIdFromQuery;
-    if (!sessionId || !auth) return;
-    const unsub = onAuthStateChanged(auth, async (user) => {
-      if (!user) return;
-      try {
-        const token = await user.getIdToken();
-        const base = getKycApiBase();
-        await fetch(
-          `${base}/kyc/sync?sessionId=${encodeURIComponent(sessionId)}&uid=${encodeURIComponent(user.uid)}`,
-          {
-            cache: "no-store",
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-      } catch {
-        // ignore sync errors; UI will keep polling
-      }
-    });
-    return () => unsub();
-  }, [sessionIdFromQuery]);
-
   async function handleDevBypass() {
     if (!auth) return;
     setBypassBusy(true);
@@ -113,7 +87,7 @@ function KycDonePageContent() {
       const user = auth.currentUser;
       if (!user) throw new Error(t('kyc.done.errors.signInFirst'));
       const token = await user.getIdToken();
-      const base = getKycApiBase();
+      const base = process.env.NEXT_PUBLIC_API_BASE || '';
       const resp = await fetch(`${base}/kyc/dev-verify`, {
         method: "POST",
         headers: {
