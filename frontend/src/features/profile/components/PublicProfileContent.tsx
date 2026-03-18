@@ -82,14 +82,14 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
       if (isBlocked) {
         await unblockUser(user.id);
         setIsBlocked(false);
-        toast({ title: t('listings.reports.unblockSuccess') });
+        toast({ title: t('reports.unblockSuccess') });
       } else {
         await blockUser(user.id);
         setIsBlocked(true);
-        toast({ title: t('listings.reports.blockSuccess') });
+        toast({ title: t('reports.blockSuccess') });
       }
     } catch {
-      toast({ title: t('listings.reports.blockFailed'), variant: 'destructive' });
+      toast({ title: t('reports.blockFailed'), variant: 'destructive' });
     } finally {
       setBlockBusy(false);
     }
@@ -97,18 +97,18 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
 
   async function handleSubmitReport() {
     if (!reportReason.trim()) {
-      toast({ title: t('listings.reports.missingReason'), variant: 'destructive' });
+      toast({ title: t('reports.missingReason'), variant: 'destructive' });
       return;
     }
     setReportBusy(true);
     try {
       await submitUserReport({ userId: user.id, reason: reportReason.trim(), note: reportNote.trim() || undefined });
-      toast({ title: t('listings.reports.submitted') });
+      toast({ title: t('reports.submitted') });
       setReportOpen(false);
       setReportReason('');
       setReportNote('');
     } catch {
-      toast({ title: t('listings.reports.failed'), variant: 'destructive' });
+      toast({ title: t('reports.failed'), variant: 'destructive' });
     } finally {
       setReportBusy(false);
     }
@@ -189,9 +189,9 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
             className="gap-2"
           >
             {isBlocked ? (
-              <><ShieldCheckIcon className="h-4 w-4" />{t('listings.reports.unblockUser')}</>
+              <><ShieldCheckIcon className="h-4 w-4" />{t('reports.unblockUser')}</>
             ) : (
-              <><ShieldBanIcon className="h-4 w-4" />{t('listings.reports.blockUser')}</>
+              <><ShieldBanIcon className="h-4 w-4" />{t('reports.blockUser')}</>
             )}
           </Button>
 
@@ -202,7 +202,7 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
             className="gap-2"
           >
             <FlagIcon className="h-4 w-4" />
-            {t('listings.reports.reportUser')}
+            {t('reports.reportUser')}
           </Button>
         </div>
       )}
@@ -211,24 +211,24 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
       <Dialog open={reportOpen} onOpenChange={setReportOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('listings.reports.reportUser')}</DialogTitle>
-            <DialogDescription>{t('listings.reports.reportUserHelp')}</DialogDescription>
+            <DialogTitle>{t('reports.reportUser')}</DialogTitle>
+            <DialogDescription>{t('reports.reportUserHelp')}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="report-reason">{t('listings.reports.reasonLabel')}</Label>
+              <Label htmlFor="report-reason">{t('reports.reasonLabel')}</Label>
               <Input
                 id="report-reason"
-                placeholder={t('listings.reports.reasonPlaceholder')}
+                placeholder={t('reports.reasonPlaceholder')}
                 value={reportReason}
                 onChange={(e) => setReportReason(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="report-note">{t('listings.reports.noteLabel')}</Label>
+              <Label htmlFor="report-note">{t('reports.noteLabel')}</Label>
               <Textarea
                 id="report-note"
-                placeholder={t('listings.reports.notePlaceholder')}
+                placeholder={t('reports.notePlaceholder')}
                 value={reportNote}
                 onChange={(e) => setReportNote(e.target.value)}
                 rows={3}
@@ -237,10 +237,10 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReportOpen(false)} disabled={reportBusy}>
-              {t('listings.reports.cancel')}
+              {t('reports.cancel')}
             </Button>
             <Button onClick={handleSubmitReport} disabled={reportBusy}>
-              {reportBusy ? t('listings.reports.submitting') : t('listings.reports.submit')}
+              {reportBusy ? t('reports.submitting') : t('reports.submit')}
             </Button>
           </DialogFooter>
         </DialogContent>
