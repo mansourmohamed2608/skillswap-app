@@ -305,10 +305,8 @@ export function AppHeader() {
                     </ul>
                   )}
                   <div className="border-t p-2">
-                    <Button variant="ghost" size="sm" asChild className="w-full justify-center">
-                      <Link href="/profile?tab=notifications" onClick={() => setDesktopNotificationsOpen(false)}>
-                        {t('profile.yourNotifications')}
-                      </Link>
+                    <Button variant="ghost" size="sm" className="w-full justify-center" onClick={() => setDesktopNotificationsOpen(false)}>
+                      {t('common.close', { defaultValue: 'Close' })}
                     </Button>
                   </div>
                 </PopoverContent>
@@ -422,10 +420,8 @@ export function AppHeader() {
                   </ul>
                 )}
                 <div className="border-t p-2">
-                  <Button variant="ghost" size="sm" asChild className="w-full justify-center">
-                    <Link href="/profile?tab=notifications" onClick={() => setMobileNotificationsOpen(false)}>
-                      {t('profile.yourNotifications')}
-                    </Link>
+                  <Button variant="ghost" size="sm" className="w-full justify-center" onClick={() => setMobileNotificationsOpen(false)}>
+                    {t('common.close', { defaultValue: 'Close' })}
                   </Button>
                 </div>
               </PopoverContent>
