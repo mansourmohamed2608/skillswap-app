@@ -209,7 +209,7 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center px-4 sm:px-6">
+      <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center justify-between px-4 sm:px-6 md:justify-start">
         <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 text-primary transition-colors hover:text-primary/80">
           <AppLogo />
           <span
@@ -359,7 +359,7 @@ export function AppHeader() {
           )}
         </div>
 
-        <div className="ms-auto flex items-center gap-0.5 md:hidden">
+        <div className="flex items-center gap-0.5 md:hidden">
           {isAuthenticated ? (
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/chat">
