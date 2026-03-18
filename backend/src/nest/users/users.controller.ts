@@ -102,6 +102,22 @@ export class UsersController {
   }
 
   @UseGuards(FirebaseAuthGuard)
+  @Post('notifications/clear-read')
+  async clearReadNotifications(@Body() body: { ids?: string[] }, @Req() req: Request) {
+    const anyReq: any = req as any;
+    const userId: string | undefined = anyReq?.user?.uid;
+    try {
+      const deleted = await this.usersService.clearReadNotifications(userId || '', body?.ids);
+      return { success: true, deleted };
+    } catch (err) {
+      if (err instanceof StatusError) {
+        throw new HttpException(err.message, err.status);
+      }
+      throw err;
+    }
+  }
+
+  @UseGuards(FirebaseAuthGuard)
   @Post('block')
   async blockUser(@Body() body: { targetUid?: string }, @Req() req: Request) {
     const anyReq: any = req as any;

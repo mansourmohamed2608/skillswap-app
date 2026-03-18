@@ -251,6 +251,18 @@ export async function markNotificationsRead(ids: string[]) {
   return (await res.json()) as { success: boolean; updated: number };
 }
 
+export async function clearReadNotifications(ids: string[]) {
+  const cleanIds = Array.isArray(ids)
+    ? Array.from(new Set(ids.map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 200)
+    : [];
+  if (!cleanIds.length) return { success: true, deleted: 0 };
+  const res = await authedFetch(`/api/user/notifications/clear-read`, {
+    body: JSON.stringify({ ids: cleanIds }),
+  });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { success: boolean; deleted: number };
+}
+
 export async function createListing(listing: any) {
   const userId = auth?.currentUser?.uid;
   if (!userId) throw new ApiError(401, messageForStatus(401));

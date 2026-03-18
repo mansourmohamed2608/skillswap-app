@@ -810,6 +810,35 @@ export class UsersService {
     return updated;
   }
 
+  async clearReadNotifications(userId: string, ids?: string[]): Promise<number> {
+    if (!userId) {
+      throw new StatusError(401, 'Unauthenticated request');
+    }
+    const uniqueIds = Array.isArray(ids)
+      ? Array.from(new Set(ids.map((item) => String(item || '').trim()).filter(Boolean))).slice(0, 200)
+      : [];
+    if (!uniqueIds.length) return 0;
+
+    const refs = uniqueIds.map((id) => admin.firestore().collection('notifications').doc(id));
+    const snaps = await admin.firestore().getAll(...refs);
+    const batch = admin.firestore().batch();
+    let deleted = 0;
+
+    for (const snap of snaps) {
+      if (!snap.exists) continue;
+      const data = snap.data() || {};
+      if (String(data.userId || '') !== userId) continue;
+      if (data.isRead !== true) continue;
+      batch.delete(snap.ref);
+      deleted += 1;
+    }
+
+    if (deleted > 0) {
+      await batch.commit();
+    }
+    return deleted;
+  }
+
   async blockUser(userId: string, targetUid: string): Promise<void> {
     if (!userId) throw new StatusError(401, 'Unauthenticated request');
     if (!targetUid) throw new StatusError(400, 'Missing targetUid');

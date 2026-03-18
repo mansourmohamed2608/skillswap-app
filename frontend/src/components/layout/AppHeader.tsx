@@ -1,19 +1,23 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon, BellIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon, BellIcon, Star, MessageSquare, Briefcase, Info, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth, db } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
-import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
+import type { Notification } from '@/types';
+import { formatDistanceToNow } from 'date-fns';
+import { clearReadNotifications, markNotificationsRead } from '@/services/api';
 
 // Public links, always visible
 const publicNavItems = [
@@ -87,27 +91,105 @@ export function AppHeader() {
   const { t, i18n } = useTranslation();
   const isAuthenticated = !!user;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [desktopNotificationsOpen, setDesktopNotificationsOpen] = useState(false);
+  const [mobileNotificationsOpen, setMobileNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const conversations = useConversationsRTDB();
   const unreadChats = getUnreadConversationCount(conversations, user?.uid);
+  const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+  const readNotifications = useMemo(() => notifications.filter((n) => n.isRead), [notifications]);
+  const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
+  const notificationIcon = (type: Notification['type']) => {
+    if (type === 'review') return <Star className="h-4 w-4 text-amber-500" />;
+    if (type === 'message') return <MessageSquare className="h-4 w-4 text-sky-500" />;
+    if (type === 'request') return <Briefcase className="h-4 w-4 text-primary" />;
+    return <Info className="h-4 w-4 text-muted-foreground" />;
+  };
 
   useEffect(() => {
     if (!db || !user?.uid) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setUnreadNotifications(0);
+      setNotifications([]);
       return;
     }
     const qy = query(
       collection(db, 'notifications'),
       where('userId', '==', user.uid),
-      orderBy('date', 'desc')
+      orderBy('date', 'desc'),
+      limit(20)
     );
     const unsub = onSnapshot(qy, (snap) => {
-      const count = snap.docs.reduce((acc, d) => acc + (d.data()?.isRead ? 0 : 1), 0);
-      setUnreadNotifications(count);
-    }, () => setUnreadNotifications(0));
+      const items = snap.docs.map((d) => {
+        const data: any = d.data();
+        let dateIso: string;
+        const dt = data.date;
+        try {
+          if (dt && typeof dt.toDate === 'function') dateIso = dt.toDate().toISOString();
+          else if (typeof dt === 'string') dateIso = new Date(dt).toISOString();
+          else if (dt instanceof Date) dateIso = dt.toISOString();
+          else dateIso = new Date().toISOString();
+        } catch {
+          dateIso = new Date().toISOString();
+        }
+        return {
+          id: d.id,
+          type: data.type || 'system',
+          content: data.content || '',
+          date: dateIso,
+          isRead: !!data.isRead,
+          link: data.link,
+          userId: data.userId,
+        } as Notification;
+      });
+      setNotifications(items);
+    }, () => setNotifications([]));
     return () => unsub();
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (!desktopNotificationsOpen && !mobileNotificationsOpen) return;
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (!unreadIds.length) return;
+
+    setNotifications((prev) => prev.map((item) => (
+      unreadIds.includes(item.id) ? { ...item, isRead: true } : item
+    )));
+    markNotificationsRead(unreadIds).catch(() => {
+      setNotifications((prev) => prev.map((item) => (
+        unreadIds.includes(item.id) ? { ...item, isRead: false } : item
+      )));
+    });
+  }, [desktopNotificationsOpen, mobileNotificationsOpen, notifications]);
+
+  const notificationTimeLabel = (n: Notification) => {
+    try {
+      return formatDistanceToNow(new Date(n.date), { addSuffix: true });
+    } catch {
+      return t('profile.notifications.recent');
+    }
+  };
+
+  const markAllVisibleAsRead = () => {
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (!unreadIds.length) return;
+    setNotifications((prev) => prev.map((item) => (
+      unreadIds.includes(item.id) ? { ...item, isRead: true } : item
+    )));
+    markNotificationsRead(unreadIds).catch(() => {
+      setNotifications((prev) => prev.map((item) => (
+        unreadIds.includes(item.id) ? { ...item, isRead: false } : item
+      )));
+    });
+  };
+
+  const clearRead = () => {
+    const readIds = readNotifications.map((n) => n.id);
+    if (!readIds.length) return;
+    const previous = notifications;
+    setNotifications((prev) => prev.filter((item) => !item.isRead));
+    clearReadNotifications(readIds).catch(() => {
+      setNotifications(previous);
+    });
+  };
 
   const labelFor = (href: string, fallback: string) => {
     const map: Record<string, string> = {
@@ -157,17 +239,80 @@ export function AppHeader() {
         <div className="hidden shrink-0 items-center justify-end gap-1 md:flex">
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" asChild className="relative">
-                <Link href="/profile?tab=notifications" className="flex items-center justify-center">
-                  <BellIcon className="h-4 w-4" />
-                  <span className="sr-only">{t('header.notifications')}</span>
-                  {unreadNotifications > 0 ? (
-                    <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
-                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                    </span>
-                  ) : null}
-                </Link>
-              </Button>
+              <Popover open={desktopNotificationsOpen} onOpenChange={setDesktopNotificationsOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')}>
+                    <BellIcon className="h-4 w-4" />
+                    <span className="sr-only">{t('header.notifications')}</span>
+                    {unreadNotifications > 0 ? (
+                      <span className="absolute -right-1 -top-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </span>
+                    ) : null}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-[22rem] p-0">
+                  <div className="border-b px-4 py-3">
+                    <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {unreadNotifications > 0
+                        ? t('profile.notifications.unreadCount', { count: unreadNotifications })
+                        : t('profile.notifications.recent')}
+                    </p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={markAllVisibleAsRead} disabled={unreadNotifications === 0}>
+                        <CheckCheck className="mr-1 h-4 w-4" />
+                        Mark all read
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={clearRead} disabled={readNotifications.length === 0}>
+                        <Trash2 className="mr-1 h-4 w-4" />
+                        Clear read
+                      </Button>
+                    </div>
+                  </div>
+                  {previewNotifications.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                      {t('profile.notifications.emptyBody')}
+                    </div>
+                  ) : (
+                    <ul className="max-h-[22rem] overflow-y-auto">
+                      {previewNotifications.map((notification) => {
+                        const content = (
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">{notificationIcon(notification.type)}</span>
+                            <span className="min-w-0">
+                              <p className="line-clamp-2 text-sm text-foreground">{notification.content}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{notificationTimeLabel(notification)}</p>
+                            </span>
+                          </div>
+                        );
+                        const rowClass = `block px-4 py-3 text-left transition-colors hover:bg-muted/50 ${notification.isRead ? 'bg-card/70' : 'bg-muted/30'}`;
+                        if (notification.link) {
+                          return (
+                            <li key={notification.id}>
+                              <Link href={notification.link} className={rowClass} onClick={() => setDesktopNotificationsOpen(false)}>
+                                {content}
+                              </Link>
+                            </li>
+                          );
+                        }
+                        return (
+                          <li key={notification.id} className={rowClass}>
+                            {content}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                  <div className="border-t p-2">
+                    <Button variant="ghost" size="sm" asChild className="w-full justify-center">
+                      <Link href="/profile?tab=notifications" onClick={() => setDesktopNotificationsOpen(false)}>
+                        {t('profile.yourNotifications')}
+                      </Link>
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
               <Button variant="ghost" size="icon" asChild className="relative">
                 <Link href="/chat" className="flex items-center justify-center">
                   <MessageCircle className="h-4 w-4" />
@@ -219,17 +364,72 @@ export function AppHeader() {
             </Button>
           ) : null}
           {isAuthenticated ? (
-            <Button variant="ghost" size="icon" asChild className="relative">
-              <Link href="/profile?tab=notifications">
-                <BellIcon className="h-5 w-5" />
-                <span className="sr-only">{t('header.notifications')}</span>
-                {unreadNotifications > 0 ? (
-                  <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </span>
-                ) : null}
-              </Link>
-            </Button>
+            <Popover open={mobileNotificationsOpen} onOpenChange={setMobileNotificationsOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')}>
+                  <BellIcon className="h-5 w-5" />
+                  <span className="sr-only">{t('header.notifications')}</span>
+                  {unreadNotifications > 0 ? (
+                    <span className="absolute -right-1 -top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-semibold text-accent-foreground">
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </span>
+                  ) : null}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[20rem] p-0">
+                <div className="border-b px-4 py-3">
+                  <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={markAllVisibleAsRead} disabled={unreadNotifications === 0}>
+                      <CheckCheck className="mr-1 h-4 w-4" />
+                      Mark all read
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={clearRead} disabled={readNotifications.length === 0}>
+                      <Trash2 className="mr-1 h-4 w-4" />
+                      Clear read
+                    </Button>
+                  </div>
+                </div>
+                {previewNotifications.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                    {t('profile.notifications.emptyBody')}
+                  </div>
+                ) : (
+                  <ul className="max-h-[18rem] overflow-y-auto">
+                    {previewNotifications.map((notification) => (
+                      <li key={notification.id} className={`px-4 py-3 ${notification.isRead ? 'bg-card/70' : 'bg-muted/30'}`}>
+                        {notification.link ? (
+                          <Link href={notification.link} onClick={() => setMobileNotificationsOpen(false)} className="block">
+                            <div className="flex items-start gap-2">
+                              <span className="mt-0.5">{notificationIcon(notification.type)}</span>
+                              <span className="min-w-0">
+                                <p className="line-clamp-2 text-sm text-foreground">{notification.content}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{notificationTimeLabel(notification)}</p>
+                              </span>
+                            </div>
+                          </Link>
+                        ) : (
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">{notificationIcon(notification.type)}</span>
+                            <span className="min-w-0">
+                              <p className="line-clamp-2 text-sm text-foreground">{notification.content}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">{notificationTimeLabel(notification)}</p>
+                            </span>
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="border-t p-2">
+                  <Button variant="ghost" size="sm" asChild className="w-full justify-center">
+                    <Link href="/profile?tab=notifications" onClick={() => setMobileNotificationsOpen(false)}>
+                      {t('profile.yourNotifications')}
+                    </Link>
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
           ) : null}
           <div className="shrink-0">
             <LanguageSwitcher compact />
