@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import Image from 'next/image';
 import { getWishPath } from '@/lib/public-ids';
+import { WishMediaGallery } from '@/components/wishes/WishMediaGallery';
 
 type WishSummary = {
   id: string;
@@ -81,15 +81,9 @@ export default function WishesListPage() {
         const isOwner = Boolean(user?.uid && w.userId && user.uid === w.userId);
         return (
           <Card key={w.id} className="shadow-sm overflow-hidden">
-            {(w.imageUrl && w.imageUrl.startsWith('https://')) || (w.videoUrl && w.videoUrl.startsWith('https://')) ? (
-              <div className="relative h-52 w-full border-b bg-muted/40">
-                {w.videoUrl && w.videoUrl.startsWith('https://') ? (
-                  <video className="h-full w-full object-cover" src={w.videoUrl} controls preload="metadata" />
-                ) : w.imageUrl && w.imageUrl.startsWith('https://') ? (
-                  <Image src={w.imageUrl} alt={w.title || 'wish'} fill style={{ objectFit: 'cover' }} />
-                ) : null}
-              </div>
-            ) : null}
+            <div className="border-b bg-muted/10 p-3">
+              <WishMediaGallery title={w.title} imageUrl={w.imageUrl} videoUrl={w.videoUrl} compact />
+            </div>
             <CardHeader className="pb-2">
               <CardTitle className="text-xl">{w.title}</CardTitle>
             </CardHeader>

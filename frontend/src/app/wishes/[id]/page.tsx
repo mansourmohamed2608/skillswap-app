@@ -12,12 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { donateToWishPublic, getFunctionsBase, mockCompletePaymentPublic, submitReport } from '@/services/api';
 import { useTranslation } from 'react-i18next';
-import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errors';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getWishPath, matchesWishPublicId } from '@/lib/public-ids';
+import { WishMediaGallery } from '@/components/wishes/WishMediaGallery';
 
 export default function WishDetailPage() {
   const params = useParams();
@@ -207,16 +207,7 @@ export default function WishDetailPage() {
           <CardTitle className="text-2xl">{wish.title}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {wish.imageUrl && (
-            <div className="relative w-full h-56 overflow-hidden rounded-lg border border-border">
-              <Image src={wish.imageUrl} alt={wish.title || t('wishes.detail.imageAlt')} fill style={{ objectFit: 'cover' }} />
-            </div>
-          )}
-          {wish.videoUrl ? (
-            <div className="w-full overflow-hidden rounded-lg border border-border">
-              <video className="w-full max-h-[340px] object-cover" src={wish.videoUrl} controls preload="metadata" />
-            </div>
-          ) : null}
+          <WishMediaGallery title={wish.title} imageUrl={wish.imageUrl} videoUrl={wish.videoUrl} />
           <p className="text-muted-foreground whitespace-pre-line">{wish.description}</p>
           {(wish.category || deadlineLabel) && (
             <div className="text-sm text-muted-foreground flex flex-wrap gap-3">

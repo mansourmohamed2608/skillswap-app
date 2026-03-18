@@ -18,8 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/context/AuthContext";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import Image from "next/image";
 import { getWishPublicId } from "@/lib/public-ids";
+import { WishMediaGallery } from "@/components/wishes/WishMediaGallery";
 
 function DonatePageContent() {
   const params = useSearchParams();
@@ -110,16 +110,7 @@ function DonatePageContent() {
         <CardContent className="space-y-6">
           {wish ? (
             <div className="space-y-3">
-              {wish.imageUrl && wish.imageUrl.startsWith('https://') ? (
-                <div className="relative h-44 w-full overflow-hidden rounded-md border">
-                  <Image src={wish.imageUrl} alt={wish.title || "wish"} fill style={{ objectFit: "cover" }} />
-                </div>
-              ) : null}
-              {wish.videoUrl && wish.videoUrl.startsWith('https://') ? (
-                <div className="w-full overflow-hidden rounded-md border">
-                  <video className="w-full max-h-[320px] object-cover" src={wish.videoUrl} controls preload="metadata" />
-                </div>
-              ) : null}
+              <WishMediaGallery title={wish.title} imageUrl={wish.imageUrl} videoUrl={wish.videoUrl} />
               <div className="text-center">
                 <div className="text-xl font-semibold">{wish.title}</div>
                 <div className="text-muted-foreground">{t('wishes.donate.goalLabel', { amount: wish.goalAmount, currency: wish.currency || 'EGP' })}</div>
