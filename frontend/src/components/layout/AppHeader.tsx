@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon, BellIcon, Star, MessageSquare, Briefcase, Info, CheckCheck, Trash2 } from 'lucide-react';
+import { MenuIcon, HomeIcon, ListIcon, UserIcon, SparklesIcon, MessageCircle, CalendarDays, LogInIcon, UserPlusIcon, LogOutIcon, GemIcon, BellIcon, Star, MessageSquare, Briefcase, Info, CheckCheck, Trash2, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth, db } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
@@ -253,12 +253,25 @@ export function AppHeader() {
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-[22rem] p-0">
                   <div className="border-b px-4 py-3">
-                    <p className="text-sm font-semibold">{t('header.notifications')}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {unreadNotifications > 0
-                        ? t('profile.notifications.unreadCount', { count: unreadNotifications })
-                        : t('profile.notifications.recent')}
-                    </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {unreadNotifications > 0
+                            ? t('profile.notifications.unreadCount', { count: unreadNotifications })
+                            : t('profile.notifications.recent')}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => setDesktopNotificationsOpen(false)}
+                        aria-label={t('common.close', { defaultValue: 'Close' })}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
                     <div className="mt-2 flex items-center gap-2">
                       <Button variant="outline" size="sm" onClick={markAllVisibleAsRead} disabled={unreadNotifications === 0}>
                         <CheckCheck className="mr-1 h-4 w-4" />
@@ -304,11 +317,6 @@ export function AppHeader() {
                       })}
                     </ul>
                   )}
-                  <div className="border-t p-2">
-                    <Button variant="ghost" size="sm" className="w-full justify-center" onClick={() => setDesktopNotificationsOpen(false)}>
-                      {t('common.close', { defaultValue: 'Close' })}
-                    </Button>
-                  </div>
                 </PopoverContent>
               </Popover>
               <Button variant="ghost" size="icon" asChild className="relative">
@@ -376,7 +384,18 @@ export function AppHeader() {
               </PopoverTrigger>
               <PopoverContent align="end" className="w-[20rem] p-0">
                 <div className="border-b px-4 py-3">
-                  <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setMobileNotificationsOpen(false)}
+                      aria-label={t('common.close', { defaultValue: 'Close' })}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={markAllVisibleAsRead} disabled={unreadNotifications === 0}>
                       <CheckCheck className="mr-1 h-4 w-4" />
@@ -419,11 +438,6 @@ export function AppHeader() {
                     ))}
                   </ul>
                 )}
-                <div className="border-t p-2">
-                  <Button variant="ghost" size="sm" className="w-full justify-center" onClick={() => setMobileNotificationsOpen(false)}>
-                    {t('common.close', { defaultValue: 'Close' })}
-                  </Button>
-                </div>
               </PopoverContent>
             </Popover>
           ) : null}
