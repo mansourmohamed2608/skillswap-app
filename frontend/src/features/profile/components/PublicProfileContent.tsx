@@ -2,7 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -163,6 +163,7 @@ export function PublicProfileContent({ user, activeListings, pastExchanges }: Pr
               <div key={review.id} className="rounded-lg border bg-card p-4">
                 <div className="mb-2 flex items-center gap-3">
                   <Avatar className="h-10 w-10">
+                    <AvatarImage src="" alt={review.reviewerName || t('reviews.reviewerFallback')} />
                     <AvatarFallback>{(review.reviewerName || t('reviews.reviewerFallback')).charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">

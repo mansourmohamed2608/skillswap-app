@@ -377,7 +377,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
             <Button onClick={applyFilters} className="w-full md:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
               <FilterIcon className="mr-2 h-4 w-4" /> {t('services.applyFilters')}
             </Button>
-            <Button type="button" variant="ghost" onClick={clearFilters} className="w-full md:w-auto">
+            <Button type="button" variant="outline" onClick={clearFilters} className="w-full md:w-auto border-primary/30 text-primary hover:bg-primary/10">
               {t('services.clearFilters')}
             </Button>
           </div>

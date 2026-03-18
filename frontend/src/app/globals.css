@@ -98,6 +98,16 @@ html[lang="ar"] body {
   transform: scaleX(-1);
 }
 
+/* 3.5. Swap common left/right utility margins in RTL for better icon/text spacing */
+[dir="rtl"] .mr-1 { margin-right: 0 !important; margin-left: 0.25rem !important; }
+[dir="rtl"] .mr-2 { margin-right: 0 !important; margin-left: 0.5rem !important; }
+[dir="rtl"] .mr-3 { margin-right: 0 !important; margin-left: 0.75rem !important; }
+[dir="rtl"] .mr-4 { margin-right: 0 !important; margin-left: 1rem !important; }
+[dir="rtl"] .ml-1 { margin-left: 0 !important; margin-right: 0.25rem !important; }
+[dir="rtl"] .ml-2 { margin-left: 0 !important; margin-right: 0.5rem !important; }
+[dir="rtl"] .ml-3 { margin-left: 0 !important; margin-right: 0.75rem !important; }
+[dir="rtl"] .ml-4 { margin-left: 0 !important; margin-right: 1rem !important; }
+
 /* 4. CSS logical property helpers – these utility classes use
       margin-inline / padding-inline so they automatically flip in RTL.
       Use .ms-auto / .me-auto / .ps-* / .pe-* in JSX instead of
@@ -137,6 +147,30 @@ body {
 @media (max-width: 767px) {
   input, textarea, select {
     font-size: max(16px, 1em);
+  }
+
+  html[lang="ar"] h1,
+  html[lang="ar"] h2,
+  html[lang="ar"] h3,
+  html[lang="ar"] h4,
+  html[lang="ar"] h5,
+  html[lang="ar"] h6 {
+    line-height: 1.45;
+  }
+
+  html[lang="ar"] p,
+  html[lang="ar"] span,
+  html[lang="ar"] label,
+  html[lang="ar"] button,
+  html[lang="ar"] a {
+    line-height: 1.7;
+  }
+
+  html[lang="ar"] button,
+  html[lang="ar"] [role="button"],
+  html[lang="ar"] [role="tab"] {
+    letter-spacing: 0;
+    white-space: normal;
   }
 }
 

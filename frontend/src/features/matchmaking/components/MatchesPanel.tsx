@@ -294,7 +294,7 @@ export function MatchesPanel() {
                       {/* Avatar + name + location */}
                       <div className="flex items-start gap-2 min-w-0">
                         <Avatar className="h-8 w-8 shrink-0">
-                          {participantPhoto ? <AvatarImage src={participantPhoto} alt={participantName || 'User'} /> : null}
+                          <AvatarImage src={participantPhoto} alt={participantName || 'User'} />
                           <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">

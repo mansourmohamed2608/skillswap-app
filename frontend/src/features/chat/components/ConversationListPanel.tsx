@@ -43,6 +43,17 @@ export function ConversationListPanel({
   const [searchText, setSearchText] = useState("");
   const [userMetaById, setUserMetaById] = useState<Record<string, { name: string; username?: string; identifier: string; avatarUrl?: string }>>({});
   const [loadingUsers, setLoadingUsers] = useState(false);
+
+  function prettyIdentifierLabel(value: string) {
+    const raw = String(value || "").trim().replace(/^@+/, "");
+    if (!raw) return "";
+    const withoutSuffix = raw.replace(/-[a-z0-9]{6}$/i, "");
+    return withoutSuffix
+      .split("-")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
   const otherIds = useMemo(() => Array.from(new Set(
     convs.map((c) => Object.keys(c.participants || {}).find((p) => p !== user?.uid) || "")
       .filter(Boolean)
@@ -106,7 +117,8 @@ export function ConversationListPanel({
     const rows = convs.map((c) => {
       const otherId = Object.keys(c.participants || {}).find((p) => p !== user?.uid) || "";
       const profileMeta = userMetaById[otherId];
-      const title = profileMeta?.name || t("chat.detail.unavailable");
+      const title = profileMeta?.name
+        || (loadingUsers ? t("chat.newChat.searching") : prettyIdentifierLabel(otherId) || t("chat.detail.unavailable"));
       const subtitle = profileMeta?.username ? `@${profileMeta.username}` : "";
       const targetIdentifier = profileMeta?.identifier || otherId;
       return {
@@ -119,7 +131,7 @@ export function ConversationListPanel({
         lastMessage: (c.lastMessage as string) || "",
         unread: (c.lastMessageAt && user?.uid && c.lastMessageAt > Number(c.perUserLastReadAt?.[user.uid] || 0)) ? 1 : 0,
         timestamp: formatTimestamp(c.lastMessageAt),
-        available: Boolean(profileMeta?.identifier),
+        available: Boolean(targetIdentifier),
         active: Boolean(
           normalizedActive &&
           (String(c.id).toLowerCase() === normalizedActive || String(targetIdentifier).toLowerCase() === normalizedActive)
@@ -133,7 +145,7 @@ export function ConversationListPanel({
       item.subtitle.toLowerCase().includes(q) ||
       item.lastMessage.toLowerCase().includes(q)
     );
-  }, [activeChatId, convs, searchText, t, user?.uid, userMetaById]);
+  }, [activeChatId, convs, loadingUsers, searchText, t, user?.uid, userMetaById]);
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>

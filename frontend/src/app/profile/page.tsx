@@ -12,7 +12,7 @@ import { PlusCircleIcon, Loader2, InfoIcon } from 'lucide-react';
 import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { RatingDisplay } from '@/components/RatingDisplay';
 import { getUserById, getListingsByUserId } from '@/services/data';
 import type { User, ServiceListing, Notification } from '@/types';
@@ -428,6 +428,7 @@ function CurrentUserProfilePageContent() {
                 <div key={review.id} className="rounded-lg border bg-card p-4">
                   <div className="mb-2 flex items-center gap-3">
                     <Avatar className="h-10 w-10 mr-3">
+                      <AvatarImage src="" alt={review.reviewerName || t('reviews.reviewerFallback')} />
                       <AvatarFallback>{(review.reviewerName || t('reviews.reviewerFallback')).charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
