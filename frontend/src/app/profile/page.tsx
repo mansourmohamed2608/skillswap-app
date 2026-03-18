@@ -380,19 +380,15 @@ function CurrentUserProfilePageContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 h-auto">
-          <TabsTrigger value="active-listings">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
-          <TabsTrigger value="past-exchanges">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
-          <TabsTrigger value="reviews">{t('profile.tabs.reviews')} ({userProfile.reviewsCount})</TabsTrigger>
-          <TabsTrigger value="notifications" className="relative">
-            {t('profile.tabs.notifications')} 
-            {unreadNotificationsCount > 0 && (
-              <span className="absolute top-0 right-1 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
-              </span>
-            )}
-            ({notifications.length})
+        <TabsList className="grid h-auto w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <TabsTrigger value="active-listings" className="h-auto min-h-10 px-3 py-2 text-center leading-tight whitespace-normal">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
+          <TabsTrigger value="past-exchanges" className="h-auto min-h-10 px-3 py-2 text-center leading-tight whitespace-normal">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
+          <TabsTrigger value="reviews" className="h-auto min-h-10 px-3 py-2 text-center leading-tight whitespace-normal">{t('profile.tabs.reviews')} ({userProfile.reviewsCount})</TabsTrigger>
+          <TabsTrigger value="notifications" className="h-auto min-h-10 px-3 py-2">
+            <span className="flex items-center justify-center gap-2 text-center leading-tight whitespace-normal">
+              <span>{t('profile.tabs.notifications')} ({notifications.length})</span>
+              {unreadNotificationsCount > 0 ? <span className="inline-flex h-2.5 w-2.5 rounded-full bg-accent" /> : null}
+            </span>
           </TabsTrigger>
         </TabsList>
         <Separator className="my-4"/>

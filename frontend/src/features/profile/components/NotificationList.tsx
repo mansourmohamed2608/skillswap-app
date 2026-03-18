@@ -54,7 +54,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
                 : t('profile.notifications.recent')}
             </p>
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="inline-flex w-fit rounded-full border border-border/70 bg-background px-2.5 py-1 text-xs text-muted-foreground">
             {t('profile.notifications.itemCount', { count: notifications.length })}
           </div>
         </div>
@@ -91,7 +91,7 @@ export function NotificationList({ notifications }: NotificationListProps) {
                 )}
               >
                 {notification.link ? (
-                  <Link href={notification.link} className="block">
+                  <Link href={notification.link} className="block break-words">
                     {content}
                   </Link>
                 ) : (
