@@ -101,11 +101,11 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mt-8">
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch">
       {ownerId && (
         <Button
           size="lg"
-          className="flex-1 overflow-hidden bg-accent hover:bg-accent/90 text-accent-foreground"
+          className="h-12 w-full rounded-lg bg-accent text-accent-foreground hover:bg-accent/90 sm:flex-1"
           onClick={async (e) => {
             e.preventDefault();
             if (loading) return;
@@ -124,7 +124,7 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
           }}
         >
           <MessageCircleIcon className="mr-2 h-5 w-5 shrink-0" />
-          <span className="truncate">{t('listings.actions.chatWith', { name: chatDisplayName })}</span>
+          <span className="truncate text-sm font-semibold leading-none sm:text-base">{t('listings.actions.chatWith', { name: chatDisplayName })}</span>
         </Button>
       )}
       <RequestExchangeButton listingId={listingId} />

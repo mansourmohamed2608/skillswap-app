@@ -11,6 +11,7 @@ import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { CalendarDaysIcon } from "lucide-react";
 
 export function RequestExchangeButton({ listingId }: { listingId: string }) {
   const { active, canCreateBooking, loading } = useMembership();
@@ -51,8 +52,9 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="lg" variant="secondary" className="flex-1">
-          {t('request.proposeTitle')}
+        <Button size="lg" variant="secondary" className="h-12 w-full rounded-lg sm:flex-1">
+          <CalendarDaysIcon className="h-5 w-5 shrink-0" />
+          <span className="truncate text-sm font-semibold leading-none sm:text-base">{t('request.proposeTitle')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent>
