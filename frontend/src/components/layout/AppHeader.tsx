@@ -212,7 +212,11 @@ export function AppHeader() {
       <div className="mx-auto flex h-16 w-full max-w-screen-2xl items-center px-4 sm:px-6">
         <Link href="/" className="flex min-w-0 shrink-0 items-center gap-2 text-primary transition-colors hover:text-primary/80">
           <AppLogo />
-          <span className="truncate font-bold text-lg sm:text-xl max-w-[8rem] sm:max-w-none">{t('common.appName')}</span>
+          <span
+            className={`truncate font-bold text-lg sm:text-xl ${i18n.dir() === 'rtl' ? 'hidden sm:inline max-w-[7rem] sm:max-w-none' : 'max-w-[8rem] sm:max-w-none'}`}
+          >
+            {t('common.appName')}
+          </span>
         </Link>
 
         <div className="hidden flex-1 items-center justify-center md:flex">
@@ -355,7 +359,7 @@ export function AppHeader() {
           )}
         </div>
 
-        <div className="ml-auto flex items-center gap-1 md:hidden">
+        <div className="ms-auto flex items-center gap-0.5 md:hidden">
           {isAuthenticated ? (
             <Button variant="ghost" size="icon" asChild className="relative">
               <Link href="/chat">

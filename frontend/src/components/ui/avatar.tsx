@@ -24,9 +24,23 @@ const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
 >(({ className, src, ...props }, ref) => {
-  const resolvedSrc = typeof src === "string" && src.trim().length > 0
-    ? src
-    : "/images/default-avatar.svg"
+  const rawSrc = typeof src === "string" ? src.trim() : ""
+  let shouldUseFallback = !rawSrc
+
+  if (!shouldUseFallback) {
+    try {
+      const parsed = new URL(rawSrc, "https://skillswap.local")
+      const host = parsed.hostname.toLowerCase()
+      const path = parsed.pathname.toLowerCase()
+      const isPlaceholderHost = host === "placehold.co" || host === "via.placeholder.com"
+      const isPlaceholderPath = /\/\d+x\d+/.test(path)
+      if (isPlaceholderHost || isPlaceholderPath) shouldUseFallback = true
+    } catch {
+      // Ignore URL parsing issues and keep the source as-is.
+    }
+  }
+
+  const resolvedSrc = shouldUseFallback ? "/images/default-avatar.svg" : rawSrc
 
   return (
     <AvatarPrimitive.Image
