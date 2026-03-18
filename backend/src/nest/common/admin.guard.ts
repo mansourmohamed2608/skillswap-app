@@ -10,7 +10,7 @@ import * as admin from 'firebase-admin';
 export class AdminGuard implements CanActivate {
   // Static shared cache so AdminService.updateUserRole can invalidate it via AdminGuard.invalidate()
   private static readonly sharedCache = new Map<string, number>(); // uid → expiresAt ms
-  private static readonly TTL_MS = 30 * 1000; // 30 seconds
+  private static readonly TTL_MS = 5 * 1000; // 5 seconds to match AdminService cache TTL
 
   /** Called by AdminService when a user's role is updated to ensure the guard cache is cleared. */
   static invalidate(uid: string): void {

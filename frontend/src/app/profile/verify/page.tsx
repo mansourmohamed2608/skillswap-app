@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 
+
 export default function VerifyProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -23,6 +24,7 @@ export default function VerifyProfilePage() {
   const [backFile, setBackFile] = useState<File | null>(null);
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
   const [backPreview, setBackPreview] = useState<string | null>(null);
+
 
   const statusCode = String(status?.status || '').trim().toUpperCase();
   const statusLabel = statusCode
@@ -46,6 +48,8 @@ export default function VerifyProfilePage() {
     }
     if (user) load();
   }, [user]);
+
+
 
   const handleFileChange = (file: File | null, type: 'front' | 'back') => {
     if (!file) {

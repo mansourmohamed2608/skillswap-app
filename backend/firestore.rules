@@ -21,7 +21,8 @@ service cloud.firestore {
       return userDoc(uid).data.kyc.status == 'VERIFIED';
     }
     function listingLimit(m) {
-      return m.plan == 'Basic' ? 9 : (m.plan == 'Standard' ? 12 : 9999999);
+      let plan = m.get('plan', 'Free');
+      return plan == 'Pro' || plan == 'Business' ? 9999999 : (plan == 'Standard' ? 12 : 9);
     }
     function canCreateListing(uid) {
       let m = membership(uid);
@@ -151,9 +152,19 @@ service cloud.firestore {
       allow read, create, update, delete: if false;
     }
 
+    /** Analytics events — server-only access */
+    match /analytics_events/{eventId} {
+      allow read, create, update, delete: if false;
+    }
+
+    /** Payments records — server-only access */
+    match /payments/{paymentId} {
+      allow read, create, update, delete: if false;
+    }
+
     /** Reviews — publicly readable; writes are server-only */
     match /reviews/{reviewId} {
-      allow read: if true;
+      allow read: if resource.data.get('status', 'active') == 'active';
       allow create, update, delete: if false;
     }
 

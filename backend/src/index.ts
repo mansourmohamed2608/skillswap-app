@@ -273,19 +273,32 @@ if (ENFORCE_APP_CHECK) {
   });
 }
 
-app.use('/', (req, res, next) => {
+let nestServerInitialized = false;
+const initNestServer = async () => {
+  if (nestServerInitialized) return;
   try {
     ensureAdminApp();
+    nestServerInitialized = true;
   } catch (err) {
-    return next(err);
+    logger.error({ event: 'nest_init_error', error: String(err) }, 'Failed to initialize admin app');
   }
+};
+
+app.use('/', (req, res, next) => {
   // Lazy-init Nest to avoid Firebase function load timeouts during discovery.
-  getNestServer()
-    .then((server) => (server as any)(req, res, next))
-    .catch(next);
+  const runRequest = async () => {
+    try {
+      await initNestServer();
+      const server = await getNestServer();
+      return (server as any)(req, res, next);
+    } catch (err) {
+      return next(err);
+    }
+  };
+  runRequest().catch(next);
 });
 
-export const api = onRequest(app);
+export const api = onRequest({ timeoutSeconds: 540 }, app);
 export { moderateListing } from './moderation';
 export { onListingWrite } from './search';
 export { moderateWish } from './moderation';

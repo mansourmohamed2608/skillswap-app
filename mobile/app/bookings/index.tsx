@@ -18,10 +18,11 @@ function BookingItem({ r }: { r: BookingRequest }) {
   const when = r.proposedTime
     ? formatDistanceToNow(new Date(r.proposedTime), { addSuffix: true })
     : 'TBD';
+  const normalizedStatus = String(r.status || '').toLowerCase();
   const statusColor =
-    r.status === 'ACCEPTED' ? 'green' :
-    r.status === 'REJECTED' || r.status === 'CANCELLED' ? 'red' :
-    r.status === 'PENDING' ? 'yellow' : 'gray';
+    normalizedStatus === 'accepted' ? 'green' :
+    normalizedStatus === 'rejected' || normalizedStatus === 'declined' || normalizedStatus === 'cancelled' ? 'red' :
+    normalizedStatus === 'pending' ? 'yellow' : 'gray';
 
   useEffect(() => {
     if (!r.listingId) return;

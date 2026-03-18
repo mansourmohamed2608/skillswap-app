@@ -1,13 +1,13 @@
-import { BadRequestException, Body, Controller, Get, Logger, NotFoundException, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Logger, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import Busboy from 'busboy';
 import * as admin from 'firebase-admin';
 import { KycService } from './kyc.service';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
-import { AdminGuard } from '../common/admin.guard';
 
 const IS_EMULATOR = Boolean(process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB);
 const ALLOWED_KYC_VENDORS = new Set(['didit', 'verified']);
+const ALLOWED_KYC_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 
 @Controller('kyc')
 export class KycController {
@@ -68,6 +68,7 @@ export class KycController {
   private parseMultipartRequest(req: Request): Promise<Record<string, Express.Multer.File>> {
     return new Promise((resolve, reject) => {
       const files: Record<string, Express.Multer.File> = {};
+      let rejected = false;
       const contentType = req.headers['content-type'] || '';
       
       if (!contentType.includes('multipart/form-data')) {
@@ -85,7 +86,17 @@ export class KycController {
         });
 
         busboy.on('file', (fieldname: string, file: NodeJS.ReadableStream, info: { filename: string; encoding: string; mimeType: string }) => {
+          if (rejected) {
+            file.resume();
+            return;
+          }
           const { filename, encoding, mimeType } = info;
+          if (!ALLOWED_KYC_MIME_TYPES.has(String(mimeType || '').toLowerCase())) {
+            rejected = true;
+            file.resume();
+            reject(new BadRequestException(`Unsupported file type: ${mimeType}`));
+            return;
+          }
           const chunks: Buffer[] = [];
           
           file.on('data', (chunk: Buffer) => {
@@ -106,10 +117,13 @@ export class KycController {
         });
 
         busboy.on('finish', () => {
+          if (rejected) return;
           resolve(files);
         });
 
         busboy.on('error', (err: Error) => {
+          if (rejected) return;
+          rejected = true;
           this.logger.error(`[KYC] Busboy error: ${err.message}`);
           reject(new BadRequestException('Failed to parse multipart form data: ' + err.message));
         });
@@ -131,15 +145,6 @@ export class KycController {
         reject(new BadRequestException('Failed to initialize multipart parser: ' + err.message));
       }
     });
-  }
-
-  @UseGuards(FirebaseAuthGuard, AdminGuard)
-  @Post('dev-verify')
-  async devVerify(@Body('vendor') vendor: string | null, @Req() req: Request) {
-    if (!IS_EMULATOR) throw new NotFoundException();
-    const uid = (req as any)?.user?.uid || null;
-    if (!uid) throw new UnauthorizedException('Authentication required');
-    return this.kycService.devVerify(uid, vendor || null);
   }
 
   @UseGuards(FirebaseAuthGuard)

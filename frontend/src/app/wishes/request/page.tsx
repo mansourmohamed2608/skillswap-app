@@ -216,9 +216,13 @@ export default function RequestWishPage() {
                 accept="video/mp4,video/webm,video/quicktime"
                 onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
               />
-              <div className="rounded-md bg-muted/60 p-4 text-sm text-muted-foreground flex items-center gap-2">
-                <VideoIcon className="h-4 w-4" />
-                MP4 / WEBM / MOV (max 25MB)
+              <div className="rounded-md bg-muted/60 p-4 text-sm text-muted-foreground space-y-2">
+                <div className="flex items-center gap-2">
+                  <VideoIcon className="h-4 w-4" />
+                  <span><strong>Recommended:</strong> MP4 (H.264) or WebM</span>
+                </div>
+                <p className="text-xs text-muted-foreground ml-6">⚠️ Avoid .MOV files from video editors (ProRes/DNxHD). Use MP4 instead.</p>
+                <p className="text-xs text-muted-foreground ml-6">Max 25MB • Players may not support all codecs</p>
               </div>
               <Input id="wish-video" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder={t("wishes.request.videoPlaceholder")} />
             </div>

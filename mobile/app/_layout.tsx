@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router';
 import { AuthProvider } from '@/context/AuthContext';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { Text, Platform, View, type ViewStyle } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Text, Platform, View, type ViewStyle, SafeAreaView } from 'react-native';
 import { useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import i18n from '@/lib/i18n';

@@ -169,7 +169,10 @@ export function SignUpForm() {
 
       // Redirect to identity verification page
       recordAnalyticsEvent('user_signed_up', { country });
-      toast({ title: t('auth.signUp.success', { defaultValue: 'Account created!' }), description: t('auth.signUp.verifyPrompt', { defaultValue: 'Please verify your identity to continue.' }) });
+      toast({
+        title: t('auth.signUp.success', { defaultValue: 'Account created!' }),
+        description: t('auth.signUp.verifyPrompt', { defaultValue: 'Please verify your identity to continue.' }),
+      });
       router.push('/profile/verify');
     } catch (err: any) {
       const msg = getErrorMessage(err, t('auth.signUp.errors.signupFailed'));

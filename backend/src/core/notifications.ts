@@ -21,6 +21,22 @@ type FailedNotification = {
   retryCount: number;
 };
 
+function isStaleFcmTokenCode(code: string | undefined): boolean {
+  const normalized = String(code || '').toLowerCase();
+  return normalized === 'messaging/registration-token-not-registered'
+    || normalized === 'messaging/invalid-registration-token';
+}
+
+async function removeStaleTokens(userId: string, currentTokens: string[], staleTokens: string[]): Promise<void> {
+  if (!staleTokens.length) return;
+  const nextTokens = currentTokens.filter((token) => !staleTokens.includes(token));
+  await admin.firestore().collection('deviceTokens').doc(userId).set({
+    tokens: nextTokens,
+    updatedAt: new Date(),
+  }, { merge: true });
+  logger.info({ event: 'stale_device_tokens_removed', userId, removed: staleTokens.length, remaining: nextTokens.length });
+}
+
 // Dead letter collection for failed notifications
 const DEAD_LETTER_COLLECTION = 'notificationDeadLetters';
 
@@ -145,6 +161,16 @@ export async function sendPushNotification(toUserId: string, title: string, body
           () => admin.messaging().sendEachForMulticast(msg),
           { maxRetries: 2, operationName: 'sendFcmPush' }
         );
+
+        const responses: Array<{ error?: { code?: string } }> = Array.isArray((response as any)?.responses)
+          ? (response as any).responses
+          : [];
+        const staleTokens = responses
+          .map((r: { error?: { code?: string } }, idx: number) => isStaleFcmTokenCode(r?.error?.code) ? fcmTokens[idx] : null)
+          .filter((t: string | null): t is string => Boolean(t));
+        if (staleTokens.length) {
+          await removeStaleTokens(toUserId, tokens, staleTokens);
+        }
         
         // Log failures for investigation
         if (response.failureCount > 0) {

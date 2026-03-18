@@ -29,13 +29,14 @@ export class MatchmakingService {
     const prefCategory = myListSnap.empty ? '' : ((myListSnap.docs[0].data() as any).category || (myListSnap.docs[0].data() as any).offeredService?.category || '');
 
     const listingsSnap = await admin.firestore().collection('listings')
+      .where('status', 'in', ['open', 'active'])
       .orderBy('createdAt', 'desc')
       .limit(30)
       .get();
     const items = listingsSnap.docs
       .map(d => ({ id: d.id, ...(d.data() as any) }))
       .filter(l => (l.userId || l.offeredByUserId) !== uid)
-      .filter(l => !l.flagged);
+      .filter(l => !l.flagged && l.status !== 'removed' && l.status !== 'inactive');
 
     const scored = items.map(l => {
       let score = 0;

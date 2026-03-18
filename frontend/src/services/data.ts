@@ -280,7 +280,7 @@ export async function getListings(): Promise<ServiceListing[]> {
     }
     try {
         const listingsCol = collection(db!, 'listings');
-        const listingsSnapshot = await getDocs(listingsCol);
+        const listingsSnapshot = await getDocs(query(listingsCol, orderBy('createdAt', 'desc'), limit(50)));
         if (listingsSnapshot.empty) return [];
         const listings: ServiceListing[] = listingsSnapshot.docs.map(docToServiceListing);
         return listings.filter((listing: ServiceListing) => isVisibleListingStatus(listing.status) && !isLowQualityListing(listing));
@@ -312,7 +312,8 @@ export async function getListingsWithUsers(options?: { count?: number }): Promis
 
     try {
         const listingsCol = collection(db!, 'listings');
-        const q = options?.count ? query(listingsCol, limit(options.count)) : query(listingsCol);
+        const pageSize = Math.min(200, Math.max(1, options?.count ?? 50));
+        const q = query(listingsCol, orderBy('createdAt', 'desc'), limit(pageSize));
         const listingsSnapshot = await getDocs(q);
 
         if (listingsSnapshot.empty) return [];
