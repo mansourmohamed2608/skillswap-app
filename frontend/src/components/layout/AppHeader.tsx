@@ -458,36 +458,6 @@ export function AppHeader() {
                 </Link>
                 <LanguageSwitcher compact />
               </div>
-              {isAuthenticated ? (
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  <Button variant="outline" asChild className="justify-between">
-                    <Link href="/chat" onClick={() => setMobileOpen(false)}>
-                      <span className="inline-flex items-center gap-2">
-                        <MessageCircle className="h-4 w-4" />
-                        {t('header.chat')}
-                      </span>
-                      {unreadChats > 0 ? (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
-                          {unreadChats > 99 ? '99+' : unreadChats}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild className="justify-between">
-                    <Link href="/profile?tab=notifications" onClick={() => setMobileOpen(false)}>
-                      <span className="inline-flex items-center gap-2">
-                        <BellIcon className="h-4 w-4" />
-                        {t('header.notifications')}
-                      </span>
-                      {unreadNotifications > 0 ? (
-                        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-semibold text-accent-foreground">
-                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </Button>
-                </div>
-              ) : null}
               <div className="mt-6 flex flex-col gap-1">
                 {publicNavItems.map((item) => (
                   <Button key={`mobile-${item.href}`} variant="ghost" asChild className="justify-start text-base">
