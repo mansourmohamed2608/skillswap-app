@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchKycStatus, verifyKycIdWithFiles } from '@/services/kyc';
+import { fetchKycStatus, reopenKycForReverify, verifyKycIdWithFiles } from '@/services/kyc';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -148,6 +148,26 @@ export default function VerifyProfilePage() {
     }
   }
 
+  async function reopenForReverify() {
+    setBusy(true);
+    try {
+      await reopenKycForReverify();
+      setStatus((prev: any) => ({ ...(prev || {}), status: 'CANCELLED', reason: 'reverify_requested' }));
+      toast({
+        title: t('profile.verify.inReviewTitle', { defaultValue: 'Verification reopened' }),
+        description: t('profile.verify.uploadHint', { defaultValue: 'You can upload your ID again now.' }),
+      });
+    } catch (err: any) {
+      toast({
+        title: t('profile.verify.errorTitle'),
+        description: err.message || t('profile.verify.errorBody'),
+        variant: 'destructive',
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (loadingStatus) {
     return (
       <div className="max-w-2xl mx-auto py-8 flex justify-center">
@@ -189,6 +209,19 @@ export default function VerifyProfilePage() {
               {status.documentNumber && (
                 <div className="text-sm text-muted-foreground">
                   {t('profile.verify.documentNumber', { number: status.documentNumber })}
+                </div>
+              )}
+              {statusCode === 'VERIFIED' && (
+                <div className="mt-3">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={reopenForReverify}
+                    disabled={busy}
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : t('profile.verify.reverify', { defaultValue: 'Verify again' })}
+                  </Button>
                 </div>
               )}
             </div>
@@ -302,6 +335,14 @@ export default function VerifyProfilePage() {
             <div className="text-center space-y-3">
               <CheckCircle className="h-12 w-12 text-emerald-600 mx-auto" />
               <p className="text-emerald-600 font-medium">{t('profile.verify.verifiedBody')}</p>
+              <Button
+                onClick={reopenForReverify}
+                variant="secondary"
+                disabled={busy}
+              >
+                {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {t('profile.verify.reverify', { defaultValue: 'Verify again' })}
+              </Button>
               <Button onClick={() => router.push('/profile')} variant="outline">
                 {t('profile.verify.backToProfile')}
               </Button>

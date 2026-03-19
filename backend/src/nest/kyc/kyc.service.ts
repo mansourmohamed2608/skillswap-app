@@ -103,6 +103,12 @@ export class KycService {
       const rawDocumentNumber = verification.document_number || verification.personal_number;
       const normalizedDocumentNumber = this.normalizeDocumentNumber(rawDocumentNumber);
       const documentNumberHash = normalizedDocumentNumber ? this.hmacSha256(normalizedDocumentNumber) : undefined;
+      const diditFullName = String(verification.full_name || '').trim();
+      const fallbackJoinedName = [verification.first_name, verification.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      const verifiedName = diditFullName || fallbackJoinedName || undefined;
 
       if (status === 'VERIFIED' && documentNumberHash) {
         const indexRef = admin.firestore().collection('kycDocumentIndex').doc(documentNumberHash);
@@ -133,11 +139,10 @@ export class KycService {
         documentNumberHash,
         firstName: verification.first_name,
         lastName: verification.last_name,
+        fullName: diditFullName || undefined,
         birthDate: verification.birth_date,
         expirationDate: verification.expiration_date,
-        verifiedName: verification.first_name && verification.last_name 
-          ? `${verification.first_name} ${verification.last_name}`.trim()
-          : undefined,
+        verifiedName,
         updatedAt: new Date(),
       };
 
@@ -238,6 +243,39 @@ export class KycService {
     await admin.firestore().collection('users').doc(uid).set({
       kyc: { status: 'CANCELLED', provider, updatedAt: now },
     }, { merge: true } as any);
+    return { ok: true, status: 'CANCELLED' };
+  }
+
+  async reopenForReverify(uid: string) {
+    if (!uid) throw new UnauthorizedException('Authentication required');
+
+    const isEmulator = Boolean(
+      process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB,
+    );
+    const allowReverify = isEmulator || String(process.env.KYC_ALLOW_REVERIFY || '').toLowerCase() === 'true';
+    if (!allowReverify) {
+      throw new BadRequestException('Re-verification is disabled');
+    }
+
+    const now = new Date();
+    const statusRef = admin.firestore().collection('users').doc(uid).collection('kyc').doc('status');
+    await statusRef.set(
+      {
+        status: 'CANCELLED',
+        provider: 'didit',
+        reason: 'reverify_requested',
+        updatedAt: now,
+      },
+      { merge: true } as any,
+    );
+
+    await admin.firestore().collection('users').doc(uid).set(
+      {
+        kyc: { status: 'CANCELLED', provider: 'didit', updatedAt: now },
+      },
+      { merge: true } as any,
+    );
+
     return { ok: true, status: 'CANCELLED' };
   }
 

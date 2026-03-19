@@ -32,6 +32,18 @@ export async function cancelKyc(): Promise<any> {
   return await resp.json();
 }
 
+export async function reopenKycForReverify(): Promise<any> {
+  const base = getKycApiBase();
+  const token = await auth?.currentUser?.getIdToken();
+  const resp = await fetch(`${base}/kyc/reopen`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    body: JSON.stringify({}),
+  });
+  if (!resp.ok) throw await toApiError(resp, 'Unable to reopen verification.');
+  return await resp.json();
+}
+
 export async function verifyKycIdWithFiles(frontFile: File, backFile: File): Promise<any> {
   const base = getKycApiBase();
   const token = await auth?.currentUser?.getIdToken();

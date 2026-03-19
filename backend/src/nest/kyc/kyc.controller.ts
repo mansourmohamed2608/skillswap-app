@@ -155,6 +155,14 @@ export class KycController {
     return this.kycService.cancel(uid);
   }
 
+  @UseGuards(FirebaseAuthGuard)
+  @Post('reopen')
+  async reopen(@Req() req: Request) {
+    const uid = (req as any)?.user?.uid || null;
+    if (!uid) throw new UnauthorizedException('Authentication required');
+    return this.kycService.reopenForReverify(uid);
+  }
+
   /**
    * POST /kyc/submit
    * Authenticated flow: accept Firebase Storage URLs, download them and
