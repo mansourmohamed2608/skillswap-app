@@ -341,7 +341,9 @@ export default function EditListingScreen() {
         <Text style={cn('text-sm text-muted-foreground')}>{t('listings.location') || 'Location'}</Text>
         <Input value={location} onChangeText={setLocation} />
         <TouchableOpacity
-          onPress={useCurrentLocation}
+          onPress={() => {
+            void useCurrentLocation();
+          }}
           disabled={locating}
           style={cn('rounded-lg border border-border px-4 py-2', locating ? 'opacity-70' : '')}
         >

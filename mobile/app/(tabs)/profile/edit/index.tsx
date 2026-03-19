@@ -369,7 +369,13 @@ export default function EditProfilePage() {
             <Input value={location} onChangeText={setLocation} className="mb-3" />
             <Text style={cn('text-sm text-foreground mb-1')}>{t('profile.edit.countryLabel')}</Text>
             <Input value={country} onChangeText={setCountry} className="mb-3" />
-            <TouchableOpacity onPress={useCurrentLocation} disabled={locating} style={cn('mt-1 mb-3 rounded-md border border-border px-3 py-2 bg-card', locating ? 'opacity-70' : '')}>
+            <TouchableOpacity
+              onPress={() => {
+                void useCurrentLocation();
+              }}
+              disabled={locating}
+              style={cn('mt-1 mb-3 rounded-md border border-border px-3 py-2 bg-card', locating ? 'opacity-70' : '')}
+            >
               <Text style={cn('text-foreground text-center')}>{locating ? t('profile.edit.locating') : t('profile.edit.useCurrentLocation')}</Text>
             </TouchableOpacity>
             {geo ? (
