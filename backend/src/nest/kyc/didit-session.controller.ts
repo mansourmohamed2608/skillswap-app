@@ -41,7 +41,7 @@ export class DiditSessionController {
    */
   @Post('session')
   async createSession(
-    @Body() body: { vendor?: string },
+    @Body() body: { vendor?: string; language?: string },
     @Req() req: Request,
   ) {
     // --- Resolve vendor / uid -------------------------------------------------
@@ -94,6 +94,8 @@ export class DiditSessionController {
     const apiKey = process.env.DIDIT_API_KEY;
     const baseUrl = process.env.DIDIT_BASE_URL || 'https://verification.didit.me';
     const workflowId = process.env.DIDIT_WORKFLOW_ID;
+    const requestedLanguage = String(body?.language || process.env.DIDIT_SESSION_LANGUAGE || 'ar').trim();
+    const language = requestedLanguage || 'ar';
     // APP_URL is a backend-only env var (e.g. https://skillswap-69yxi.web.app)
     // DIDIT_CALLBACK_URL takes priority; fall back to APP_URL + /kyc/done
     const callbackUrl = process.env.DIDIT_CALLBACK_URL ||
@@ -114,6 +116,7 @@ export class DiditSessionController {
         {
           workflow_id: workflowId,
           vendor_data: String(vendor),
+          language,
           ...(callbackUrl ? { callback: callbackUrl } : {}),
         },
         {

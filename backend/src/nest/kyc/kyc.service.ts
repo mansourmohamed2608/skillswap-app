@@ -40,6 +40,7 @@ export class KycService {
 
     const apiKey = process.env.DIDIT_API_KEY;
     const baseUrl = process.env.DIDIT_BASE_URL || 'https://verification.didit.me';
+    const preferredCharacters = String(process.env.DIDIT_PREFERRED_CHARACTERS || 'non_latin').toLowerCase();
 
     if (!apiKey) {
       throw new HttpException('KYC verification is not configured', HttpStatus.SERVICE_UNAVAILABLE);
@@ -67,6 +68,7 @@ export class KycService {
       // Optional: Specify Egypt National ID
       form.append('issuing_country', 'EGY');
       form.append('document_type', 'Identity Card');
+      form.append('preferred_characters', preferredCharacters === 'latin' ? 'latin' : 'non_latin');
 
       // Call Didit ID Verification API
       const response = await axios.post(
