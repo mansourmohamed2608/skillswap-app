@@ -109,6 +109,9 @@ export class KycService {
         .join(' ')
         .trim();
       const verifiedName = diditFullName || fallbackJoinedName || undefined;
+      const allowDocumentReassign = ['true', '1'].includes(
+        String(process.env.KYC_ALLOW_DOCUMENT_REASSIGN || '').toLowerCase(),
+      );
 
       if (status === 'VERIFIED' && documentNumberHash) {
         const indexRef = admin.firestore().collection('kycDocumentIndex').doc(documentNumberHash);
@@ -117,7 +120,12 @@ export class KycService {
           if (idxSnap.exists) {
             const existingUid = String((idxSnap.data() as any)?.uid || '');
             if (existingUid && existingUid !== uid) {
-              throw new BadRequestException({ code: 'kyc/document-already-used' });
+              if (!allowDocumentReassign) {
+                throw new BadRequestException({ code: 'kyc/document-already-used' });
+              }
+              this.logger.warn(
+                `[KYC] Reassigning document hash from uid=${existingUid} to uid=${uid} due to KYC_ALLOW_DOCUMENT_REASSIGN`,
+              );
             }
           }
           tx.set(indexRef, {
@@ -252,7 +260,9 @@ export class KycService {
     const isEmulator = Boolean(
       process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB,
     );
-    const allowReverify = isEmulator || String(process.env.KYC_ALLOW_REVERIFY || '').toLowerCase() === 'true';
+    // Re-verify is enabled by default; set KYC_ALLOW_REVERIFY=false to hard-disable it.
+    const reverifyEnv = String(process.env.KYC_ALLOW_REVERIFY ?? 'true').toLowerCase();
+    const allowReverify = isEmulator || reverifyEnv === 'true' || reverifyEnv === '1';
     if (!allowReverify) {
       throw new BadRequestException('Re-verification is disabled');
     }
