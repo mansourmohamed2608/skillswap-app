@@ -98,11 +98,15 @@ export default function WishesListPage() {
               <Link href={getWishPath(w)} className="w-full">
                 <Button variant="outline" className="w-full">{t('home.wishes.viewDetails')}</Button>
               </Link>
-              <Link href={`/wishes/donate?wish=${encodeURIComponent(w.publicId || w.id)}`} className="w-full">
-                <Button className="w-full" disabled={isOwner}>
-                  {isOwner ? 'Your wish' : t('wishes.list.donate')}
+              {isOwner ? (
+                <Button className="w-full" disabled>
+                  Your wish
                 </Button>
-              </Link>
+              ) : (
+                <Link href={`/wishes/donate?wish=${encodeURIComponent(w.publicId || w.id)}`} className="w-full">
+                  <Button className="w-full">{t('wishes.list.donate')}</Button>
+                </Link>
+              )}
             </CardFooter>
           </Card>
         );

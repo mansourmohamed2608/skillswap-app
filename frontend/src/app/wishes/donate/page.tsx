@@ -65,6 +65,14 @@ function DonatePageContent() {
       }
       if (snap.exists()) {
         const nextWish = { id: snap.id, ...snap.data() } as any;
+        const ownWishSelected = Boolean(user?.uid && nextWish?.userId && user.uid === nextWish.userId);
+        if (ownWishSelected) {
+          setWish(null);
+          setResolvedWishId('');
+          toast({ title: 'You cannot donate to your own wish.', variant: 'destructive' });
+          router.replace('/wishes/donate');
+          return;
+        }
         const publicId = getWishPublicId({
           id: snap.id,
           title: nextWish?.title,
@@ -77,7 +85,7 @@ function DonatePageContent() {
         }
       }
     })();
-  }, [wishIdentifier, params, router]);
+  }, [wishIdentifier, params, router, toast, user?.uid]);
 
   useEffect(() => {
     if (wishIdentifier) return;
@@ -86,13 +94,14 @@ function DonatePageContent() {
       setLoadingWishes(true);
       try {
         const data = await getFeaturedWishes({ count: 6 });
-        if (mounted) setAvailableWishes(data);
+        const filtered = data.filter((item) => !(user?.uid && item.userId && item.userId === user.uid));
+        if (mounted) setAvailableWishes(filtered);
       } finally {
         if (mounted) setLoadingWishes(false);
       }
     })();
     return () => { mounted = false; };
-  }, [wishIdentifier]);
+  }, [wishIdentifier, user?.uid]);
 
   const base = process.env.NEXT_PUBLIC_FUNCTIONS_BASE || `http://127.0.0.1:5001/${process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID}/us-central1`;
   const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
