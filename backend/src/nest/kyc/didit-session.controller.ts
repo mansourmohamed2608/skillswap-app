@@ -110,7 +110,7 @@ export class DiditSessionController {
 
     try {
       const response = await axios.post(
-        `${baseUrl}/v2/session/`,
+        `${baseUrl}/v3/session/`,
         {
           workflow_id: workflowId,
           vendor_data: String(vendor),

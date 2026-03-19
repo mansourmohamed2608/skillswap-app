@@ -70,7 +70,7 @@ export class KycService {
 
       // Call Didit ID Verification API
       const response = await axios.post(
-        `${baseUrl}/v2/id-verification/`,
+        `${baseUrl}/v3/id-verification/`,
         form,
         {
           headers: {
