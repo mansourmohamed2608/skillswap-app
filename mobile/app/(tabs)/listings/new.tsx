@@ -285,9 +285,7 @@
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('listings.location') || 'Location'}</Text>
         <Input className="mb-3" value={location} onChangeText={setLocation} placeholder={t('listings.locationPlaceholder') || 'City, Country'} />
         <TouchableOpacity
-          onPress={() => {
-            void useCurrentLocation();
-          }}
+          onPress={useCurrentLocation}
           disabled={locating}
           style={cn('mb-3 rounded-lg border border-border px-4 py-2', locating ? 'opacity-70' : '')}
         >
