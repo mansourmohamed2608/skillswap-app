@@ -41,20 +41,13 @@
       "**/.*",
       "**/node_modules/**"
     ],
-    "cleanUrls": false,
-    "trailingSlash": false,
+    "cleanUrls": true,
+    "trailingSlash": true,
     "rewrites": [
       {
         "source": "/api/**",
         "function": {
           "functionId": "api",
-          "region": "europe-west3"
-        }
-      },
-      {
-        "source": "**",
-        "function": {
-          "functionId": "nextjs",
           "region": "europe-west3"
         }
       }

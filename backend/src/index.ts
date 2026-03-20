@@ -299,7 +299,6 @@ app.use('/', (req, res, next) => {
 });
 
 export const api = onRequest({ timeoutSeconds: 540 }, app);
-export { nextjs } from './nextjs-handler';
 export { moderateListing } from './moderation';
 export { onListingWrite } from './search';
 export { moderateWish } from './moderation';
