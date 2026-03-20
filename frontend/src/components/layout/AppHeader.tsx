@@ -107,7 +107,10 @@ export function AppHeader() {
   };
 
   useEffect(() => {
-    if (!db || !user?.uid) return;
+    if (!db || !user?.uid) {
+      setNotifications([]);
+      return;
+    }
     const qy = query(
       collection(db, 'notifications'),
       where('userId', '==', user.uid),
@@ -142,7 +145,8 @@ export function AppHeader() {
     return () => unsub();
   }, [user?.uid]);
 
-  const markVisibleUnreadAsRead = () => {
+  useEffect(() => {
+    if (!desktopNotificationsOpen && !mobileNotificationsOpen) return;
     const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
     if (!unreadIds.length) return;
 
@@ -154,17 +158,7 @@ export function AppHeader() {
         unreadIds.includes(item.id) ? { ...item, isRead: false } : item
       )));
     });
-  };
-
-  const handleDesktopNotificationsOpenChange = (open: boolean) => {
-    setDesktopNotificationsOpen(open);
-    if (open) markVisibleUnreadAsRead();
-  };
-
-  const handleMobileNotificationsOpenChange = (open: boolean) => {
-    setMobileNotificationsOpen(open);
-    if (open) markVisibleUnreadAsRead();
-  };
+  }, [desktopNotificationsOpen, mobileNotificationsOpen, notifications]);
 
   const notificationTimeLabel = (n: Notification) => {
     try {
@@ -249,7 +243,7 @@ export function AppHeader() {
         <div className="hidden shrink-0 items-center justify-end gap-1 md:flex">
           {isAuthenticated ? (
             <div className="flex items-center gap-1.5">
-              <Popover open={desktopNotificationsOpen} onOpenChange={handleDesktopNotificationsOpenChange}>
+              <Popover open={desktopNotificationsOpen} onOpenChange={setDesktopNotificationsOpen}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')}>
                     <BellIcon className="h-4 w-4" />
@@ -380,7 +374,7 @@ export function AppHeader() {
             </Button>
           ) : null}
           {isAuthenticated ? (
-            <Popover open={mobileNotificationsOpen} onOpenChange={handleMobileNotificationsOpenChange}>
+            <Popover open={mobileNotificationsOpen} onOpenChange={setMobileNotificationsOpen}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')}>
                   <BellIcon className="h-5 w-5" />
