@@ -1,6 +1,6 @@
 import axios from 'axios';
 import * as admin from 'firebase-admin';
-import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
+import { createHash, createHmac, randomBytes } from 'crypto';
 import { DURATION_IN_MONTHS, SubscriptionPlan } from './constants';
 import { saveDonationRecord, savePaymentRecord, updateDonationStatus, updatePaymentStatus } from './postgres';
 import { sendEmail, sendEmailNotification, sendInAppNotification, sendPushNotification } from './notifications';
@@ -90,7 +90,8 @@ function constantTimeEq(a: string, b: string): boolean {
   const ab = Buffer.from(a);
   const bb = Buffer.from(b);
   if (ab.length !== bb.length) return false;
-  if (timingSafeEqual) return timingSafeEqual(ab, bb);
+  const crypto = require('crypto');
+  if (crypto.timingSafeEqual) return crypto.timingSafeEqual(ab, bb);
   let diff = 0;
   for (let i = 0; i < ab.length; i++) diff |= ab[i] ^ bb[i];
   return diff === 0;
@@ -490,11 +491,7 @@ async function handleDonationWebhook(args: {
   if (donorEmail) {
     const subject = 'Donation Receipt - SkillSwap';
     const text = `Thank you for your donation!\n\nAmount: ${amount} ${donationData.currency || 'EGP'}\nWish: ${wishId}\n\nWe appreciate your support.\n`;
-    try {
-      await sendEmail(donorEmail, subject, text);
-    } catch (err) {
-      logger.warn({ err, donorEmail, eventKey }, '[Payments] failed to send donation receipt email');
-    }
+    try { await sendEmail(donorEmail, subject, text); } catch {}
   }
 
   await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'donation_granted' }, { merge: true });

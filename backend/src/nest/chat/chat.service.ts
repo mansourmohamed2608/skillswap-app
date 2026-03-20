@@ -204,9 +204,7 @@ export class ChatService {
           const hit = byNameSlug.docs.find((d) => d.id.toLowerCase().endsWith(fallbackUidSuffix)) || byNameSlug.docs[0];
           if (hit) return hit.id;
         }
-      } catch {
-        // Ignore fallback lookup failures and continue with other strategies.
-      }
+      } catch {}
 
       // Last-resort compatibility for synthetic identifiers like member-<suffix>.
       if (fallbackNameSlug === 'member') {
@@ -216,9 +214,7 @@ export class ChatService {
             const hit = sample.docs.find((doc) => String(doc.id || '').toLowerCase().endsWith(fallbackUidSuffix));
             if (hit) return hit.id;
           }
-        } catch {
-          // Ignore broad scan failures and continue to final not-found response.
-        }
+        } catch {}
       }
     }
 

@@ -14,7 +14,6 @@ import { createRequestLogger } from './logger';
 
 // Extend Express Request type
 declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       correlationId: string;

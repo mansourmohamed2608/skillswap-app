@@ -3,8 +3,6 @@
  * This file runs before each test file
  */
 
-/* eslint-disable no-console */
-
 // Set test environment
 process.env.NODE_ENV = 'test';
 process.env.FUNCTIONS_EMULATOR = 'true';
