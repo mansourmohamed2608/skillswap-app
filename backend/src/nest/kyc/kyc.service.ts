@@ -103,6 +103,12 @@ export class KycService {
       const rawDocumentNumber = verification.document_number || verification.personal_number;
       const normalizedDocumentNumber = this.normalizeDocumentNumber(rawDocumentNumber);
       const documentNumberHash = normalizedDocumentNumber ? this.hmacSha256(normalizedDocumentNumber) : undefined;
+      const diditFullName = String(verification.full_name || '').trim();
+      const fallbackJoinedName = [verification.first_name, verification.last_name]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      const verifiedName = diditFullName || fallbackJoinedName || undefined;
 
       if (status === 'VERIFIED' && documentNumberHash) {
         const indexRef = admin.firestore().collection('kycDocumentIndex').doc(documentNumberHash);
@@ -133,11 +139,10 @@ export class KycService {
         documentNumberHash,
         firstName: verification.first_name,
         lastName: verification.last_name,
+        fullName: diditFullName || undefined,
         birthDate: verification.birth_date,
         expirationDate: verification.expiration_date,
-        verifiedName: verification.first_name && verification.last_name 
-          ? `${verification.first_name} ${verification.last_name}`.trim()
-          : undefined,
+        verifiedName,
         updatedAt: new Date(),
       };
 
