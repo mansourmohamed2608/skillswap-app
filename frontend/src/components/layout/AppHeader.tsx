@@ -107,8 +107,8 @@ export function AppHeader() {
   };
 
   useEffect(() => {
+    // Only set up listener if db and user are available
     if (!db || !user?.uid) {
-      setNotifications([]);
       return;
     }
     const qy = query(
@@ -141,7 +141,9 @@ export function AppHeader() {
         } as Notification;
       });
       setNotifications(items);
-    }, () => setNotifications([]));
+    }, () => {
+      setNotifications([]);
+    });
     return () => unsub();
   }, [user?.uid]);
 
@@ -150,13 +152,13 @@ export function AppHeader() {
     const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
     if (!unreadIds.length) return;
 
-    setNotifications((prev) => prev.map((item) => (
-      unreadIds.includes(item.id) ? { ...item, isRead: true } : item
-    )));
-    markNotificationsRead(unreadIds).catch(() => {
+    // Mark notifications as read asynchronously via API
+    markNotificationsRead(unreadIds).then(() => {
       setNotifications((prev) => prev.map((item) => (
-        unreadIds.includes(item.id) ? { ...item, isRead: false } : item
+        unreadIds.includes(item.id) ? { ...item, isRead: true } : item
       )));
+    }).catch(() => {
+      // On error, don't update state since the API call failed
     });
   }, [desktopNotificationsOpen, mobileNotificationsOpen, notifications]);
 

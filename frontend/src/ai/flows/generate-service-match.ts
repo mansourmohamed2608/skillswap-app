@@ -35,6 +35,7 @@ type ListingContext = {
   location?: string;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let geminiRunnerPromise: Promise<((input: {
   userProfile: string;
   serviceRequests: string;

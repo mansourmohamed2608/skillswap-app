@@ -25,12 +25,14 @@ export default function AdminPage() {
   const [keywordInput, setKeywordInput] = useState('');
   const [keywordsLoading, setKeywordsLoading] = useState(false);
   const [users, setUsers] = useState<Array<{ id: string; email?: string; name?: string; role?: string; accountStatus?: string }>>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [auditItems, setAuditItems] = useState<Array<{ id: string; actorId: string; action: string; targetId: string; details?: any; createdAt?: any }>>([]);
   const [usersLoading, setUsersLoading] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
   const [reports, setReports] = useState<Array<{ id: string; type: string; contentId: string; reason: string; note?: string; reporterId: string; ownerId?: string; status: string; createdAt?: any }>>([]);
   const [reportsLoading, setReportsLoading] = useState(false);
   const [analyticsSummary, setAnalyticsSummary] = useState<Array<{ name: string; count: number }>>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [analyticsItems, setAnalyticsItems] = useState<Array<{ id: string; name: string; userId?: string; properties?: any; createdAt?: any }>>([]);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
