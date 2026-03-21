@@ -8,12 +8,13 @@ type PasswordInputProps = RNInputProps;
 
 export default function PasswordInput({ className, ...rest }: PasswordInputProps) {
   const [visible, setVisible] = React.useState(false);
+  const mergedClassName = className ? `pr-10 ${className}` : 'pr-10';
   return (
     <View style={cn('relative')}>
       <Input
         {...rest}
         secureTextEntry={!visible}
-        className={cn('pr-10', className)}
+        className={mergedClassName}
       />
       <Pressable
         onPress={() => setVisible((v) => !v)}
