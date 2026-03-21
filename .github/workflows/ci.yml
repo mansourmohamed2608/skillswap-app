@@ -191,11 +191,33 @@ jobs:
         working-directory: backend
         run: npm run build
 
-      - name: Deploy Functions
+      - name: Write Firebase service account key
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF != '' }}
+        run: |
+          cat > "$RUNNER_TEMP/firebase-sa.json" <<'JSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF }}
+          JSON
+
+      - name: Deploy Functions (service account)
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF != '' }}
+        working-directory: backend
+        env:
+          FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: firebase deploy --only functions --project skillswap-69yxi
+
+      - name: Deploy Functions (token fallback)
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF == '' && secrets.FIREBASE_TOKEN != '' }}
         working-directory: backend
         env:
           FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
         run: firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}"
+
+      - name: Fail when deploy credentials are missing
+        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF == '' && secrets.FIREBASE_TOKEN == '' }}
+        run: |
+          echo "Missing Firebase deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF (preferred) or FIREBASE_TOKEN." >&2
+          exit 1
 
       # Frontend deployment (Firebase App Hosting handles this via GitHub integration)
       # If using manual deployment:
