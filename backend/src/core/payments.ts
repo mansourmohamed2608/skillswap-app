@@ -24,7 +24,7 @@ const USE_MOCK =
   (!IS_PRODUCTION && IS_EMULATOR);
 const ALLOW_UNCONFIGURED_PAYMENT_FALLBACK = process.env.ALLOW_UNCONFIGURED_PAYMENT_FALLBACK !== '0';
 
-// Security: Startup safety checks — warn loudly if insecure modes are active in production
+// Security: Startup safety checks - warn loudly if insecure modes are active in production
 if (IS_PRODUCTION && USE_MOCK) {
   logger.warn('[Payments] SECURITY WARNING: Mock payment mode is ENABLED in production (USE_MOCK_PAYMENTS=1). Set USE_MOCK_PAYMENTS=0 to enforce real Geidea payments.');
 }
@@ -77,7 +77,7 @@ async function callGateway<T>(fn: () => Promise<T>): Promise<T> {
   } catch (err: any) {
     const status: number | undefined = err?.response?.status;
     const message: string = String(err?.response?.data?.message || err?.response?.data?.detail || err?.message || 'Payment gateway error').slice(0, 200);
-    logger.error(`[Payments] Gateway call failed — HTTP ${status ?? 'unknown'}: ${message}`);
+    logger.error(`[Payments] Gateway call failed - HTTP ${status ?? 'unknown'}: ${message}`);
     throw new Error(`Payment gateway error (HTTP ${status ?? 'unknown'}): ${message}`);
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Security regression tests — fifth audit round.
+ * Security regression tests - fifth audit round.
  *
  * Each test targets a specific security control that was added or hardened
  * across multiple audit passes.  The intent is to prevent regressions when
@@ -185,10 +185,10 @@ function resetFirestoreChain() {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// PaymentsService — plan / duration input validation
+// PaymentsService - plan / duration input validation
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('PaymentsService — input validation', () => {
+describe('PaymentsService - input validation', () => {
   let service: PaymentsService;
 
   beforeEach(async () => {
@@ -241,10 +241,10 @@ describe('PaymentsService — input validation', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// ChatService — self-message and block guards
+// ChatService - self-message and block guards
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('ChatService — message guards', () => {
+describe('ChatService - message guards', () => {
   let service: ChatService;
   // Must be ≥20 alphanumeric characters to hit the UID fast-path in resolveRecipientUid.
   const SENDER    = 'senderUid123456789012345678';     // 28 chars
@@ -317,10 +317,10 @@ describe('ChatService — message guards', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// ReviewsService — guest reviewer + membership gate
+// ReviewsService - guest reviewer + membership gate
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('ReviewsService — access control', () => {
+describe('ReviewsService - access control', () => {
   let service: ReviewsService;
   const LISTING_SNAP = mockSnap({ userId: 'owner-uid', status: 'active' });
 
@@ -334,7 +334,7 @@ describe('ReviewsService — access control', () => {
   });
 
   it('throws UnauthorizedException for unauthenticated reviewer', async () => {
-    // createReview fetches the listing first — mock that to succeed.
+    // createReview fetches the listing first - mock that to succeed.
     mockFirestoreGet.mockResolvedValueOnce(LISTING_SNAP);
     await expect(
       service.createReview(null as any, {
@@ -384,10 +384,10 @@ describe('ReviewsService — access control', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// WishesService — input validation
+// WishesService - input validation
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('WishesService — input validation', () => {
+describe('WishesService - input validation', () => {
   let service: WishesService;
 
   beforeEach(async () => {
@@ -504,10 +504,10 @@ describe('WishesService — input validation', () => {
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// UsersService — business-profile array field limits
+// UsersService - business-profile array field limits
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('UsersService — businessProfile input validation', () => {
+describe('UsersService - businessProfile input validation', () => {
   let service: UsersService;
 
   beforeEach(async () => {
@@ -548,7 +548,7 @@ describe('UsersService — businessProfile input validation', () => {
   it('accepts teamMembers entries at exactly 100 characters', async () => {
     const exactMember = 'M'.repeat(100);
     // Expect the call NOT to throw on the length check; it may fail later at Firestore
-    // — we only care that StatusError is not thrown for the length
+    // - we only care that StatusError is not thrown for the length
     (admin.firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({
         doc: jest.fn(() => ({
@@ -571,7 +571,7 @@ describe('UsersService — businessProfile input validation', () => {
   });
 
   it('truncates teamMembers array to maximum 5 entries', async () => {
-    // Trigger the length map with 6 short entries — should NOT throw, just truncate
+    // Trigger the length map with 6 short entries - should NOT throw, just truncate
     const members = ['A', 'B', 'C', 'D', 'E', 'F']; // 6 entries
     // The check length >100 won't fire. Array.slice(0,5) reduces to 5. It should
     // pass through without a StatusError for length.

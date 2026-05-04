@@ -241,7 +241,7 @@ export function MatchesPanel() {
         </Card>
       ) : null}
 
-      {/* Complementary listing matches — fires without needing requests */}
+      {/* Complementary listing matches - fires without needing requests */}
       {!loading && listingMatches.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export function MatchesPanel() {
                     <div>
                       <p className="text-xs text-muted-foreground mb-0.5">{t('listings.card.exchangeFor')}</p>
                       <p className="text-sm font-medium text-primary line-clamp-2 min-h-[2.5rem]">
-                        {match.theirListing.requestedCategory || '—'}
+                        {match.theirListing.requestedCategory || 'N/A'}
                       </p>
                     </div>
                   </CardContent>

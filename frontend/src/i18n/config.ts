@@ -98,7 +98,7 @@ const resources = {
       home: {
         hero: {
           title: "Welcome to SkillSwap!",
-          body: "SkillSwap is your vibrant hub to share your skills and services with your community — unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
+          body: "SkillSwap is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
           ctaBrowse: "Browse Listings",
           ctaPost: "Post a Listing",
         },
@@ -478,7 +478,7 @@ const resources = {
           loadingMatches: "Checking your latest matches…",
           complementaryTitle: "Complementary Listings",
           countFound: "{{count}} found",
-          complementaryDesc: "These users offer exactly what you want and want exactly what you offer — no request needed yet.",
+          complementaryDesc: "These users offer exactly what you want and want exactly what you offer, no request needed yet.",
           perfectExchange: "Perfect Exchange",
           noLiveMatches: "No live exchange matches yet",
           noLiveMatchesDesc: "These matches appear automatically when your listing\u2019s offer and wanted service complement another user\u2019s listing. Make sure your listing has both an offered service and a requested service category set.",
@@ -1034,7 +1034,7 @@ const resources = {
           pro_priority: "Priority listing in search",
           pro_verified: "Verified badge",
           pro_branding: "Custom profile branding",
-          pro_regionLobby: "Access to Middle East swap lobby",
+          pro_regionLobby: "Access to the Middle East lobby",
           pro_supportFull: "Full support",
 
           business_team: "Multiple team members (up to 5)",
@@ -1358,7 +1358,7 @@ const resources = {
       home: {
         hero: {
           title: "مرحبًا بك في سكيل سواپ!",
-          body: "سكيل سواپ هو منصّتك الحيوية لمشاركة مهاراتك وخدماتك مع مجتمعك — أطلق إمكاناتك، وشارك بما تتقنه، واكتشف ما تحتاجه في المقابل. سواء كنت تتبادل خدمة بخدمة أو منتجًا بمنتج، أو تحوّل موهبتك إلى دخل، سكيل سواپ يساعدك على تحقيق أقصى استفادة مما تتقنه.",
+          body: "سكيل سواپ هو منصّتك الحيوية لمشاركة مهاراتك وخدماتك مع مجتمعك، أطلق إمكاناتك، وشارك بما تتقنه، واكتشف ما تحتاجه في المقابل. سواء كنت تتبادل خدمة بخدمة أو منتجًا بمنتج، أو تحوّل موهبتك إلى دخل، سكيل سواپ يساعدك على تحقيق أقصى استفادة مما تتقنه.",
           ctaBrowse: "تصفّح العروض",
           ctaPost: "أنشئ عرضًا",
         },
@@ -1738,7 +1738,7 @@ const resources = {
           loadingMatches: "جارٍ التحقق من أحدث تطابقاتك…",
           complementaryTitle: "عروض تكميلية",
           countFound: "{{count}} تطابق",
-          complementaryDesc: "هؤلاء المستخدمون يقدّمون ما تريده ويريدون ما تقدّمه — دون الحاجة لطلب مسبق.",
+          complementaryDesc: "هؤلاء المستخدمون يقدّمون ما تريده ويريدون ما تقدّمه، دون الحاجة لطلب مسبق.",
           perfectExchange: "تبادل مثالي",
           noLiveMatches: "لا توجد تطابقات تبادل حية بعد",
           noLiveMatchesDesc: "تظهر هذه التطابقات تلقائيًا عندما يتكامل عرضك في العروض مع عرض مستخدم آخر. تأكد من أن عرضك يتضمن خدمة معروضة وفئة خدمة مطلوبة.",
@@ -2294,7 +2294,7 @@ const resources = {
           pro_priority: "أولوية في نتائج البحث",
           pro_verified: "شعار موثّق",
           pro_branding: "علامة تجارية مخصّصة للملف",
-          pro_regionLobby: "الوصول إلى صالة التبادل في الشرق الأوسط",
+          pro_regionLobby: "الوصول إلى صالة الشرق الأوسط",
           pro_supportFull: "دعم كامل",
 
           business_team: "عدة أعضاء للفريق (حتى 5)",

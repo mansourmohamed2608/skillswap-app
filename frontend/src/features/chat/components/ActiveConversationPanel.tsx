@@ -27,7 +27,7 @@ type ActiveConversationPanelProps = {
   className?: string;
   onClose?: () => void;
   onBack?: () => void;
-  /** Pre-seeded metadata from the conversation list — avoids loading flash */
+  /** Pre-seeded metadata from the conversation list - avoids loading flash */
   initialUserMeta?: UserMeta;
 };
 
@@ -102,7 +102,7 @@ export function ActiveConversationPanel({
     (async () => {
       if (active) setResolvingUser(true);
       if (!user?.uid) {
-        // Auth still loading — keep resolvingUser=true so we don't flash "User unavailable"
+        // Auth still loading - keep resolvingUser=true so we don't flash "User unavailable"
         if (authLoading) return;
         if (active) {
           setResolvedOtherUserId("");

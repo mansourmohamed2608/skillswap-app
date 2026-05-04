@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-// Arabic script font — used when lang="ar" is active
+// Arabic script font - used when lang="ar" is active
 const cairofont = Cairo({
   variable: '--font-cairo',
   subsets: ['arabic', 'latin'],

@@ -146,7 +146,7 @@ export class ChatService {
   }
 
   // In-process TTL cache: avoids N+1 Firestore queries for repeated username lookups.
-  // TTL is 5 minutes — stale after a username change, acceptable for internal routing.
+  // TTL is 5 minutes - stale after a username change, acceptable for internal routing.
   private readonly uidCache = new Map<string, { uid: string; expiresAt: number }>();
 
   private async resolveRecipientUid(identifier: string): Promise<string> {

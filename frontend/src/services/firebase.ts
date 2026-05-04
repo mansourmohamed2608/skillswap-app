@@ -13,11 +13,11 @@ import { getDatabase, connectDatabaseEmulator, type Database } from "firebase/da
 
 // ---------- Public config ----------
 // Priority:
-// 1. FIREBASE_WEBAPP_CONFIG — auto-injected by Firebase App Hosting at runtime (server-side)
-// 2. NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG — set in apphosting.yaml, inlined at build time
-// 3. Individual NEXT_PUBLIC_FIREBASE_* vars — set in apphosting.yaml, inlined at build time
-// 4. Hardcoded fallback — guarantees the browser bundle always has a valid config
-//    (these are the public Firebase web config values — not secrets)
+// 1. FIREBASE_WEBAPP_CONFIG - auto-injected by Firebase App Hosting at runtime (server-side)
+// 2. NEXT_PUBLIC_FIREBASE_WEBAPP_CONFIG - set in apphosting.yaml, inlined at build time
+// 3. Individual NEXT_PUBLIC_FIREBASE_* vars - set in apphosting.yaml, inlined at build time
+// 4. Hardcoded fallback - guarantees the browser bundle always has a valid config
+//    (these are the public Firebase web config values - not secrets)
 const FALLBACK_CONFIG: FirebaseOptions = {
   apiKey: "AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc",
   authDomain: "skillswap-69yxi.firebaseapp.com",

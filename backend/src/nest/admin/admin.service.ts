@@ -20,7 +20,7 @@ export class AdminService {
 
   // In-process TTL cache: avoids a Firestore read on every admin action within the same
   // Cloud Functions instance.  A cache miss (first call, or after TTL) still hits Firestore.
-  // TTL is 5 sec — a revoked admin retains access for at most 5 sec on a warm instance.
+  // TTL is 5 sec - a revoked admin retains access for at most 5 sec on a warm instance.
   private readonly adminCache = new Map<string, number>(); // uid → expiresAt ms
   private readonly ADMIN_CACHE_TTL_MS = 5 * 1000; // 5 seconds
 
@@ -203,7 +203,7 @@ export class AdminService {
       this.adminCache.delete(targetUid);
       AdminGuard.invalidate(targetUid);
     } catch (e: any) {
-      // Log but do NOT fail — Firestore is the authoritative source
+      // Log but do NOT fail - Firestore is the authoritative source
       this.logger.warn({ event: 'set_custom_claims_failed', targetUid, role, error: e?.message }, 'Failed to set custom claims');
     }
 

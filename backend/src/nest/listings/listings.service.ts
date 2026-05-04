@@ -325,7 +325,7 @@ export class ListingsService {
         createdAt: updatedAtVal,
       });
     } catch (e) {
-      this.logger.error('[Listings] Audit log write failed — reconciliation may be needed', {
+      this.logger.error('[Listings] Audit log write failed - reconciliation may be needed', {
         listingId, userId, error: String((e as any)?.message || e),
       });
     }

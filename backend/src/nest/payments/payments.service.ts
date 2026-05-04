@@ -50,7 +50,7 @@ export class PaymentsService {
         createdAt: createdAtVal,
       });
     } catch (fsErr) {
-      this.logger.error('[Payments] Firestore write failed after Postgres write succeeded — reconciliation needed', {
+      this.logger.error('[Payments] Firestore write failed after Postgres write succeeded - reconciliation needed', {
         userId, sessionId, error: String((fsErr as any)?.message || fsErr),
       });
     }

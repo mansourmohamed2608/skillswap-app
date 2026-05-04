@@ -224,7 +224,7 @@ app.use((req, res, next) => {
 });
 
 // Stricter rate limit for account-creation endpoint to prevent enumeration / spam
-// 20 attempts per hour per IP — well above legitimate use but blocks credential stuffing
+// 20 attempts per hour per IP - well above legitimate use but blocks credential stuffing
 const bootstrapLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   limit: 20,

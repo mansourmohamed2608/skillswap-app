@@ -35,7 +35,7 @@ export const DURATION_IN_MONTHS: Record<string, number> = {
 /**
  * Country grouping for regional lobbies
  * Free/Basic users see only their own country
- * Pro users can see the Middle East Lobby with all Middle East countries
+ * Pro users can see the Middle East Lobby across all supported Middle East countries.
  */
 export const COUNTRY_GROUPS = {
   // Individual countries
@@ -62,7 +62,7 @@ export const COUNTRY_GROUPS = {
   MIDDLE_EAST_LOBBY: 'MIDDLE_EAST_LOBBY',
 };
 
-// Countries included in Middle East Lobby (Pro-only feature)
+// Countries included in the Middle East Lobby (Pro-only feature)
 export const MIDDLE_EAST_COUNTRIES = new Set([
   'EG',  // Egypt
   'SA',  // Saudi Arabia
@@ -95,12 +95,12 @@ export function canAccessCountry(userCountry: string, targetCountry: string, isP
   // Same country - always allowed
   if (userCC === targetCC) return true;
 
-  // Middle East Lobby - only for Pro users
+  // Middle East Lobby: only for Pro users
   if (targetCC === COUNTRY_GROUPS.MIDDLE_EAST_LOBBY) {
     return isPro && isMiddleEastCountry(userCC);
   }
 
-  // Pro users can see all Middle East countries from Middle East Lobby
+  // Pro users can see all supported Middle East countries in the lobby.
   if (isPro && isMiddleEastCountry(userCC) && isMiddleEastCountry(targetCC)) {
     return true;
   }

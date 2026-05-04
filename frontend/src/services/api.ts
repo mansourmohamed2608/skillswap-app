@@ -97,7 +97,7 @@ function inferProjectIdFromHostedApp() {
   return m?.[1] || '';
 }
 
-// Hardcoded production base — used as last resort when NEXT_PUBLIC_FUNCTIONS_BASE
+// Hardcoded production base - used as last resort when NEXT_PUBLIC_FUNCTIONS_BASE
 // is not baked into the bundle (e.g. App Hosting build without env injection).
 // Points to Firebase Hosting, which rewrites /api/** → Cloud Function.
 const HARDCODED_PROD_BASE = 'https://skillswap-69yxi.web.app';
@@ -730,7 +730,7 @@ export async function deleteReview(reviewId: string) {
 
 // --------------- Analytics ---------------
 /**
- * Fire-and-forget analytics event. Never throws — analytics must not block user flows.
+ * Fire-and-forget analytics event. Never throws; analytics must not block user flows.
  */
 export function recordAnalyticsEvent(name: string, properties?: Record<string, unknown>): void {
   if (!auth?.currentUser) return;

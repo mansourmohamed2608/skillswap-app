@@ -36,7 +36,7 @@ export class PaymentsController {
     return this.paymentsService.handleWebhook(raw, req.headers || {});
   }
 
-  /** DEV / EMULATOR / MOCK-MODE ONLY — blocked once USE_MOCK_PAYMENTS is removed */
+  /** DEV / EMULATOR / MOCK-MODE ONLY - blocked once USE_MOCK_PAYMENTS is removed */
   @Post('mock-complete')
   async mockComplete(@Body('sessionId') sessionId: string) {
     if (!IS_EMULATOR_OR_MOCK) {

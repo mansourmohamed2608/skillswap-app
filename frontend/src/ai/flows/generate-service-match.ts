@@ -229,7 +229,7 @@ export async function generateServiceMatch(input: GenerateServiceMatchInput): Pr
     if (runner) {
       try {
         const contextText = listingContext
-          .map((item: ListingContext, idx: number) => `${idx + 1}. ${item.offerTitle}${item.offerCategory ? ` (${item.offerCategory})` : ''}${item.location ? ` in ${item.location}` : ''}${item.requestTitle ? ` — wants ${item.requestTitle}` : ''}`)
+          .map((item: ListingContext, idx: number) => `${idx + 1}. ${item.offerTitle}${item.offerCategory ? ` (${item.offerCategory})` : ''}${item.location ? ` in ${item.location}` : ''}${item.requestTitle ? ` - wants ${item.requestTitle}` : ''}`)
           .join('\n');
         return await runner({
           userProfile: input.userProfile,

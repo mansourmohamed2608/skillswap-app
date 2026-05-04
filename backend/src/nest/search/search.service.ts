@@ -112,7 +112,7 @@ export class SearchService {
             return haystack.includes(lowered);
           })
           .filter((hit: any) => {
-            // Enforce Middle East Lobby access
+            // Enforce Middle East Lobby access.
             if (!userCountry) return true;
             const ownerCountry = String(hit.ownerCountry || hit.location || '').trim();
             if (!ownerCountry) return true;
@@ -204,7 +204,7 @@ export class SearchService {
         return haystack.includes(lcq);
       })
       .filter((l) => {
-        // Enforce Middle East Lobby access: check if user is allowed to see this listing
+        // Enforce Middle East Lobby access: check if user is allowed to see this listing.
         if (!userCountry) return true;
         const ownerCountry = String(l.ownerCountry || l.location || '').trim();
         if (!ownerCountry) return true;

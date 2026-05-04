@@ -1,6 +1,6 @@
 /**
  * User-level block/unblock operations routed through the backend API.
- * Never write block state directly to Firestore — the backend validates,
+ * Never write block state directly to Firestore; the backend validates,
  * rate-limits and logs every block/unblock action.
  */
 import { auth, db } from '@/services/firebase';
