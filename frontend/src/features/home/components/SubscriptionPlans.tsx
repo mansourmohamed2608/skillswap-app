@@ -63,22 +63,6 @@ const PLANS: Plan[] = [
       'Full support',
     ],
   },
-  {
-    name: 'Business',
-    description: 'For growing businesses and teams',
-    price: 600,
-    currency: 'EGP',
-    icon: <Crown className="h-6 w-6" />,
-    features: [
-      'Multiple team members (up to 5)',
-      'Business profile & branding',
-      'Custom service categories',
-      'Email notifications',
-      'Dedicated account manager',
-      'Event or workshop listing',
-      'Early access to new features',
-    ],
-  },
 ];
 
 export function SubscriptionPlans() {
@@ -93,7 +77,7 @@ export function SubscriptionPlans() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {PLANS.map((plan) => (
           <div key={plan.name} className={`relative ${plan.highlight ? 'md:scale-105 md:-my-4' : ''}`}>
             {plan.highlight && (
