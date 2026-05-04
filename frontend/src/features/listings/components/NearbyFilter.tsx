@@ -6,15 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
-import { MapPin, Navigation, X } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
 
 interface NearbyFilterProps {
   // onFiltered returns both the listings and the device coordinates used for the search
   onFiltered?: (payload: { listings: any[]; origin: { lat: number; lng: number } | null }) => void;
-  onClose?: () => void;
 }
 
-export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps) {
+export default function NearbyFilter({ onFiltered }: NearbyFilterProps) {
   const { t } = useTranslation();
   const [radius, setRadius] = useState(5); // km
   const [loading, setLoading] = useState(false);
@@ -27,7 +26,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
     setError('');
 
     if (!navigator.geolocation) {
-      setError(t('listings.geolocation_not_supported'));
+      setError(t('listings.nearby.geolocation_not_supported'));
       setLoading(false);
       return;
     }
@@ -47,10 +46,10 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
             setResults(data);
             onFiltered?.({ listings: data, origin: { lat: latitude, lng: longitude } });
           } else {
-            setError(t('listings.failed_to_fetch_nearby'));
+            setError(t('listings.nearby.failed_to_fetch_nearby'));
           }
         } catch (err) {
-          setError(t('listings.error_fetching_nearby'));
+          setError(t('listings.nearby.error_fetching_nearby'));
           console.error(err);
         } finally {
           setLoading(false);
@@ -59,8 +58,8 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
       (err) => {
         setError(
           err.code === 1
-            ? t('listings.location_permission_denied')
-            : t('listings.location_error')
+            ? t('listings.nearby.location_permission_denied')
+            : t('listings.nearby.location_error')
         );
         setLoading(false);
       },
@@ -97,23 +96,18 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
 
   return (
     <Card className="p-6 space-y-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <MapPin className="w-5 h-5" />
+      <div className="flex items-center gap-2 mb-4">
+        <MapPin className="w-5 h-5" />
+        <h3 className="text-lg font-semibold">
           Find nearby listings
         </h3>
-        {onClose && (
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
-            <X className="w-5 h-5" />
-          </button>
-        )}
       </div>
 
       {/* Location Request */}
       {!userLocation && (
         <div className="text-center space-y-4">
           <p className="text-muted-foreground">
-            {t('listings.enable_location_description')}
+            {t('listings.nearby.enable_location_description')}
           </p>
           <Button
             onClick={requestLocation}
@@ -121,7 +115,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
             className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Navigation className="w-4 h-4" />
-            {loading ? t('common.detecting', 'Detecting...') : t('listings.enable_location', 'Use my location')}
+            {loading ? t('common.detecting', 'Detecting...') : t('listings.nearby.enable_location')}
           </Button>
           {error && (
             <div className="p-3 bg-red-50 text-red-800 rounded-md text-sm">
@@ -136,7 +130,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">
-              {t('listings.search_radius')}: {radius} km
+              {t('listings.nearby.search_radius')}: {radius} km
             </label>
             <Slider
               value={[radius]}
@@ -149,7 +143,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
           </div>
 
           <p className="text-sm text-muted-foreground">
-            {t('listings.found_listings', { count: results.length })}
+            {t('listings.nearby.found_listings', { count: results.length })}
           </p>
 
           {results.length > 0 && (
