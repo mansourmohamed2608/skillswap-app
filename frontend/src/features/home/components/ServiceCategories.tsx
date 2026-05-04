@@ -92,18 +92,22 @@ export function ServiceCategories() {
         {CATEGORIES.map((category) => {
           const Icon = category.icon;
           return (
-            <Link key={category.id} href={`/listings?category=${category.id}`}>
-              <div
-                className={`bg-gradient-to-br ${category.color} p-6 rounded-lg text-white cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 h-full flex flex-col justify-between`}
-              >
-                <div>
-                  <Icon className="h-8 w-8 mb-3 opacity-90" />
-                  <h3 className="font-semibold text-lg mb-1">{category.name}</h3>
-                  <p className="text-sm opacity-90">{category.description}</p>
+            <Link key={category.id} href={`/listings?category=${category.id}`} className="group block h-full">
+              <div className="relative h-full overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${category.color}`} />
+                <div className="mb-5 flex items-center justify-between">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
+                    <Icon className="h-6 w-6" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                 </div>
-                <div className="mt-4 flex items-center text-sm font-medium opacity-90 hover:opacity-100">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg text-foreground">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{category.description}</p>
+                </div>
+                <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">
                   {t('home.categories.browse', 'Browse')}
-                  <ArrowRight className="h-4 w-4 ml-2" />
+                  <ArrowRight className="h-4 w-4" />
                 </div>
               </div>
             </Link>
@@ -112,7 +116,7 @@ export function ServiceCategories() {
       </div>
 
       <div className="text-center mt-8">
-        <Button size="lg" variant="outline" asChild>
+        <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
           <Link href="/listings">
             {t('home.categories.viewAll', 'View All Categories')}
           </Link>
