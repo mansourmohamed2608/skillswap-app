@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { haversineDistanceKm, readGeoPoint } from '../../core/geo';
+import { canAccessCountry } from '../../core/constants';
 
 @Injectable()
 export class SearchService {
@@ -49,8 +50,10 @@ export class SearchService {
     nearLat?: number;
     nearLng?: number;
     radiusKm?: number;
+    userCountry?: string;
+    isPro?: boolean;
   }) {
-    const { q, category, location } = opts;
+    const { q, category, location, userCountry, isPro = false } = opts;
     const page = Number.isFinite(opts.page) ? Number(opts.page) : 0;
     const pageSize = Math.min(50, Math.max(1, Number.isFinite(opts.pageSize as any) ? Number(opts.pageSize) : 20));
     const nearLat = Number.isFinite(opts.nearLat as any) ? Number(opts.nearLat) : undefined;
@@ -107,6 +110,13 @@ export class SearchService {
               .map((value: any) => String(value || '').toLowerCase())
               .join(' ');
             return haystack.includes(lowered);
+          })
+          .filter((hit: any) => {
+            // Enforce Middle East Lobby access
+            if (!userCountry) return true;
+            const ownerCountry = String(hit.ownerCountry || hit.location || '').trim();
+            if (!ownerCountry) return true;
+            return canAccessCountry(userCountry, ownerCountry, isPro);
           });
 
         if (refinedHits.length > 0) {
@@ -192,6 +202,13 @@ export class SearchService {
           .map((v) => String(v || '').toLowerCase())
           .join(' ');
         return haystack.includes(lcq);
+      })
+      .filter((l) => {
+        // Enforce Middle East Lobby access: check if user is allowed to see this listing
+        if (!userCountry) return true;
+        const ownerCountry = String(l.ownerCountry || l.location || '').trim();
+        if (!ownerCountry) return true;
+        return canAccessCountry(userCountry, ownerCountry, isPro);
       });
     const withDistance = refined.map((l) => {
       const geo = readGeoPoint((l as any).geo);

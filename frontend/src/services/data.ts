@@ -4,7 +4,9 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 import { getFunctionsBase } from './api';
 
 import { collection, getDocs, doc, getDoc, query, where, DocumentData, Timestamp, limit, orderBy } from 'firebase/firestore';
-import type { ServiceListing, User } from '@/types';
+import type { ServiceListing, User, WishSummary } from '@/types';
+
+export type { WishSummary };
 
 const mapUserFromDoc = (id: string, data: any): User => {
     const membership = data?.membership;
@@ -548,21 +550,6 @@ export async function getListingsByUserId(userId: string): Promise<ServiceListin
     }
 }
 
-export type WishSummary = {
-    id: string;
-    publicId?: string | null;
-    userId?: string;
-    title?: string;
-    description?: string;
-    totalDonated?: number;
-    goalAmount?: number;
-    currency?: string;
-    category?: string;
-    deadline?: any;
-    imageUrl?: string | null;
-    videoUrl?: string | null;
-};
-
 export async function getFeaturedWishes(options?: { count?: number }): Promise<WishSummary[]> {
     if (!isFirebaseConfigured() || !db) return [];
     try {
@@ -573,7 +560,7 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
             const data: any = d.data() || {};
             return {
                 id: d.id,
-                publicId: data.publicId || null,
+                publicId: data.publicId || undefined,
                 userId: data.userId || undefined,
                 title: data.title,
                 description: data.description,
@@ -581,6 +568,7 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
                 goalAmount: data.goalAmount,
                 currency: data.currency,
                 category: data.category,
+                status: data.status || 'open',
                 deadline: data.deadline,
                 imageUrl: data.imageUrl || null,
                 videoUrl: data.videoUrl || null,

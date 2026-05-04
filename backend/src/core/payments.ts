@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as admin from 'firebase-admin';
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'crypto';
 import { DURATION_IN_MONTHS, SubscriptionPlan } from './constants';
-import { saveDonationRecord, savePaymentRecord, updateDonationStatus, updatePaymentStatus } from './postgres';
+import { saveDonationRecord, savePaymentRecord, saveTokenTransactionRecord, updateDonationStatus, updatePaymentStatus } from './postgres';
 import { sendEmail, sendEmailNotification, sendInAppNotification, sendPushNotification } from './notifications';
 import { logger } from './logger';
 
@@ -330,8 +330,27 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
       .limit(1)
       .get();
     if (donationSnap.empty) {
-      logger.warn({ eventKey, sessionId }, '[Payments] payment not found');
-      throw new Error(`Payment record not found for sessionId=${sessionId}`);
+      // Check for token purchase transaction
+      const tokenSnap = await admin
+        .firestore()
+        .collection('tokenTransactions')
+        .where('geideaSessionId', '==', sessionId)
+        .limit(1)
+        .get();
+      if (tokenSnap.empty) {
+        logger.warn({ eventKey, sessionId }, '[Payments] payment not found');
+        throw new Error(`Payment record not found for sessionId=${sessionId}`);
+      }
+      const tokenDoc = tokenSnap.docs[0];
+      return handleTokenPurchaseWebhook({
+        tokenTransactionRef: tokenDoc.ref,
+        tokenData: tokenDoc.data() as any,
+        incomingStatus,
+        eventId,
+        eventKey,
+        eventsRef,
+        updatedAtVal: tsVal,
+      });
     }
     const donationDoc = donationSnap.docs[0];
     return handleDonationWebhook({
@@ -500,6 +519,167 @@ async function handleDonationWebhook(args: {
   await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'donation_granted' }, { merge: true });
   logger.info({ event: 'donation_applied', eventKey, sessionId, wishId, amount }, '[Payments] donation applied');
   return { ok: true };
+}
+
+async function handleTokenPurchaseWebhook(args: {
+  tokenTransactionRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>;
+  tokenData: Record<string, any>;
+  incomingStatus: string;
+  eventId?: string;
+  eventKey: string;
+  eventsRef: FirebaseFirestore.DocumentReference<FirebaseFirestore.DocumentData>;
+  updatedAtVal: any;
+}): Promise<{ ok: boolean; alreadyProcessed?: boolean }> {
+  const { tokenTransactionRef, tokenData, incomingStatus, eventId, eventKey, eventsRef, updatedAtVal } = args;
+  const sessionId = String(tokenData.geideaSessionId || '');
+  const userId = String(tokenData.userId || '');
+  const tokenAmount = Number(tokenData.tokenAmount || 0);
+  const currency = String(tokenData.currency || 'EGP');
+
+  if (!userId || !(tokenAmount > 0)) {
+    throw new Error('Token transaction missing userId or tokenAmount');
+  }
+
+  // Update transaction status in both Firestore and PostgreSQL
+  await tokenTransactionRef.update({
+    status: incomingStatus || 'UNKNOWN',
+    ...(eventId ? { lastEventId: eventId } : { lastEventId: eventKey }),
+    updatedAt: updatedAtVal,
+  });
+
+  // If not successful, mark as processed but do not credit tokens
+  if (!(incomingStatus === 'PAID' || incomingStatus === 'SUCCESS')) {
+    await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'status_update' }, { merge: true });
+    logger.info({ eventKey, sessionId, userId, status: incomingStatus }, '[Payments] token purchase not successful');
+    return { ok: true };
+  }
+
+  // Handle token credit with idempotency check
+  const txResult = await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(tokenTransactionRef);
+    const data = snap.data() || {};
+    const alreadyProcessed = Boolean(
+      data.tokensCredited ||
+      String(data.status || '').toUpperCase() === 'CREDITED' ||
+      (String(data.status || '').toUpperCase() === 'SUCCESS' && data.creditedAt)
+    );
+    if (alreadyProcessed) {
+      return { shouldCredit: false, data };
+    }
+
+    // Mark tokens as credited and credit user balance
+    tx.update(tokenTransactionRef, {
+      status: 'SUCCESS',
+      tokensCredited: true,
+      creditedAt: updatedAtVal,
+      updatedAt: updatedAtVal,
+    });
+
+    const userRef = admin.firestore().collection('users').doc(userId);
+    tx.update(userRef, {
+      tokenBalance: admin.firestore.FieldValue.increment(tokenAmount),
+    });
+
+    return { shouldCredit: true, data };
+  });
+
+  if (!txResult.shouldCredit) {
+    await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'tokens_already_credited' }, { merge: true });
+    logger.info({ eventKey, sessionId, userId }, '[Payments] tokens already credited (idempotent)');
+    return { ok: true, alreadyProcessed: true };
+  }
+
+  // Update PostgreSQL audit with final status
+  await saveTokenTransactionRecord({
+    transactionId: tokenTransactionRef.id,
+    userId,
+    type: 'PURCHASE',
+    tokenAmount,
+    amount: tokenData.amount || tokenAmount,
+    currency,
+    status: 'SUCCESS',
+    geideaSessionId: sessionId,
+    createdAt: tokenData.createdAt || new Date(),
+  });
+
+  // Send success notification
+  try {
+    await sendInAppNotification({
+      userId,
+      type: 'system',
+      content: `You've successfully purchased ${tokenAmount} tokens!`,
+      link: '/wallet',
+    });
+  } catch (err) {
+    logger.warn({ err, userId, eventKey }, '[Payments] failed to send token purchase notification');
+  }
+
+  await eventsRef.set({ processed: true, processedAt: updatedAtVal, note: 'tokens_credited' }, { merge: true });
+  logger.info({ event: 'token_purchase_completed', eventKey, sessionId, userId, tokenAmount }, '[Payments] token purchase completed');
+  return { ok: true };
+}
+
+export async function createGeideaTokenPurchaseSession(args: {
+  tokenAmount: number;
+  amount: number;
+  currency?: string;
+  userId: string;
+  userEmail?: string;
+  userName?: string;
+}): Promise<{ paymentUrl: string; sessionId: string }> {
+  const currency = (args.currency || 'EGP').toUpperCase();
+  const amount = Number(args.amount || 0);
+  if (!(amount > 0)) throw new Error('Invalid token purchase amount');
+
+  if (USE_MOCK) {
+    const sessionId = `mock_token_${Date.now()}_${randomBytes(4).toString('hex')}`;
+    const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${amount}&currency=${currency}&tokens=${args.tokenAmount}`;
+    return { paymentUrl, sessionId };
+  }
+
+  const merchantId = process.env.GEIDEA_MERCHANT_ID;
+  const apiPassword = process.env.GEIDEA_API_PASSWORD;
+  const callbackUrl = process.env.GEIDEA_CALLBACK_URL;
+  const baseUrl = getGeideaBaseUrl();
+
+  if (!merchantId || !apiPassword || !callbackUrl) {
+    if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
+      const sessionId = `mock_fallback_token_${Date.now()}_${randomBytes(4).toString('hex')}`;
+      const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${amount}&currency=${currency}&tokens=${args.tokenAmount}`;
+      logger.warn('[Payments] Geidea config missing. Using token purchase mock checkout fallback session.');
+      return { paymentUrl, sessionId };
+    }
+    throw new Error('Geidea config missing. Set GEIDEA_MERCHANT_ID, GEIDEA_API_PASSWORD, GEIDEA_CALLBACK_URL env vars OR enable mock via USE_MOCK_PAYMENTS=1.');
+  }
+
+  const payload: Record<string, any> = {
+    merchantId,
+    amount: amount.toFixed(2),
+    currency,
+    callbackUrl,
+    customer: {
+      id: args.userId,
+      email: args.userEmail,
+      name: args.userName,
+    },
+    merchantReferenceId: `token_${args.tokenAmount}_${args.userId}`,
+  };
+
+  const resp = await callGateway(() => axios.post(`${baseUrl}/v2/payments`, payload, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `APIKey ${apiPassword}`,
+    },
+    timeout: 10000,
+  }));
+
+  const data = (resp as any).data || {};
+  const paymentUrl = data.redirectUrl || data.paymentUrl;
+  const sessionId = data.id || data.sessionId;
+  if (!paymentUrl || !sessionId) {
+    throw new Error('Unexpected gateway response (missing paymentUrl/sessionId)');
+  }
+  return { paymentUrl, sessionId };
 }
 
 export async function mockComplete(sessionId: string): Promise<void> {

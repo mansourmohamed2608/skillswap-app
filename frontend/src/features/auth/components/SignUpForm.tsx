@@ -167,6 +167,20 @@ export function SignUpForm() {
         throw claimErr;
       }
 
+      // Store user's country in localStorage for access control (Middle East Lobby filtering)
+      try {
+        localStorage.setItem('userCountry', country);
+      } catch {}
+
+      // Apply guest-selected plan if present in localStorage
+      try {
+        const guestPlan = localStorage.getItem('guestSelectedPlan');
+        if (guestPlan && ['free', 'basic', 'pro', 'business'].includes(guestPlan)) {
+          // Plan will be automatically picked up by AuthContext on next render via localStorage
+          // (AuthContext reads selectedPlan from localStorage on mount)
+        }
+      } catch {}
+
       // Redirect to identity verification page
       recordAnalyticsEvent('user_signed_up', { country });
       toast({

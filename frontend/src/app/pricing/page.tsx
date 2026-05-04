@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 import { Suspense } from 'react';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -176,6 +176,9 @@ function PricingPageInner() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const router = useRouter();
+  const autoLaunchRef = useRef(false);
+  const selectedPlanParam = searchParams.get('plan') || '';
+  const shouldAutostart = searchParams.get('autostart') === '1';
 
   // Show a toast if redirected here due to missing subscription
   useEffect(() => {
@@ -190,23 +193,33 @@ function PricingPageInner() {
       toast({ title: t('pricing.waitAuth') });
       return;
     }
+
+    // Calculate final duration early so it's available for guest saves
+    const requestedDuration = duration;
+    const hasRequestedDuration = pricingData[planKey][currency][requestedDuration] !== null;
+    const finalDuration = hasRequestedDuration
+      ? requestedDuration
+      : (durationOrder.find((d) => pricingData[planKey][currency][d] !== null) || '3mo');
+
     if (!user) {
+      try {
+        localStorage.setItem('guestSelectedPlan', planKey);
+        localStorage.setItem('guestSelectedCurrency', currency);
+        localStorage.setItem('guestSelectedDuration', finalDuration);
+      } catch {}
+
+      const signupNext = `/pricing?plan=${encodeURIComponent(planKey)}&autostart=1`;
       toast({
         title: t('pricing.mustSignIn'),
         action: (
-          <ToastAction altText={t('header.signIn')} onClick={() => router.push('/auth/signin')}>
-            {t('header.signIn')}
+          <ToastAction altText={t('auth.signUp.title')} onClick={() => router.push(`/auth/signup?plan=${encodeURIComponent(planKey)}&next=${encodeURIComponent(signupNext)}`)}>
+            {t('auth.signUp.title')}
           </ToastAction>
         ),
       });
       return;
     }
 
-    const requestedDuration = duration;
-    const hasRequestedDuration = pricingData[planKey][currency][requestedDuration] !== null;
-    const finalDuration = hasRequestedDuration
-      ? requestedDuration
-      : (durationOrder.find((d) => pricingData[planKey][currency][d] !== null) || '3mo');
     if (!hasRequestedDuration) {
       setDuration(finalDuration);
       toast({
@@ -253,6 +266,18 @@ function PricingPageInner() {
       });
     }
   }
+
+  useEffect(() => {
+    if (!shouldAutostart || autoLaunchRef.current) return;
+    if (!selectedPlanParam) return;
+    if (loading) return;
+    if (!user) return;
+
+    const plan = selectedPlanParam as PlanKey;
+    if (!['basic', 'standard', 'pro', 'business'].includes(plan)) return;
+    autoLaunchRef.current = true;
+    void handleChoose(plan);
+  }, [shouldAutostart, selectedPlanParam, loading, user]);
 
   return (
     <div className="space-y-8">

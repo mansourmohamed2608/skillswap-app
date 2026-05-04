@@ -127,3 +127,72 @@ export async function updateDonationStatus(sessionId: string, status: string): P
     logger.error({ err }, 'Error updating donation status in PostgreSQL');
   }
 }
+
+export async function saveTokenTransactionRecord(record: {
+  transactionId: string;
+  userId: string;
+  type: 'PURCHASE' | 'GRANT';
+  tokenAmount: number;
+  amount: number;
+  currency: string;
+  status: string;
+  geideaSessionId?: string;
+  createdAt: Date;
+}): Promise<void> {
+  const pool = requirePool('saveTokenTransactionRecord');
+  if (!pool) return;
+  const query = `
+    INSERT INTO token_transactions (transaction_id, user_id, type, token_amount, amount, currency, status, geidea_session_id, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    ON CONFLICT (transaction_id) DO UPDATE SET status = $7, updated_at = NOW()
+  `;
+  const values = [
+    record.transactionId,
+    record.userId,
+    record.type,
+    record.tokenAmount,
+    record.amount,
+    record.currency,
+    record.status,
+    record.geideaSessionId || null,
+    record.createdAt,
+  ];
+  try {
+    await pool.query(query, values);
+  } catch (err) {
+    logger.error({ err }, 'Error inserting token transaction into PostgreSQL');
+  }
+}
+
+export async function saveWishContributionRecord(record: {
+  contributionId: string;
+  wishId: string;
+  contributorId: string;
+  tokenAmount: number;
+  platformFee: number;
+  contributionAmount: number;
+  status: string;
+  createdAt: Date;
+}): Promise<void> {
+  const pool = requirePool('saveWishContributionRecord');
+  if (!pool) return;
+  const query = `
+    INSERT INTO wish_contributions (contribution_id, wish_id, contributor_id, token_amount, platform_fee, contribution_amount, status, created_at)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+  `;
+  const values = [
+    record.contributionId,
+    record.wishId,
+    record.contributorId,
+    record.tokenAmount,
+    record.platformFee,
+    record.contributionAmount,
+    record.status,
+    record.createdAt,
+  ];
+  try {
+    await pool.query(query, values);
+  } catch (err) {
+    logger.error({ err }, 'Error inserting wish contribution into PostgreSQL');
+  }
+}

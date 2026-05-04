@@ -7,6 +7,7 @@ import { RequestsModule } from './requests/requests.module';
 import { ListingsModule } from './listings/listings.module';
 import { MatchmakingModule } from './matchmaking/matchmaking.module';
 import { WishesModule } from './wishes/wishes.module';
+import { WalletModule } from './wallet/wallet.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { SearchModule } from './search/search.module';
 import { DevicesModule } from './devices/devices.module';
@@ -26,6 +27,7 @@ import { EventsModule } from './events/events.module';
     ListingsModule,
     MatchmakingModule,
     WishesModule,
+    WalletModule,
     AnalyticsModule,
     SearchModule,
     DevicesModule,

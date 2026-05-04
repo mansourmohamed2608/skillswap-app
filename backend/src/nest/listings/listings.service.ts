@@ -378,7 +378,8 @@ export class ListingsService {
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {
     const status = String(userSnap.get('kyc.status') || userSnap.get('kyc')?.status || '').toUpperCase();
     if (status !== 'VERIFIED') {
-      throw new ForbiddenException('KYC verification required');
+      // Throw a ForbiddenException with a stable machine-readable code while preserving 403 status
+      throw new ForbiddenException({ code: 'KYC_REQUIRED', message: 'KYC verification required' });
     }
   }
 

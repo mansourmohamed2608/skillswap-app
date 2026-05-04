@@ -8,13 +8,26 @@ import { ensurePushRegistered } from '@/services/push';
 import { onDisconnect, ref, set } from 'firebase/database';
 import { getErrorMessage } from '@/lib/errors';
 
-type AuthCtx = { user: User | null; loading: boolean; error?: string };
+type AuthCtx = { 
+  user: User | null; 
+  loading: boolean; 
+  error?: string;
+  selectedPlan?: 'free' | 'basic' | 'pro' | 'business';
+  setSelectedPlan?: (plan: 'free' | 'basic' | 'pro' | 'business') => void;
+};
 const Ctx = createContext<AuthCtx>({ user: null, loading: true });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>();
+  const [selectedPlan, setSelectedPlanState] = useState<'free' | 'basic' | 'pro' | 'business' | undefined>(() => {
+    if (typeof window === 'undefined') return undefined;
+    const storedPlan = localStorage.getItem('selectedPlan');
+    return storedPlan && ['free', 'basic', 'pro', 'business'].includes(storedPlan)
+      ? (storedPlan as 'free' | 'basic' | 'pro' | 'business')
+      : undefined;
+  });
   const prevUidRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -60,7 +73,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.uid]);
 
-  return <Ctx.Provider value={{ user, loading, error: err }}>{children}</Ctx.Provider>;
+  const handleSetSelectedPlan = (plan: 'free' | 'basic' | 'pro' | 'business') => {
+    setSelectedPlanState(plan);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('selectedPlan', plan);
+    }
+  };
+
+  return (
+    <Ctx.Provider 
+      value={{ 
+        user, 
+        loading, 
+        error: err,
+        selectedPlan,
+        setSelectedPlan: handleSetSelectedPlan
+      }}
+    >
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export const useAuth = () => useContext(Ctx);

@@ -79,6 +79,19 @@ function KycDonePageContent() {
     };
   }, []);
 
+  // Redirect back to stored returnTo after successful verification
+  useEffect(() => {
+    if (status === 'approved') {
+      try {
+        const rt = typeof window !== 'undefined' ? localStorage.getItem('kyc:returnTo') : null;
+        if (rt) {
+          try { localStorage.removeItem('kyc:returnTo'); } catch {}
+          router.push(rt);
+        }
+      } catch {}
+    }
+  }, [status, router]);
+
   async function handleDevBypass() {
     if (!auth) return;
     setBypassBusy(true);

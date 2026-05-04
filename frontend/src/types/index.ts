@@ -89,3 +89,50 @@ export interface Notification {
   link?: string;
   userId?: string; // ID of the user who triggered the notification
 }
+
+export interface Wish {
+  id: string;
+  publicId?: string;
+  userId: string;
+  title: string;
+  description: string;
+  goalAmount: number;
+  totalDonated?: number;
+  donationCount?: number;
+  currency?: string;
+  category?: string;
+  status: 'open' | 'fulfilled' | 'closed' | 'cancelled';
+  deadline?: string | Date;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
+export type WishSummary = {
+  id: string;
+  publicId?: string;
+  userId?: string;
+  title?: string;
+  description?: string;
+  totalDonated?: number;
+  goalAmount?: number;
+  currency?: string;
+  category?: string;
+  status?: 'open' | 'fulfilled' | 'closed' | 'cancelled';
+  deadline?: any;
+  imageUrl?: string | null;
+  videoUrl?: string | null;
+};
+
+export interface Contributor {
+  id: string;
+  name: string;
+  displayName?: string;
+  profileImage?: string | null;
+  totalTokensContributed: number;
+  contributionCount: number;
+  wishTitle?: string;
+  amount: number;
+  createdAt: string | Date;
+}

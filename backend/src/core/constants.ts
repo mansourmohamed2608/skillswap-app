@@ -31,3 +31,80 @@ export const DURATION_IN_MONTHS: Record<string, number> = {
   '6_months': 6,
   '12_months': 12,
 };
+
+/**
+ * Country grouping for regional lobbies
+ * Free/Basic users see only their own country
+ * Pro users can see the Middle East Lobby with all Middle East countries
+ */
+export const COUNTRY_GROUPS = {
+  // Individual countries
+  EGYPT: 'EG',
+  SAUDI_ARABIA: 'SA',
+  UAE: 'AE',
+  KUWAIT: 'KW',
+  QATAR: 'QA',
+  BAHRAIN: 'BH',
+  OMAN: 'OM',
+  JORDAN: 'JO',
+  LEBANON: 'LB',
+  PALESTINE: 'PS',
+  SYRIA: 'SY',
+  IRAQ: 'IQ',
+  YEMEN: 'YE',
+  ISRAEL: 'IL',
+  TURKEY: 'TR',
+  IRAN: 'IR',
+  AFGHANISTAN: 'AF',
+  PAKISTAN: 'PK',
+
+  // Regional lobby (Pro-only)
+  MIDDLE_EAST_LOBBY: 'MIDDLE_EAST_LOBBY',
+};
+
+// Countries included in Middle East Lobby (Pro-only feature)
+export const MIDDLE_EAST_COUNTRIES = new Set([
+  'EG',  // Egypt
+  'SA',  // Saudi Arabia
+  'AE',  // UAE
+  'KW',  // Kuwait
+  'QA',  // Qatar
+  'BH',  // Bahrain
+  'OM',  // Oman
+  'JO',  // Jordan
+  'LB',  // Lebanon
+  'PS',  // Palestine
+  'SY',  // Syria
+  'IQ',  // Iraq
+  'YE',  // Yemen
+  'IL',  // Israel
+  'TR',  // Turkey
+  'IR',  // Iran
+  'AF',  // Afghanistan
+  'PK',  // Pakistan
+]);
+
+export function isMiddleEastCountry(countryCode: string): boolean {
+  return MIDDLE_EAST_COUNTRIES.has(String(countryCode || '').toUpperCase());
+}
+
+export function canAccessCountry(userCountry: string, targetCountry: string, isPro: boolean): boolean {
+  const userCC = String(userCountry || '').toUpperCase();
+  const targetCC = String(targetCountry || '').toUpperCase();
+
+  // Same country - always allowed
+  if (userCC === targetCC) return true;
+
+  // Middle East Lobby - only for Pro users
+  if (targetCC === COUNTRY_GROUPS.MIDDLE_EAST_LOBBY) {
+    return isPro && isMiddleEastCountry(userCC);
+  }
+
+  // Pro users can see all Middle East countries from Middle East Lobby
+  if (isPro && isMiddleEastCountry(userCC) && isMiddleEastCountry(targetCC)) {
+    return true;
+  }
+
+  // Free/Basic users can only see their own country
+  return false;
+}

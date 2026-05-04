@@ -15,6 +15,8 @@ export class SearchController {
     @Query('radiusKm') radiusKm?: string,
     @Query('page') page?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('userCountry') userCountry?: string,
+    @Query('isPro') isPro?: string,
   ) {
     if ((q || '').length > 500) throw new BadRequestException('Search query too long (max 500 characters)');
     if ((category || '').length > 100) throw new BadRequestException('Category filter too long (max 100 characters)');
@@ -28,6 +30,8 @@ export class SearchController {
       radiusKm: radiusKm !== undefined ? Number(radiusKm) : undefined,
       page: page !== undefined ? Number(page) : 0,
       pageSize: pageSize !== undefined ? Number(pageSize) : undefined,
+      userCountry: userCountry || undefined,
+      isPro: isPro === 'true',
     });
   }
 }

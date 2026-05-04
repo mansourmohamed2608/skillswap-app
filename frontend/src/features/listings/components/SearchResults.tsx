@@ -1,11 +1,13 @@
 "use client";
 import { useEffect, useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { ServiceCard } from '@/features/listings/components/ServiceCard';
 import type { ServiceListing, User } from '@/types';
 import { track } from '@/services/analytics';
 import { useTranslation } from 'react-i18next';
 import { getFunctionsBase } from '@/services/api';
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
+import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
 
 export type SearchParams = {
   q?: string;
@@ -14,6 +16,7 @@ export type SearchParams = {
   nearLat?: number;
   nearLng?: number;
   radiusKm?: number;
+  region?: 'all' | 'middle-east';
 };
 
 type ListingWithUser = {
@@ -28,6 +31,7 @@ function isVisibleListingStatus(status: unknown) {
 
 export function SearchResults({ params, fallbackItems = [] }: { params: SearchParams; fallbackItems?: ListingWithUser[] }) {
   const { t } = useTranslation();
+  const { user, selectedPlan } = useAuth();
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +48,13 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
         if (Number.isFinite(params.nearLat)) usp.set('nearLat', String(params.nearLat));
         if (Number.isFinite(params.nearLng)) usp.set('nearLng', String(params.nearLng));
         if (Number.isFinite(params.radiusKm)) usp.set('radiusKm', String(params.radiusKm));
+        
+        // Pass user context for access control (Middle East Lobby)
+        const isPro = selectedPlan === 'pro' || selectedPlan === 'business';
+        const userCountry = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
+        if (userCountry) usp.set('userCountry', userCountry);
+        if (isPro) usp.set('isPro', 'true');
+        
         const base = getFunctionsBase();
         const url = base
           ? `${base}/api/search/listings?${usp.toString()}`
@@ -52,7 +63,15 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
         const data = await resp.json();
         if (!cancelled) {
           const nextItems = Array.isArray(data?.hits)
-            ? data.hits.filter((hit: any) => isVisibleListingStatus(hit?.status))
+            ? data.hits
+                .filter((hit: any) => isVisibleListingStatus(hit?.status))
+                .filter((hit: any) => {
+                  if (params.region !== 'middle-east') return true;
+                  const regionText = [hit.ownerCountry, hit.country, hit.location]
+                    .map((value) => String(value || '').trim())
+                    .filter(Boolean);
+                  return regionText.some((value) => isMiddleEastLobbyEligible(value));
+                })
             : [];
           setItems(nextItems);
         }
@@ -82,7 +101,7 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
     return () => {
       cancelled = true;
     };
-  }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm]);
+  }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm, params.region, selectedPlan]);
 
   const hasRemoteItems = Array.isArray(items) && items.length > 0;
   const hasFallbackItems = fallbackItems.length > 0;

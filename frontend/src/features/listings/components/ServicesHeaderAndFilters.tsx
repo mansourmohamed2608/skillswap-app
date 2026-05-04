@@ -4,16 +4,19 @@ import { useTranslation } from "react-i18next";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon, PlusCircleIcon } from 'lucide-react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon, PlusCircleIcon, MapPinIcon } from 'lucide-react';
 import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
 import { useEffect, useRef, useState } from 'react';
 import { SearchResults } from '@/features/listings/components/SearchResults';
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
 import { ServicesEmptyState } from '@/features/listings/components/ServicesEmptyState';
+import NearbyFilter from '@/features/listings/components/NearbyFilter';
 import type { ServiceListing, User } from '@/types';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useMemo } from 'react';
+import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
 
 type ListingWithUser = {
   listing: ServiceListing;
@@ -27,27 +30,31 @@ type SubmittedFilters = {
   nearLat?: number;
   nearLng?: number;
   radiusKm?: number;
+  region?: 'all' | 'middle-east';
 };
 
 export function ServicesHeaderAndFilters({ initialItems }: { initialItems: ListingWithUser[] }) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
+  const { user, selectedPlan } = useAuth();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string | undefined>(undefined);
   const [manualLocation, setManualLocation] = useState('');
   const [nearCoords, setNearCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState<string>('any');
+  const [region, setRegion] = useState<'all' | 'middle-east'>('all');
   const [locating, setLocating] = useState(false);
   const [locationHint, setLocationHint] = useState<string>('');
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
   const [submitted, setSubmitted] = useState<SubmittedFilters>({});
+  const [showNearbyFilter, setShowNearbyFilter] = useState(false);
   const autoLocationRequestedRef = useRef(false);
   const hasNearSubmitted = submitted.nearLat !== undefined && submitted.nearLng !== undefined;
   const hasSubmittedFilters = Boolean(
     submitted.q ||
     submitted.category ||
     submitted.location ||
-    hasNearSubmitted
+    hasNearSubmitted ||
+    submitted.region === 'middle-east'
   );
   const submittedKey = JSON.stringify(submitted);
 
@@ -95,6 +102,16 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
       const aDistance = haversineKm(origin.lat, origin.lng, Number(aGeo!.lat), Number(aGeo!.lng));
       const bDistance = haversineKm(origin.lat, origin.lng, Number(bGeo!.lat), Number(bGeo!.lng));
       return aDistance - bDistance;
+    }).map(item => {
+      // Attach distance to each listing for display on cards
+      if (origin && item.listing.geo && Number.isFinite(item.listing.geo.lat) && Number.isFinite(item.listing.geo.lng)) {
+        const distance = haversineKm(origin.lat, origin.lng, Number(item.listing.geo.lat), Number(item.listing.geo.lng));
+        return {
+          ...item,
+          listing: { ...item.listing, distanceKm: distance }
+        };
+      }
+      return item;
     });
   }
 
@@ -103,7 +120,11 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     const q = String(submitted.q || '').trim().toLowerCase();
     const categoryFilter = String(submitted.category || '').trim().toLowerCase();
     const locationFilter = String(submitted.location || '').trim().toLowerCase();
+    const regionFilter = submitted.region;
     const hasRadius = Number.isFinite(submitted.radiusKm);
+    const origin = Number.isFinite(submitted.nearLat) && Number.isFinite(submitted.nearLng)
+      ? { lat: Number(submitted.nearLat), lng: Number(submitted.nearLng) }
+      : null;
 
     const filtered = initialItems.filter((item) => {
       if (q && !toSearchableText(item).includes(q)) return false;
@@ -127,28 +148,24 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
         if (locationText && !locationText.includes(locationFilter) && !hasRadius) return false;
       }
 
-      if (
-        Number.isFinite(submitted.nearLat) &&
-        Number.isFinite(submitted.nearLng) &&
-        hasRadius &&
-        item.listing.geo &&
-        Number.isFinite(item.listing.geo.lat) &&
-        Number.isFinite(item.listing.geo.lng)
-      ) {
-        const distance = haversineKm(
-          Number(submitted.nearLat),
-          Number(submitted.nearLng),
-          Number(item.listing.geo.lat),
-          Number(item.listing.geo.lng),
-        );
+      if (regionFilter === 'middle-east') {
+        const regionText = [item.user?.country, item.listing.location]
+          .map((value) => String(value || '').trim())
+          .filter(Boolean);
+        if (!regionText.some((value) => isMiddleEastLobbyEligible(value))) return false;
+      }
+
+      if (origin && hasRadius && item.listing.geo && Number.isFinite(item.listing.geo.lat) && Number.isFinite(item.listing.geo.lng)) {
+        const distance = haversineKm(origin.lat, origin.lng, Number(item.listing.geo.lat), Number(item.listing.geo.lng));
         if (distance > Number(submitted.radiusKm)) return false;
       }
 
       return true;
     });
-    return withDistanceSort(filtered, Number.isFinite(submitted.nearLat) && Number.isFinite(submitted.nearLng)
-      ? { lat: Number(submitted.nearLat), lng: Number(submitted.nearLng) }
-      : null);
+    
+    // Attach distance to filtered items for display
+    const sorted = withDistanceSort(filtered, origin);
+    return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasSubmittedFilters, initialItems, submitted]);
 
@@ -166,6 +183,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
       nearLat: nextNear?.lat,
       nearLng: nextNear?.lng,
       radiusKm: nextNear && radius !== 'any' ? Number(radius) : undefined,
+      region: region === 'middle-east' ? 'middle-east' : undefined,
     };
   }
 
@@ -304,7 +322,36 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     setLocationHint('');
     setLocationHintTone('neutral');
     setSubmitted({});
+    setShowNearbyFilter(false);
   }
+
+  function handleNearbyFiltered(payload: { listings: any[]; origin: { lat: number; lng: number } | null }) {
+    const { origin } = payload || { origin: null };
+    // Use device/browser coordinates (origin) as the submitted origin for distance filtering
+    if (origin && Number.isFinite(origin.lat) && Number.isFinite(origin.lng)) {
+      setNearCoords({ lat: origin.lat, lng: origin.lng });
+      setRadius('5'); // Default to 5km radius
+      const nextSubmitted = buildSubmitted({ lat: origin.lat, lng: origin.lng }, undefined);
+      nextSubmitted.radiusKm = 5;
+      setSubmitted(nextSubmitted);
+      setLocationHintTone('success');
+      setLocationHint(t('services.locationReady'));
+    } else {
+      // Fallback: if no device origin provided, don't override existing coords
+      // but still close the modal
+    }
+    setShowNearbyFilter(false);
+  }
+
+  function handleRegionChange(nextRegion: 'all' | 'middle-east') {
+    setRegion(nextRegion);
+    setSubmitted((current) => ({
+      ...current,
+      region: nextRegion === 'middle-east' ? 'middle-east' : undefined,
+    }));
+  }
+
+  const canUseMiddleEastLobby = selectedPlan === 'pro' || selectedPlan === 'business';
 
   useEffect(() => {
     if (autoLocationRequestedRef.current) return;
@@ -421,10 +468,31 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
           </div>
         </div>
 
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label htmlFor="region" className="block text-sm font-medium mb-1">Middle East Lobby</label>
+            <Select value={region} onValueChange={(value) => handleRegionChange(value as 'all' | 'middle-east')}>
+              <SelectTrigger id="region">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All regions</SelectItem>
+                <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
+                  Middle East Lobby {!canUseMiddleEastLobby ? '(Pro only)' : ''}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="mt-3 flex items-center gap-3">
           <Button type="button" variant="outline" onClick={fetchCurrentLocation} disabled={locating}>
             {locating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LocateFixedIcon className="mr-2 h-4 w-4" />}
             {locating ? t('services.locating') : t('services.useMyLocation')}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setShowNearbyFilter(true)} className="gap-2">
+            <MapPinIcon className="h-4 w-4" />
+            {t('listings.find_nearby')}
           </Button>
         </div>
 
@@ -448,6 +516,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
             nearLat: submitted.nearLat,
             nearLng: submitted.nearLng,
             radiusKm: submitted.radiusKm,
+            region: submitted.region,
           }} fallbackItems={submittedFallbackItems} />
         ) : initialItemsSorted.length > 0 ? (
           <ListingsGrid items={initialItemsSorted} />
@@ -455,6 +524,16 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
           <ServicesEmptyState />
         )}
       </div>
+
+      {/* Nearby Filter Modal */}
+      <Dialog open={showNearbyFilter} onOpenChange={setShowNearbyFilter}>
+        <DialogContent className="max-w-md">
+          <NearbyFilter 
+            onFiltered={handleNearbyFiltered}
+            onClose={() => setShowNearbyFilter(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

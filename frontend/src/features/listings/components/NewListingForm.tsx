@@ -454,6 +454,13 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       }
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403) {
+        // Detect backend KYC requirement and redirect to verification flow
+        if (err.code === 'KYC_REQUIRED' || String(err.message || '').toLowerCase().includes('kyc')) {
+          const currentPath = (typeof window !== 'undefined') ? (window.location.pathname + window.location.search) : '/listings/new';
+          try { localStorage.setItem('kyc:returnTo', currentPath); } catch {}
+          router.push(`/kyc/verify?returnTo=${encodeURIComponent(currentPath)}`);
+          return;
+        }
         router.push('/pricing?alert=sub-required');
         return;
       }

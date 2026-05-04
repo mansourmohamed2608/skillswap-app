@@ -271,8 +271,8 @@ export async function createListing(listing: any) {
     body: JSON.stringify({ userId, listing }),
   });
   if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
+    // Let the standard error parser extract machine-readable codes (e.g. KYC_REQUIRED)
+    throw await toApiError(res, 'Subscription required');
   }
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { id: string; publicId?: string };

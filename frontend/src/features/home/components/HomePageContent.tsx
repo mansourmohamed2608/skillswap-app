@@ -5,9 +5,14 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
+import { WishCard } from "@/features/wishes/components/WishCard";
+import { GlobalSearchBar } from "@/features/home/components/GlobalSearchBar";
+import { SubscriptionPlans } from "@/features/home/components/SubscriptionPlans";
+import { ServiceCategories } from "@/features/home/components/ServiceCategories";
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
+import { TopContributors } from "@/features/home/components/TopContributors";
 import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
-import type { ServiceListing, User } from "@/types";
+import type { ServiceListing, User, Wish, Contributor, WishSummary } from "@/types";
 
 const HeroLogo = () => (
   <svg
@@ -34,38 +39,35 @@ type FeaturedListing = {
   user: User | null;
 };
 
-type FeaturedWish = {
-  id: string;
-  title?: string;
-  description?: string;
-  totalDonated?: number;
-  goalAmount?: number;
-  currency?: string;
-  category?: string;
-  imageUrl?: string | null;
-};
-
 export function HomePageContent({
   featuredListingsData,
-  featuredWishes: _featuredWishes = [],
+  featuredWishes = [],
+  topContributors = [],
 }: {
   featuredListingsData: FeaturedListing[];
-  featuredWishes?: FeaturedWish[];
+  featuredWishes?: WishSummary[];
+  topContributors?: Contributor[];
 }) {
   const { t } = useTranslation();
 
   return (
     <div className="space-y-12">
-      {/* Hero Section */}
+      {/* Hero Section with Search */}
       <section className="relative text-center py-10 sm:py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
         <div className="relative z-10 container mx-auto px-4">
           <HeroLogo />
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 text-primary-foreground">
             {t("home.hero.title")}
           </h1>
-          <p className="text-base sm:text-lg md:text-xl mb-6 sm:mb-8 max-w-2xl mx-auto text-primary-foreground/90">
+          <p className="text-base sm:text-lg md:text-xl mb-8 sm:mb-10 max-w-2xl mx-auto text-primary-foreground/90">
             {t("home.hero.body")}
           </p>
+
+          {/* Global Search Bar */}
+          <div className="mb-8">
+            <GlobalSearchBar />
+          </div>
+
           <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
             <Button
               size="lg"
@@ -85,6 +87,9 @@ export function HomePageContent({
           </div>
         </div>
       </section>
+
+      {/* Service Categories */}
+      <ServiceCategories />
 
       {/* How it Works Section */}
       <section>
@@ -158,6 +163,52 @@ export function HomePageContent({
           </Button>
         </div>
       </section>
+
+      {/* Featured Wishes Section - Make a Wish Come True */}
+      {featuredWishes && featuredWishes.length > 0 && (
+        <section>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-semibold mb-2">
+              {t("home.wishesCards.title", "Make a Wish Come True")}
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              {t("home.wishesCards.subtitle", "Help community members achieve their dreams")}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {featuredWishes.map((wish) => (
+              <WishCard key={wish.id} wish={wish} />
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Button
+              size="lg"
+              asChild
+              className="bg-accent hover:bg-accent/90 text-accent-foreground"
+            >
+              <Link href="/wishes">{t("home.wishesCards.viewAll", "View All Wishes")}</Link>
+            </Button>
+          </div>
+        </section>
+      )}
+
+      {/* Subscription Plans Section */}
+      <SubscriptionPlans />
+
+      {/* Top Contributors Section */}
+      {topContributors && topContributors.length > 0 && (
+        <section>
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-semibold mb-2">
+              {t("home.contributors.title", "Thank You, Generous Contributors!")}
+            </h2>
+            <p className="text-muted-foreground text-lg">
+              {t("home.contributors.subtitle", "Celebrating those who make wishes come true")}
+            </p>
+          </div>
+          <TopContributors initialContributors={topContributors} />
+        </section>
+      )}
 
       {/* Community Wishes Section */}
       <section>
