@@ -63,6 +63,14 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
     setSubmitted(initialCategory ? { category: initialCategory } : {});
   }, [initialCategory]);
 
+  // Auto-apply category filter when category state changes
+  useEffect(() => {
+    setSubmitted((current) => ({
+      ...current,
+      category: category,
+    }));
+  }, [category]);
+
   function toSearchableText(item: ListingWithUser) {
     return [
       item.listing.offeredService?.title,
