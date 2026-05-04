@@ -466,6 +466,12 @@ export async function donateToWishPublic(baseUrl: string, wishId: string, args: 
 export type ListingSummary = { id: string; title?: string; category?: string };
 export type Participant = { uid: string; name?: string };
 
+async function authHeaders() {
+  const token = await auth?.currentUser?.getIdToken();
+  if (!token) throw new ApiError(401, messageForStatus(401));
+  return { Authorization: `Bearer ${token}` };
+}
+
 export async function fetchTriadCycles() {
   const res = await authedFetch(`/api/matchmaking/cycles3`, { method: 'GET' });
   if (!res.ok) throw await toApiError(res);
@@ -516,12 +522,7 @@ export async function fetchListingMatches() {
 }
 
 export async function acceptMatch(payload: { type: 'triad' | 'mutual'; users: string[]; edges?: Array<{ from: string; to: string; requestId: string; listingId: string }>; }) {
-  const res = await authedFetch(`/api/matchmaking/accept`, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw await toApiError(res);
-  return (await res.json()) as { ok: boolean; key: string; acceptedCount: number };
+  return await authedPost(`/api/matchmaking/accept`, payload) as { ok: boolean; key: string; acceptedCount: number };
 }
 
 // --------------- Admin moderation ---------------
