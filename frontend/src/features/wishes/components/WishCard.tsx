@@ -10,9 +10,20 @@ type WishCardProps = {
   wish: Wish | WishSummary;
 };
 
+function formatWishDeadline(deadline: unknown): string | null {
+  if (!deadline) return null;
+  try {
+    const date = typeof (deadline as any)?.toDate === 'function' ? (deadline as any).toDate() : new Date(deadline as any);
+    return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString();
+  } catch {
+    return null;
+  }
+}
+
 export function WishCard({ wish }: WishCardProps) {
   const progress = wish.goalAmount ? Math.min(100, Math.round((wish.totalDonated || 0) / wish.goalAmount * 100)) : 0;
   const remaining = Math.max(0, (wish.goalAmount || 0) - (wish.totalDonated || 0));
+  const deadlineLabel = formatWishDeadline(wish.deadline);
 
   return (
     <Link href={`/wishes/${wish.id}`}>
@@ -54,10 +65,10 @@ export function WishCard({ wish }: WishCardProps) {
                 {remaining} {wish.currency || 'EGP'} needed
               </p>
             )}
-            {wish.deadline && (
+            {deadlineLabel && (
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Clock className="h-4 w-4" />
-                Due: {new Date(wish.deadline).toLocaleDateString()}
+                Due: {deadlineLabel}
               </p>
             )}
           </div>

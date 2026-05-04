@@ -181,23 +181,25 @@ export default function SearchPage() {
                   {results.wishes.map((wish) => (
                     <Card key={wish.id} className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
                       <div className="flex items-start gap-4">
-                        {wish.imageUrl && (
+                        {wish.imageUrl ? (
                           <img
                             src={wish.imageUrl}
                             alt={wish.title}
-                            className="w-20 h-20 rounded object-cover"
+                            className="w-20 h-20 rounded object-cover shrink-0"
                           />
+                        ) : (
+                          <div className="w-20 h-20 rounded bg-muted shrink-0" aria-hidden="true" />
                         )}
                         <div className="flex-1">
                           <h3 className="font-semibold mb-2">{wish.title}</h3>
                           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
                             {wish.description}
                           </p>
-                          <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center justify-between gap-3 text-sm">
                             <span className="font-medium">
                               {wish.totalDonated} / {wish.goalAmount} {wish.currency}
                             </span>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" className="whitespace-nowrap">
                               {t('wishes.contribute')}
                             </Button>
                           </div>
