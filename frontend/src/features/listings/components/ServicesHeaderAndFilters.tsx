@@ -483,15 +483,15 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <label htmlFor="region" className="block text-sm font-medium mb-1">Middle East Lobby</label>
+            <label htmlFor="region" className="block text-sm font-medium mb-1">Countries</label>
             <Select value={region} onValueChange={(value) => handleRegionChange(value as 'all' | 'middle-east')}>
               <SelectTrigger id="region">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All regions</SelectItem>
+                <SelectItem value="all">Your country</SelectItem>
                 <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
-                  Middle East Lobby
+                  Other countries
                 </SelectItem>
               </SelectContent>
             </Select>

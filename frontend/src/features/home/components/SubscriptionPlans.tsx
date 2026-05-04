@@ -59,7 +59,7 @@ const PLANS: Plan[] = [
       'Priority listing in search',
       'Verified badge',
       'Custom profile branding',
-      'Access to the Middle East lobby',
+      'Access to other countries',
       'Full support',
     ],
   },

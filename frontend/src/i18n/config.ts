@@ -1045,7 +1045,7 @@ const resources = {
           pro_priority: "Priority listing in search",
           pro_verified: "Verified badge",
           pro_branding: "Custom profile branding",
-          pro_regionLobby: "Access to the Middle East lobby",
+          pro_regionLobby: "Access to other countries",
           pro_supportFull: "Full support",
 
           business_team: "Multiple team members (up to 5)",
@@ -2316,7 +2316,7 @@ const resources = {
           pro_priority: "أولوية في نتائج البحث",
           pro_verified: "شعار موثّق",
           pro_branding: "علامة تجارية مخصّصة للملف",
-          pro_regionLobby: "الوصول إلى صالة الشرق الأوسط",
+          pro_regionLobby: "الوصول إلى دول أخرى",
           pro_supportFull: "دعم كامل",
 
           business_team: "عدة أعضاء للفريق (حتى 5)",
