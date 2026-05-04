@@ -491,7 +491,7 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
               <SelectContent>
                 <SelectItem value="all">All regions</SelectItem>
                 <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
-                  Middle East Lobby {!canUseMiddleEastLobby ? '(Pro only)' : ''}
+                  Middle East Lobby
                 </SelectItem>
               </SelectContent>
             </Select>
