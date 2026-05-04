@@ -63,8 +63,8 @@ export function WishCard({ wish }: WishCardProps) {
           </div>
         </CardContent>
         <CardFooter>
-          <Button size="sm" className="w-full bg-accent hover:bg-accent/90" asChild>
-            <span className="flex items-center gap-2">
+          <Button size="sm" className="w-full bg-accent hover:bg-accent/90 whitespace-nowrap" asChild>
+            <span className="inline-flex items-center gap-2 whitespace-nowrap">
               <Heart className="h-4 w-4" />
               Contribute Tokens
             </span>
