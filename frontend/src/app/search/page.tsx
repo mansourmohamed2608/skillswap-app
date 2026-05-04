@@ -92,20 +92,22 @@ export default function SearchPage() {
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="mb-8">
-          <div className="relative flex gap-2">
-            <div className="relative flex-1">
+          <div className="rounded-2xl border border-border/70 bg-card/80 p-3 shadow-sm">
+            <div className="relative flex flex-col gap-3 sm:flex-row">
+              <div className="relative flex-1">
               <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder={t('search.placeholder') || 'Search listings, wishes, services...'}
+                placeholder="Search listings, wishes, services..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-12 text-lg"
+                className="pl-10 h-12 text-lg border-border/80 bg-background focus-visible:ring-primary/30"
               />
             </div>
-            <Button type="submit" size="lg" disabled={loading}>
-              {loading ? t('common.searching') : t('common.search')}
+            <Button type="submit" size="lg" disabled={loading} className="h-12 min-w-36 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+              {loading ? 'Searching...' : 'Search'}
             </Button>
+          </div>
           </div>
         </form>
 
@@ -113,15 +115,15 @@ export default function SearchPage() {
         {query && (
           <div className="mb-8">
             <h1 className="text-3xl font-bold mb-2">
-              {t('search.results_for')} &quot;{query}&quot;
+              Search results for &quot;{query}&quot;
             </h1>
             <p className="text-muted-foreground">
               {loading ? (
-                t('common.loading')
+                'Loading...'
               ) : resultCount > 0 ? (
-                t('search.found_results', { count: resultCount })
+                `${resultCount} result${resultCount === 1 ? '' : 's'} found`
               ) : (
-                t('search.no_results')
+                'No results yet. Try a broader keyword or browse categories below.'
               )}
             </p>
           </div>
@@ -166,8 +168,8 @@ export default function SearchPage() {
                   ))}
                 </div>
               ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">{t('search.no_listings')}</p>
+                <Card className="p-8 text-center border-dashed border-border/70 bg-card/80">
+                  <p className="text-muted-foreground">No listings matched this search.</p>
                 </Card>
               )}
             </TabsContent>
@@ -205,8 +207,8 @@ export default function SearchPage() {
                   ))}
                 </div>
               ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">{t('search.no_wishes')}</p>
+                <Card className="p-8 text-center border-dashed border-border/70 bg-card/80">
+                  <p className="text-muted-foreground">No wishes matched this search.</p>
                 </Card>
               )}
             </TabsContent>
@@ -221,15 +223,15 @@ export default function SearchPage() {
                       <p className="text-sm text-muted-foreground mb-3">{service.description}</p>
                       <Button variant="outline" size="sm" asChild>
                         <a href={`/listings?category=${service.id}`}>
-                          {t('common.view_listings')}
+                          {t('common.view_listings', 'View listings')}
                         </a>
                       </Button>
                     </Card>
                   ))}
                 </div>
               ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">{t('search.no_services')}</p>
+                <Card className="p-8 text-center border-dashed border-border/70 bg-card/80">
+                  <p className="text-muted-foreground">No services matched this search.</p>
                 </Card>
               )}
             </TabsContent>
@@ -243,8 +245,8 @@ export default function SearchPage() {
                   ))}
                 </div>
               ) : (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">{t('search.no_users')}</p>
+                <Card className="p-8 text-center border-dashed border-border/70 bg-card/80">
+                  <p className="text-muted-foreground">No users matched this search.</p>
                 </Card>
               )}
             </TabsContent>
@@ -253,14 +255,14 @@ export default function SearchPage() {
 
         {/* Empty State */}
         {!loading && resultCount === 0 && query && (
-          <Card className="p-12 text-center">
+          <Card className="p-12 text-center border-border/70 bg-card/80 shadow-sm">
             <SearchIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <h2 className="text-2xl font-bold mb-2">{t('search.no_results_found')}</h2>
+            <h2 className="text-2xl font-bold mb-2">No results found</h2>
             <p className="text-muted-foreground mb-6">
-              {t('search.try_different_keywords')}
+              Try different keywords or use the category cards to narrow your search.
             </p>
-            <Button onClick={() => router.push('/')} variant="outline">
-              {t('common.back_to_home')}
+            <Button onClick={() => router.push('/')} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              Back to home
             </Button>
           </Card>
         )}
