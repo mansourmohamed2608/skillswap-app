@@ -100,7 +100,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold flex items-center gap-2">
           <MapPin className="w-5 h-5" />
-          {t('listings.find_nearby')}
+          Find nearby listings
         </h3>
         {onClose && (
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
@@ -118,10 +118,10 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
           <Button
             onClick={requestLocation}
             disabled={loading}
-            className="gap-2"
+            className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Navigation className="w-4 h-4" />
-            {loading ? t('common.detecting') : t('listings.enable_location')}
+            {loading ? t('common.detecting', 'Detecting...') : t('listings.enable_location', 'Use my location')}
           </Button>
           {error && (
             <div className="p-3 bg-red-50 text-red-800 rounded-md text-sm">
@@ -177,7 +177,7 @@ export default function NearbyFilter({ onFiltered, onClose }: NearbyFilterProps)
             variant="outline"
             className="w-full"
           >
-            {t('common.clear')}
+            {t('common.clear', 'Clear')}
           </Button>
         </div>
       )}

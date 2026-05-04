@@ -18,6 +18,7 @@ import {
 const CATEGORIES = [
   {
     id: 'programming',
+    category: 'Web Development',
     name: 'Programming',
     icon: Code,
     description: 'Web, app, and software development',
@@ -25,6 +26,7 @@ const CATEGORIES = [
   },
   {
     id: 'design',
+    category: 'Graphic Design',
     name: 'Design',
     icon: Palette,
     description: 'UI/UX, graphics, and branding',
@@ -32,6 +34,7 @@ const CATEGORIES = [
   },
   {
     id: 'music',
+    category: 'Music Lessons',
     name: 'Music & Audio',
     icon: Music,
     description: 'Lessons, production, and mixing',
@@ -39,6 +42,7 @@ const CATEGORIES = [
   },
   {
     id: 'education',
+    category: 'Tutoring',
     name: 'Education',
     icon: BookOpen,
     description: 'Languages, tutoring, and courses',
@@ -46,6 +50,7 @@ const CATEGORIES = [
   },
   {
     id: 'fitness',
+    category: 'Fitness Training',
     name: 'Fitness & Wellness',
     icon: Dumbbell,
     description: 'Training, yoga, and health coaching',
@@ -53,6 +58,7 @@ const CATEGORIES = [
   },
   {
     id: 'business',
+    category: 'Consulting',
     name: 'Business & Career',
     icon: Briefcase,
     description: 'Consulting, mentoring, and advice',
@@ -60,6 +66,7 @@ const CATEGORIES = [
   },
   {
     id: 'photography',
+    category: 'Photography',
     name: 'Photography & Video',
     icon: Camera,
     description: 'Photo services and videography',
@@ -67,6 +74,7 @@ const CATEGORIES = [
   },
   {
     id: 'home',
+    category: 'Home Repair',
     name: 'Home & Living',
     icon: HomeIcon,
     description: 'Repairs, cleaning, and maintenance',
@@ -92,7 +100,7 @@ export function ServiceCategories() {
         {CATEGORIES.map((category) => {
           const Icon = category.icon;
           return (
-            <Link key={category.id} href={`/listings?category=${category.id}`} className="group block h-full">
+            <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.category)}`} className="group block h-full">
               <div className="relative h-full overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
                 <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${category.color}`} />
                 <div className="mb-5 flex items-center justify-between">

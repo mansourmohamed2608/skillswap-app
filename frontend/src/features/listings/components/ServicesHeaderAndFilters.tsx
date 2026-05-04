@@ -33,11 +33,11 @@ type SubmittedFilters = {
   region?: 'all' | 'middle-east';
 };
 
-export function ServicesHeaderAndFilters({ initialItems }: { initialItems: ListingWithUser[] }) {
+export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { initialItems: ListingWithUser[]; initialCategory?: string }) {
   const { t, i18n } = useTranslation();
   const { user, selectedPlan } = useAuth();
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<string | undefined>(undefined);
+  const [category, setCategory] = useState<string | undefined>(initialCategory);
   const [manualLocation, setManualLocation] = useState('');
   const [nearCoords, setNearCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState<string>('any');
@@ -45,7 +45,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
   const [locating, setLocating] = useState(false);
   const [locationHint, setLocationHint] = useState<string>('');
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
-  const [submitted, setSubmitted] = useState<SubmittedFilters>({});
+  const [submitted, setSubmitted] = useState<SubmittedFilters>(initialCategory ? { category: initialCategory } : {});
   const [showNearbyFilter, setShowNearbyFilter] = useState(false);
   const autoLocationRequestedRef = useRef(false);
   const hasNearSubmitted = submitted.nearLat !== undefined && submitted.nearLng !== undefined;
@@ -57,6 +57,11 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
     submitted.region === 'middle-east'
   );
   const submittedKey = JSON.stringify(submitted);
+
+  useEffect(() => {
+    setCategory(initialCategory);
+    setSubmitted(initialCategory ? { category: initialCategory } : {});
+  }, [initialCategory]);
 
   function toSearchableText(item: ListingWithUser) {
     return [
@@ -492,7 +497,7 @@ export function ServicesHeaderAndFilters({ initialItems }: { initialItems: Listi
           </Button>
           <Button type="button" variant="outline" onClick={() => setShowNearbyFilter(true)} className="gap-2">
             <MapPinIcon className="h-4 w-4" />
-            {t('listings.find_nearby')}
+            Find nearby listings
           </Button>
         </div>
 
