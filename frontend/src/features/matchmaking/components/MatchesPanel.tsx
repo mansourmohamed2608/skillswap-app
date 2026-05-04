@@ -204,7 +204,7 @@ export function MatchesPanel() {
             </div>
           ) : null}
         </div>
-        <Button variant="outline" size="sm" onClick={load} disabled={loading || !canLoad}>
+        <Button size="sm" onClick={load} disabled={loading || !canLoad} className="bg-primary text-primary-foreground hover:bg-primary/90">
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCcw className="h-4 w-4" />}
           <span className="ml-2">{t('matchmaking.panel.refresh')}</span>
         </Button>

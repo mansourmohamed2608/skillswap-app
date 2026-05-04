@@ -216,7 +216,7 @@ export function MatchmakingForm() {
           {!isGuest && !hasSubmitted && (
             <Button
               type="button"
-              variant="ghost"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
               onClick={() => {
                 setProfileValue('');
                 setRequestsValue('');
