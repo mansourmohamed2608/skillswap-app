@@ -58,9 +58,9 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
   );
   const submittedKey = JSON.stringify(submitted);
 
+  // Initialize category from URL param on mount only
   useEffect(() => {
     setCategory(initialCategory);
-    setSubmitted(initialCategory ? { category: initialCategory } : {});
   }, [initialCategory]);
 
   // Auto-apply category filter when category state changes
