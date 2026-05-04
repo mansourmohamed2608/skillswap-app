@@ -543,7 +543,6 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
         <DialogContent className="max-w-md">
           <NearbyFilter 
             onFiltered={handleNearbyFiltered}
-            onClose={() => setShowNearbyFilter(false)}
           />
         </DialogContent>
       </Dialog>
