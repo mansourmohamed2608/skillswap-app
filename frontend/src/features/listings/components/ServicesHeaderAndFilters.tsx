@@ -37,7 +37,11 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
   const { t, i18n } = useTranslation();
   const { user, selectedPlan } = useAuth();
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<string | undefined>(initialCategory);
+  // Normalize initial category to one of the known serviceCategories for consistent matching
+  const normalize = (s?: string | null) => String(s || '').trim().toLowerCase();
+  const matchedInitial = serviceCategories.find((c) => normalize(c) === normalize(initialCategory));
+  const normalizedInitialCategory = matchedInitial ?? (initialCategory || undefined);
+  const [category, setCategory] = useState<string | undefined>(normalizedInitialCategory);
   const [manualLocation, setManualLocation] = useState('');
   const [nearCoords, setNearCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [radius, setRadius] = useState<string>('any');
@@ -45,7 +49,7 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
   const [locating, setLocating] = useState(false);
   const [locationHint, setLocationHint] = useState<string>('');
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
-  const [submitted, setSubmitted] = useState<SubmittedFilters>(initialCategory ? { category: initialCategory } : {});
+  const [submitted, setSubmitted] = useState<SubmittedFilters>(normalizedInitialCategory ? { category: normalizedInitialCategory } : {});
   const [showNearbyFilter, setShowNearbyFilter] = useState(false);
   const autoLocationRequestedRef = useRef(false);
   const hasNearSubmitted = submitted.nearLat !== undefined && submitted.nearLng !== undefined;
@@ -58,9 +62,10 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
   );
   const submittedKey = JSON.stringify(submitted);
 
-  // Initialize category from URL param on mount only
+  // Initialize category from URL param on mount only (normalize to known categories)
   useEffect(() => {
-    setCategory(initialCategory);
+    const match = serviceCategories.find((c) => normalize(c) === normalize(initialCategory));
+    setCategory(match ?? (initialCategory || undefined));
   }, [initialCategory]);
 
   // Auto-apply category filter when category state changes
@@ -490,9 +495,9 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Your country</SelectItem>
-                <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
-                  All countries
-                </SelectItem>
+                  <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
+                    {t('services.allCountriesPro', { defaultValue: 'All countries (Pro)' })}
+                  </SelectItem>
               </SelectContent>
             </Select>
           </div>
