@@ -147,15 +147,15 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
 
   const ownerContent = (
     <>
-      <Avatar className="h-8 w-8">
+      <Avatar className="h-8 w-8 shrink-0">
         <AvatarImage src={resolvedUser?.avatarUrl} alt={displayName} data-ai-hint="person face"/>
         <AvatarFallback>{displayName.substring(0,1)}</AvatarFallback>
       </Avatar>
-      <div className="min-w-0">
-        <span className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2 break-words">{displayName}</span>
+      <div className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium transition-colors group-hover:text-primary">{displayName}</span>
         {publicOwnerLocation && (
-          <div className="flex items-center text-xs text-muted-foreground mt-0.5 min-w-0">
-            <MapPinIcon className="h-3 w-3 mr-1" />
+          <div className="mt-0.5 flex min-w-0 items-center text-xs text-muted-foreground">
+            <MapPinIcon className="mr-1 h-3 w-3 shrink-0" />
             <span className="truncate">{publicOwnerLocation}</span>
           </div>
         )}
@@ -202,19 +202,19 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
       </CardContent>
       <CardFooter className="p-3 border-t">
         <div className="flex flex-col w-full gap-2">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center justify-between gap-3">
             {resolvedUser ? (
               isOwner ? (
-                <div className="flex items-start gap-2 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center gap-2">
                   {ownerContent}
                 </div>
               ) : (
-                <Link href={getProfilePath(resolvedUser)} className="flex items-start gap-2 group min-w-0">
+                <Link href={getProfilePath(resolvedUser)} className="flex min-w-0 flex-1 items-center gap-2 group">
                   {ownerContent}
                 </Link>
               )
             ) : (
-              <div className="text-xs text-muted-foreground">
+              <div className="min-w-0 flex-1 text-xs text-muted-foreground">
                 {authUser ? (
                   isOwner ? t('listings.card.you') : t('listings.actions.ownerFallback')
                 ) : (
@@ -224,10 +224,10 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                 )}
               </div>
             )}
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex shrink-0 items-center gap-1">
               {isOwner ? (
                 <>
-                  <Button asChild type="button" size="icon" variant="ghost" className="h-7 w-7">
+                  <Button asChild type="button" size="icon" variant="ghost" className="hidden h-7 w-7 sm:inline-flex">
                     <Link href={`/listings/${listing.id}/edit`} aria-label={t('listings.actions.edit', { defaultValue: 'Edit listing' })}>
                       <PencilIcon className="h-3 w-3" />
                     </Link>
@@ -236,7 +236,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    className="hidden h-7 w-7 text-destructive hover:text-destructive sm:inline-flex"
                     aria-label={t('listings.actions.delete', { defaultValue: 'Delete listing' })}
                     onClick={() => setDeleteOpen(true)}
                     disabled={deleting}
@@ -245,7 +245,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                   </Button>
                 </>
               ) : null}
-              <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0 text-xs">
+              <Badge variant={getStatusBadgeVariant(listing.status)} className="shrink-0 whitespace-nowrap text-xs">
                 {getStatusText(listing.status)}
               </Badge>
             </div>

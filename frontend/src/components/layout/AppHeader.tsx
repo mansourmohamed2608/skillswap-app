@@ -150,12 +150,13 @@ export function AppHeader() {
             </nav>
 
             {/* Search Bar - Desktop (on the right, after nav) */}
-            {!isSearchPage && (
+            {!isSearchPage ? (
               <div className="mx-2 min-w-[220px] flex-1 max-w-md">
                 <GlobalSearchBar />
               </div>
+            ) : (
+              <div className="mx-2 w-24 shrink-0 sm:w-32 lg:w-40" aria-hidden="true" />
             )}
-            {isSearchPage && <div className="mx-2 flex-1" />}
 
             {/* Right Actions */}
             <div className="flex items-center gap-1">
@@ -277,9 +278,9 @@ export function AppHeader() {
                   {/* Mobile Menu Content */}
                   <SheetContent
                     side={i18n.dir() === 'rtl' ? 'left' : 'right'}
-                    className="w-[280px]"
+                    className="z-[80] w-[82vw] max-w-[360px] p-0"
                   >
-                    <div className="mt-8 flex flex-col gap-2">
+                    <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-4">
                     {/* Primary Nav */}
                     {primaryNavItems.map((item) => (
                       <Button
@@ -426,7 +427,7 @@ export function AppHeader() {
             </div>
 
             {/* Bottom Row: Full-width Search Bar */}
-            {!isSearchPage && (
+            {!isSearchPage && !mobileMenuOpen && (
               <div className="border-t border-border/40 px-4 py-2">
                 <GlobalSearchBar />
               </div>
