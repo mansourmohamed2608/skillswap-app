@@ -81,7 +81,7 @@ export function ServiceCategories() {
           return (
             <Link
               key={category.id}
-              href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
+              href={`/listings?category=${encodeURIComponent(category.name)}`}
               className="flex h-14 items-center justify-between rounded-xl border border-border/70 bg-card px-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/30"
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -109,7 +109,7 @@ export function ServiceCategories() {
           const meta = CATEGORY_META[category.id as keyof typeof CATEGORY_META];
           const Icon = meta.icon;
           return (
-            <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.listingCategory)}`} className="group block h-full">
+            <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.name)}`} className="group block h-full">
               <div className="relative h-full overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
                 <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.color}`} />
                 <div className="mb-5 flex items-center justify-between">

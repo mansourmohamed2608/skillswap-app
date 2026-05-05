@@ -122,7 +122,7 @@ export function HomePageContent({
   const contributeText = t('wishes.contribute', 'Contribute');
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-28 md:space-y-12 md:py-8 md:pb-8">
+    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-3 pb-24 sm:px-6 sm:py-4 sm:pb-28 md:space-y-12 md:py-6 md:pb-8">
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/80 to-secondary/80 py-8 text-center shadow-xl sm:py-12 md:py-14">
         <div className="relative z-10 mx-auto max-w-3xl px-4">
           <HeroLogo />

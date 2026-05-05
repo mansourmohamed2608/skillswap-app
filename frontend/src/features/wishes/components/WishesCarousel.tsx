@@ -95,7 +95,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="relative" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div className="relative px-0 md:px-12" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
         <div className="overflow-hidden rounded-2xl">
           <div
             className="flex transition-transform duration-500 ease-out"
@@ -114,7 +114,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
                   style={{ width: `${100 / cardsPerView}%` }}
                 >
                   <Card className="h-full overflow-hidden border-border/70 bg-card/90 shadow-sm">
-                    <CardContent className="space-y-3 p-4">
+                    <CardContent className="space-y-3 p-3 sm:p-4">
                       <div className="flex items-start gap-3">
                         {wish.imageUrl ? (
                           <img
@@ -160,7 +160,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
                         </div>
                       )}
 
-                      <Button asChild size="sm" className="h-9 w-full bg-accent text-accent-foreground hover:bg-accent/90">
+                      <Button asChild size="sm" className="h-10 w-full bg-accent text-accent-foreground hover:bg-accent/90">
                         <Link href={`/wishes/${wish.id}`}>{contributeLabel}</Link>
                       </Button>
                     </CardContent>
@@ -177,7 +177,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
               type="button"
               variant="secondary"
               size="icon"
-              className="absolute left-2 top-1/2 h-8 w-8 -translate-y-1/2 border border-border/60 bg-background/90"
+              className="absolute -left-4 top-1/2 hidden h-9 w-9 -translate-y-1/2 border border-border/60 bg-background/90 md:inline-flex"
               onClick={goPrev}
               aria-label="Previous wishes"
             >
@@ -187,7 +187,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
               type="button"
               variant="secondary"
               size="icon"
-              className="absolute right-2 top-1/2 h-8 w-8 -translate-y-1/2 border border-border/60 bg-background/90"
+              className="absolute -right-4 top-1/2 hidden h-9 w-9 -translate-y-1/2 border border-border/60 bg-background/90 md:inline-flex"
               onClick={goNext}
               aria-label="Next wishes"
             >

@@ -423,8 +423,8 @@ export function SearchPageContent() {
   const suggestedChips = ['Home', 'Listings', 'Design', 'Services', 'Bookings', 'Subscription'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/50 pt-8">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/50 pt-4 sm:pt-6">
+      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
         <form onSubmit={handleSubmit} className="mx-auto mb-8 w-full max-w-5xl">
           <div className="rounded-2xl border border-border/70 bg-card/90 p-3 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row">
@@ -552,7 +552,7 @@ export function SearchPageContent() {
                       size="sm"
                       className="rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                     >
-                      <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                      <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
                         {category.name}
                       </Link>
                     </Button>

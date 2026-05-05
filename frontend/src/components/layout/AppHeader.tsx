@@ -120,7 +120,7 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-[60] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-[1280px]">
           {/* Desktop Header Layout */}
           <div className="hidden h-16 items-center gap-2 px-4 sm:px-6 md:flex">
@@ -193,7 +193,7 @@ export function AppHeader() {
                     <DropdownMenuContent align="end" className="w-56">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                          <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
                             {category.name}
                           </Link>
                         </DropdownMenuItem>
@@ -222,7 +222,7 @@ export function AppHeader() {
                     <DropdownMenuContent align="end" className="w-56">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                          <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
                             {category.name}
                           </Link>
                         </DropdownMenuItem>
@@ -325,7 +325,7 @@ export function AppHeader() {
                             className="h-9 w-full justify-start text-sm"
                           >
                             <Link
-                              href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
+                              href={`/listings?category=${encodeURIComponent(category.name)}`}
                               onClick={() => setMobileMenuOpen(false)}
                             >
                               {category.name}
