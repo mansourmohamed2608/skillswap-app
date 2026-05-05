@@ -18,6 +18,7 @@ import { getUnreadConversationCount, useConversationsRTDB } from '@/services/cha
 import type { Notification } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { clearReadNotifications, markNotificationsRead } from '@/services/api';
+import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 
 // Public links, always visible
 const publicNavItems = [
@@ -220,6 +221,12 @@ export function AppHeader() {
             {t('common.appName')}
           </span>
         </Link>
+
+        <div className="hidden flex-1 items-center justify-center md:flex px-8">
+          <div className="w-full max-w-md">
+            <GlobalSearchBar />
+          </div>
+        </div>
 
         <div className="hidden flex-1 items-center justify-center md:flex">
           <nav className="flex items-center gap-0.5">

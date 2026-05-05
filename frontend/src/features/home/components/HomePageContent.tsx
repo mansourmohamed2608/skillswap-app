@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { WishCard } from "@/features/wishes/components/WishCard";
-import { GlobalSearchBar } from "@/features/home/components/GlobalSearchBar";
 import { SubscriptionPlans } from "@/features/home/components/SubscriptionPlans";
 import { ServiceCategories } from "@/features/home/components/ServiceCategories";
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
@@ -52,18 +51,13 @@ export function HomePageContent({
 
   return (
     <div className="space-y-12">
-      {/* Hero Section with Search */}
+      {/* Hero Section */}
       <section className="relative text-center py-10 sm:py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
         <div className="relative z-10 container mx-auto px-4">
           <HeroLogo />
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-8 sm:mb-10 text-primary-foreground">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-primary-foreground">
             {t("home.hero.title")}
           </h1>
-
-          {/* Global Search Bar - Prominent at Top */}
-          <div className="mb-10 sm:mb-12">
-            <GlobalSearchBar />
-          </div>
 
           <p className="text-base sm:text-lg md:text-xl mb-10 sm:mb-12 max-w-2xl mx-auto text-primary-foreground/90">
             {t("home.hero.body")}
