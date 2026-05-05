@@ -15,6 +15,7 @@ const resources = {
         confirm: "Confirm",
         unset: "Unset",
         menu: "Menu",
+        language: "Language",
       },
       errors: {
         network: "Network error. Check your connection and try again.",
@@ -88,6 +89,7 @@ const resources = {
         signOut: "Sign Out",
         logout: "Logout",
         more: "More",
+        menu: "Menu",
         subscribe: "Subscribe",
       },
       footer: {
@@ -105,6 +107,7 @@ const resources = {
           body: "SkillSwap is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
           ctaBrowse: "Browse Listings",
           ctaPost: "Post a Listing",
+          ctaSubscribe: "Subscribe Now",
         },
         howItWorks: {
           title: "How SkillSwap Works",
@@ -1293,6 +1296,7 @@ const resources = {
         confirm: "تأكيد",
         unset: "غير محدد",
         menu: "القائمة",
+        language: "اللغة",
       },
       errors: {
         network: "خطأ في الشبكة. تحقق من الاتصال وحاول مرة أخرى.",
@@ -1366,6 +1370,7 @@ const resources = {
         signOut: "تسجيل الخروج",
         logout: "تسجيل الخروج",
         more: "المزيد",
+        menu: "القائمة",
         subscribe: "اشترك",
       },
       footer: {
@@ -1383,6 +1388,7 @@ const resources = {
           body: "سكيل سواپ هو منصّتك الحيوية لمشاركة مهاراتك وخدماتك مع مجتمعك، أطلق إمكاناتك، وشارك بما تتقنه، واكتشف ما تحتاجه في المقابل. سواء كنت تتبادل خدمة بخدمة أو منتجًا بمنتج، أو تحوّل موهبتك إلى دخل، سكيل سواپ يساعدك على تحقيق أقصى استفادة مما تتقنه.",
           ctaBrowse: "تصفّح العروض",
           ctaPost: "أنشئ عرضًا",
+          ctaSubscribe: "اشترك الآن",
         },
         howItWorks: {
           title: "كيف يعمل سكيل سواپ",

@@ -16,7 +16,6 @@ import {
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
-  Search,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/services/firebase';
@@ -25,7 +24,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 import { MoreDropdown } from '@/components/layout/MoreDropdown';
-import { ExpandedSearchBar } from '@/components/layout/ExpandedSearchBar';
+import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
@@ -90,11 +89,11 @@ function SignOutButton({
       variant="ghost"
       size={isMobile ? 'default' : 'icon'}
       onClick={handleSignOut}
-      className={isMobile ? 'justify-start text-base py-3 w-full gap-2' : ''}
-      aria-label={t('header.signOut')}
+      className={isMobile ? 'justify-start text-base py-3 w-full gap-2 h-11' : ''}
+      aria-label={t('header.signOut', 'Sign Out')}
     >
       <LogOutIcon className={isMobile ? 'h-5 w-5' : 'h-4 w-4'} />
-      {isMobile && <span>{t('header.signOut')}</span>}
+      {isMobile && <span>{t('header.signOut', 'Sign Out')}</span>}
     </Button>
   );
 }
@@ -104,27 +103,21 @@ export function AppHeader() {
   const { t, i18n } = useTranslation();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-screen-2xl px-4 sm:px-6">
+        <div className="mx-auto max-w-screen-2xl">
           {/* Desktop Header Layout */}
-          <div className="hidden md:flex h-16 items-center gap-6">
+          <div className="hidden md:flex h-16 items-center gap-3 px-4 sm:px-6">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0 text-primary hover:text-primary/80 transition-colors">
               <AppLogo />
               <span className="font-bold text-lg hidden lg:inline">{t('common.appName')}</span>
             </Link>
 
-            {/* Search Bar - Desktop */}
-            <div className="flex-1 max-w-md">
-              <GlobalSearchBar />
-            </div>
-
             {/* Primary Navigation */}
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-0.5">
               {primaryNavItems.map((item) => (
                 <Button
                   key={item.href}
@@ -142,8 +135,13 @@ export function AppHeader() {
               ))}
             </nav>
 
+            {/* Search Bar - Desktop (in the middle) */}
+            <div className="flex-1 max-w-sm mx-2">
+              <GlobalSearchBar />
+            </div>
+
             {/* Right Actions */}
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1 ml-auto">
               {isAuthenticated ? (
                 <>
                   {/* Bookings (primary) */}
@@ -167,7 +165,12 @@ export function AppHeader() {
                     </Link>
                   </Button>
 
-                  {/* More Dropdown */}
+                  {/* Language Toggle - Visible in desktop */}
+                  <div className="hidden lg:block border-l border-border/40 ml-1 pl-1">
+                    <LanguageSwitcher compact />
+                  </div>
+
+                  {/* Menu Button (replaces 3-dot) */}
                   <MoreDropdown />
                 </>
               ) : (
@@ -189,35 +192,26 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Mobile Header Layout */}
-          <div className="md:hidden flex h-14 items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
-              <AppLogo />
-              <span className="font-bold text-sm">{t('common.appName')}</span>
-            </Link>
+          {/* Mobile Header Layout - Two Row */}
+          <div className="md:hidden">
+            {/* Top Row: Logo + Menu */}
+            <div className="flex h-14 items-center justify-between px-4">
+              <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
+                <AppLogo />
+                <span className="font-bold text-sm">{t('common.appName')}</span>
+              </Link>
 
-            {/* Mobile Actions */}
-            <div className="flex items-center gap-1">
-              {/* Search Icon */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setMobileSearchOpen(true)}
-                aria-label={t('home.search.label', 'Search')}
-              >
-                <Search className="h-5 w-5" />
-              </Button>
-
-              {/* Hamburger Menu */}
+              {/* Menu Button (hamburger with text) */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="icon"
+                    size="sm"
+                    className="flex items-center gap-1"
                     aria-label={t('common.menu', 'Menu')}
                   >
                     <MenuIcon className="h-5 w-5" />
+                    <span className="text-sm font-medium">{t('header.menu', 'Menu')}</span>
                   </Button>
                 </SheetTrigger>
 
@@ -270,31 +264,43 @@ export function AppHeader() {
                         ))}
 
                         {/* Divider */}
-                        <div className="my-2 h-px bg-border" />
+                        <div className="my-3 h-px bg-border" />
 
-                        {/* Secondary Items */}
-                        <Button
-                          variant="ghost"
-                          asChild
-                          className="justify-start text-base gap-2 h-11"
-                        >
-                          <Link
-                            href="/pricing"
-                            onClick={() => setMobileMenuOpen(false)}
+                        {/* Secondary Items Section */}
+                        <div className="space-y-2">
+                          {/* Subscription Plans */}
+                          <Button
+                            variant="ghost"
+                            asChild
+                            className="justify-start text-base gap-2 h-11"
                           >
-                            <span>💎</span>
-                            {t('header.pricing')}
-                          </Link>
-                        </Button>
+                            <Link
+                              href="/pricing"
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              <span>💎</span>
+                              {t('header.pricing', 'Subscription Plans')}
+                            </Link>
+                          </Button>
+                        </div>
 
                         {/* Divider */}
-                        <div className="my-2 h-px bg-border" />
+                        <div className="my-3 h-px bg-border" />
 
-                        {/* Sign Out */}
-                        <SignOutButton
-                          isMobile
-                          onDone={() => setMobileMenuOpen(false)}
-                        />
+                        {/* Language & Logout Section */}
+                        <div className="space-y-2">
+                          {/* Language Toggle */}
+                          <div className="px-2 py-2">
+                            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">{t('common.language', 'Language')}</p>
+                            <LanguageSwitcher />
+                          </div>
+
+                          {/* Sign Out */}
+                          <SignOutButton
+                            isMobile
+                            onDone={() => setMobileMenuOpen(false)}
+                          />
+                        </div>
                       </>
                     ) : (
                       <>
@@ -321,12 +327,14 @@ export function AppHeader() {
                 </SheetContent>
               </Sheet>
             </div>
+
+            {/* Bottom Row: Full-width Search Bar */}
+            <div className="border-t border-border/40 px-4 py-2">
+              <GlobalSearchBar />
+            </div>
           </div>
         </div>
       </header>
-
-      {/* Mobile Expanded Search Bar */}
-      {mobileSearchOpen && <ExpandedSearchBar onClose={() => setMobileSearchOpen(false)} />}
     </>
   );
 }

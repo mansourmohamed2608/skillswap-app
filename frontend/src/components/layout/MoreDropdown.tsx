@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { BellIcon, GemIcon, X, CheckCheck, Trash2, MoreVertical, LogOut } from 'lucide-react';
+import { BellIcon, GemIcon, X, CheckCheck, Trash2, MenuIcon, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { auth } from '@/services/firebase';
@@ -133,8 +132,9 @@ export function MoreDropdown() {
   return (
     <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={t('common.more', 'More')}>
-          <MoreVertical className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="flex items-center gap-1" aria-label={t('header.menu', 'Menu')}>
+          <MenuIcon className="h-4 w-4" />
+          <span className="hidden sm:inline text-sm font-medium">{t('header.menu', 'Menu')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
@@ -230,11 +230,6 @@ export function MoreDropdown() {
               {t('header.logout', 'Logout')}
             </Button>
           )}
-
-          {/* Language Switcher */}
-          <div className="px-2">
-            <LanguageSwitcher compact />
-          </div>
         </div>
       </PopoverContent>
     </Popover>

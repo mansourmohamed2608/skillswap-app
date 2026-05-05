@@ -71,6 +71,9 @@ export function HomePageContent({
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href="/listings/new">{t('home.hero.ctaPost')}</Link>
             </Button>
+            <Button size="lg" variant="secondary" asChild className="w-full transition-transform hover:-translate-y-0.5 sm:w-auto">
+              <Link href="/pricing">{t('home.hero.ctaSubscribe', 'Subscribe Now')}</Link>
+            </Button>
           </div>
         </div>
       </section>
