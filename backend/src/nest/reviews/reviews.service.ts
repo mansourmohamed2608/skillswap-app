@@ -355,7 +355,7 @@ export class ReviewsService {
         return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
       } catch (e) {
         // Fallback for missing composite index in production.
-        this.logger.warn('[Reviews] Composite index missing for listForListing — using client-side fallback filter', { listingId });
+        this.logger.warn('[Reviews] Composite index missing for listForListing - using client-side fallback filter', { listingId });
         const snap = await admin.firestore()
           .collection('reviews')
           .where('listingId', '==', listingId)
@@ -387,7 +387,7 @@ export class ReviewsService {
           .get();
         return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
       } catch (e) {
-        this.logger.warn('[Reviews] Composite index missing for listForUser — using client-side fallback filter', { userId });
+        this.logger.warn('[Reviews] Composite index missing for listForUser - using client-side fallback filter', { userId });
         const snap = await admin.firestore()
           .collection('reviews')
           .where('ownerId', '==', userId)

@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { WishCard } from "@/features/wishes/components/WishCard";
-import { SubscriptionPlans } from "@/features/home/components/SubscriptionPlans";
 import { ServiceCategories } from "@/features/home/components/ServiceCategories";
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
 import { TopContributors } from "@/features/home/components/TopContributors";
@@ -186,9 +185,6 @@ export function HomePageContent({
           </div>
         </section>
       )}
-
-      {/* Subscription Plans Section */}
-      <SubscriptionPlans />
 
       {/* Top Contributors Section */}
       {topContributors && topContributors.length > 0 && (
