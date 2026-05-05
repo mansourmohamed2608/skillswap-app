@@ -27,7 +27,7 @@ export function ListingsGrid({ items }: { items: ListingWithUser[] }) {
   }, [items, user]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
       {sortedItems.map(({ listing, user: listingUser }) => (
         <ServiceCard key={listing.id} listing={listing} user={listingUser} />
       ))}

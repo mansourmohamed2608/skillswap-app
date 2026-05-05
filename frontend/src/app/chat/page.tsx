@@ -8,8 +8,8 @@ export default function ChatPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="relative z-0 mx-auto max-w-6xl">
-      <div className="grid h-[calc(100dvh-9rem)] min-h-[34rem] overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
+    <div className="flex flex-col h-full">
+      <div className="grid flex-1 min-h-0 overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
         <ConversationListPanel className="min-h-0 border-r bg-background" />
         <div className="hidden min-h-0 flex-col items-center justify-center bg-muted/10 p-10 text-center md:flex">
           <div className="rounded-full bg-primary/10 p-5 text-primary">

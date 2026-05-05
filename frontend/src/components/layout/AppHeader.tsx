@@ -120,10 +120,10 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-[60] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-[1280px]">
+      <header className="sticky top-0 z-[70] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           {/* Desktop Header Layout */}
-          <div className="hidden h-16 items-center gap-2 px-4 sm:px-6 md:flex">
+          <div className="hidden h-16 items-center gap-2 md:flex">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0 text-primary hover:text-primary/80 transition-colors">
               <AppLogo />
@@ -149,17 +149,17 @@ export function AppHeader() {
               ))}
             </nav>
 
-            {/* Search Bar - Desktop (on the right, after nav) */}
+            {/* Search Bar - Desktop (centered flex-1) */}
             {!isSearchPage ? (
-              <div className="mx-2 min-w-[220px] flex-1 max-w-md">
+              <div className="mx-2 flex-1 max-w-md">
                 <GlobalSearchBar />
               </div>
             ) : (
-              <div className="mx-2 w-24 shrink-0 sm:w-32 lg:w-40" aria-hidden="true" />
+              <div className="mx-2 flex-1" aria-hidden="true" />
             )}
 
             {/* Right Actions */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {isAuthenticated ? (
                 <>
                   {/* Bookings (primary) */}
@@ -191,7 +191,7 @@ export function AppHeader() {
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-56 z-[100]">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -220,7 +220,7 @@ export function AppHeader() {
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent align="end" className="w-56 z-[100]">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -254,7 +254,7 @@ export function AppHeader() {
           {/* Mobile Header Layout - Two Row */}
           <div className="md:hidden">
             {/* Top Row: Logo + Menu */}
-            <div className="flex h-14 items-center justify-between gap-2 px-4">
+            <div className="flex h-14 items-center justify-between gap-2">
               <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
                 <AppLogo />
                 <span className="font-bold text-sm">{t('common.appName')}</span>
@@ -278,7 +278,7 @@ export function AppHeader() {
                   {/* Mobile Menu Content */}
                   <SheetContent
                     side={i18n.dir() === 'rtl' ? 'left' : 'right'}
-                    className="z-[80] w-[82vw] max-w-[360px] p-0"
+                    className="z-[90] w-[82vw] max-w-[360px] p-0"
                   >
                     <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-4">
                     {/* Primary Nav */}

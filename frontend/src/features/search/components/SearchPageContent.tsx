@@ -423,9 +423,9 @@ export function SearchPageContent() {
   const suggestedChips = ['Home', 'Listings', 'Design', 'Services', 'Bookings', 'Subscription'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/50 pt-4 sm:pt-6">
-      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
-        <form onSubmit={handleSubmit} className="mx-auto mb-8 w-full max-w-5xl">
+    <div className="w-full bg-gradient-to-b from-background to-background/50">
+      <div className="mx-auto w-full max-w-[1280px] space-y-6 px-4 sm:px-6">
+        <form onSubmit={handleSubmit} className="w-full">
           <div className="rounded-2xl border border-border/70 bg-card/90 p-3 shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
@@ -447,14 +447,14 @@ export function SearchPageContent() {
         </form>
 
         {query ? (
-          <div className="mb-6 space-y-2">
+          <div className="space-y-2">
             <h1 className="text-2xl font-bold sm:text-3xl">Search results for &quot;{query}&quot;</h1>
             <p className="text-sm text-muted-foreground sm:text-base">
               {loading ? 'Loading...' : `${totalResults} result${totalResults === 1 ? '' : 's'} found`}
             </p>
           </div>
         ) : (
-          <div className="mb-6 space-y-2">
+          <div className="space-y-2">
             <h1 className="text-2xl font-bold sm:text-3xl">Search SkillSwap</h1>
             <p className="text-sm text-muted-foreground sm:text-base">
               Find pages, categories, listings, wishes, bookings, and more.
@@ -462,7 +462,7 @@ export function SearchPageContent() {
           </div>
         )}
 
-        <div className="mb-8 flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
           {suggestedChips.map((chip) => (
             <Button
               key={chip}

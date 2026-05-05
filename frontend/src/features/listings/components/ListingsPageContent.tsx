@@ -245,13 +245,13 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const hasFilters = Boolean(filters.search || filters.category || filters.location || (filters.radius && filters.radius !== 'any') || (filters.country && filters.country !== 'all'));
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6">
+    <div className="w-full space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1 text-center md:text-left">
           <h1 className="text-3xl font-bold tracking-tight text-primary md:text-4xl">Service Exchange Listings</h1>
-          <p className="text-sm text-muted-foreground md:text-lg">Find services you need or offer your skills in exchange.</p>
+          <p className="text-sm text-muted-foreground md:text-base">Find services you need or offer your skills in exchange.</p>
         </div>
-        <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 md:w-auto">
+        <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 md:w-auto shrink-0">
           <Link href="/listings/new">
             <PlusCircleIcon className="mr-2 h-4 w-4" />
             {t('profile.createNewListing')}
@@ -288,8 +288,9 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
       <Card className="border-border/70 bg-card/90 shadow-sm">
         <CardContent className="space-y-4 p-4 sm:p-5">
           <div className={`${mobileFiltersOpen ? 'block' : 'hidden'} space-y-4 md:block`}>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <div className="xl:col-span-2">
+            {/* Row 1: Search, Category, Location, Radius */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="lg:col-span-1">
                 <label htmlFor="listing-search" className="mb-1 block text-sm font-medium text-foreground">{t('services.searchLabel')}</label>
                 <Input
                   id="listing-search"
@@ -299,7 +300,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                   className="h-11 rounded-xl border-border/70 bg-background"
                 />
               </div>
-              <div>
+              <div className="lg:col-span-1">
                 <label htmlFor="listing-category" className="mb-1 block text-sm font-medium text-foreground">{t('services.filterCategory')}</label>
                 <Select value={filters.category || 'all'} onValueChange={(value) => updateFilters({ category: value === 'all' ? '' : value })}>
                   <SelectTrigger id="listing-category" className="h-11 rounded-xl border-border/70 bg-background">
@@ -315,7 +316,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+              <div className="lg:col-span-1">
                 <label htmlFor="listing-location" className="mb-1 block text-sm font-medium text-foreground">{t('services.locationLabel')}</label>
                 <Input
                   id="listing-location"
@@ -325,7 +326,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                   className="h-11 rounded-xl border-border/70 bg-background"
                 />
               </div>
-              <div>
+              <div className="lg:col-span-1">
                 <label htmlFor="listing-radius" className="mb-1 block text-sm font-medium text-foreground">{t('services.radiusLabel')}</label>
                 <Select value={filters.radius} onValueChange={(value) => updateFilters({ radius: value })}>
                   <SelectTrigger id="listing-radius" className="h-11 rounded-xl border-border/70 bg-background">
@@ -343,8 +344,9 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-              <div className="max-w-sm">
+            {/* Row 2: Country, Apply, Clear */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:items-end">
+              <div>
                 <label htmlFor="listing-country" className="mb-1 block text-sm font-medium text-foreground">Country</label>
                 <Select value={filters.country} onValueChange={(value) => updateFilters({ country: value })}>
                   <SelectTrigger id="listing-country" className="h-11 rounded-xl border-border/70 bg-background">
@@ -352,19 +354,17 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All countries</SelectItem>
-                    <SelectItem value="middle-east" disabled={false}>Middle East only</SelectItem>
+                    <SelectItem value="middle-east">Middle East only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex gap-3 md:justify-end">
-                <Button type="button" className="h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90" onClick={applyFilters}>
-                  <FilterIcon className="mr-2 h-4 w-4" />
-                  {t('services.applyFilters')}
-                </Button>
-                <Button type="button" variant="outline" className="h-11 rounded-xl border-primary/30 text-primary hover:bg-primary/10" onClick={clearFilters}>
-                  {t('services.clearFilters')}
-                </Button>
-              </div>
+              <Button type="button" className="h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 lg:col-span-1" onClick={applyFilters}>
+                <FilterIcon className="mr-2 h-4 w-4" />
+                {t('services.applyFilters')}
+              </Button>
+              <Button type="button" variant="outline" className="h-11 rounded-xl border-primary/30 text-primary hover:bg-primary/10 lg:col-span-1" onClick={clearFilters}>
+                {t('services.clearFilters')}
+              </Button>
             </div>
           </div>
         </CardContent>

@@ -23,8 +23,8 @@ export default function ChatDetailPage({ params }: { params: Params | Promise<Pa
   }, [router]);
 
   return (
-    <div className="relative z-0 mx-auto max-w-6xl">
-      <div className="grid h-[calc(100dvh-9rem)] min-h-[34rem] overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
+    <div className="flex flex-col h-full">
+      <div className="grid flex-1 min-h-0 overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
         <ConversationListPanel
           activeChatId={chatId}
           className="hidden min-h-0 border-r bg-background md:flex"
