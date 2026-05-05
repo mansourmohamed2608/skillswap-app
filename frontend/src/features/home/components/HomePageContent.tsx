@@ -71,8 +71,20 @@ export function HomePageContent({
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href="/listings/new">{t('home.hero.ctaPost')}</Link>
             </Button>
-            <Button size="lg" variant="secondary" asChild className="w-full transition-transform hover:-translate-y-0.5 sm:w-auto">
-              <Link href="/pricing">{t('home.hero.ctaSubscribe', 'Subscribe Now')}</Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Subscription CTA Banner */}
+      <section className="mx-auto max-w-3xl px-4">
+        <div className="rounded-lg border border-border/60 bg-card p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold">{t('home.subscribe.title', 'Unlock more with SkillSwap')}</h3>
+            <p className="text-sm text-muted-foreground">{t('home.subscribe.body', 'Get more visibility, better matches, and premium features.')}</p>
+          </div>
+          <div>
+            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <Link href="/pricing">{t('home.subscribe.cta', 'Subscribe Now')}</Link>
             </Button>
           </div>
         </div>

@@ -116,6 +116,9 @@ export function AppHeader() {
               <span className="font-bold text-lg hidden lg:inline">{t('common.appName')}</span>
             </Link>
 
+            {/* Spacer pushes nav/search/actions to the right */}
+            <div className="flex-1" />
+
             {/* Primary Navigation */}
             <nav className="flex items-center gap-0.5">
               {primaryNavItems.map((item) => (
@@ -135,8 +138,8 @@ export function AppHeader() {
               ))}
             </nav>
 
-            {/* Search Bar - Desktop (in the middle) */}
-            <div className="flex-1 max-w-sm mx-2">
+            {/* Search Bar - Desktop (on the right, after nav) */}
+            <div className="max-w-sm mx-2">
               <GlobalSearchBar />
             </div>
 
@@ -170,8 +173,10 @@ export function AppHeader() {
                     <LanguageSwitcher compact />
                   </div>
 
-                  {/* Menu Button (replaces 3-dot) */}
-                  <MoreDropdown />
+                  {/* Menu Button (burger icon only) */}
+                  <div>
+                    <MoreDropdown />
+                  </div>
                 </>
               ) : (
                 <>
@@ -201,17 +206,15 @@ export function AppHeader() {
                 <span className="font-bold text-sm">{t('common.appName')}</span>
               </Link>
 
-              {/* Menu Button (hamburger with text) */}
+              {/* Menu Button (hamburger only) */}
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button
                     variant="ghost"
-                    size="sm"
-                    className="flex items-center gap-1"
-                    aria-label={t('common.menu', 'Menu')}
+                    size="icon"
+                    aria-label="Open menu"
                   >
                     <MenuIcon className="h-5 w-5" />
-                    <span className="text-sm font-medium">{t('header.menu', 'Menu')}</span>
                   </Button>
                 </SheetTrigger>
 

@@ -132,9 +132,8 @@ export function MoreDropdown() {
   return (
     <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center gap-1" aria-label={t('header.menu', 'Menu')}>
+        <Button variant="ghost" size="icon" aria-label="Open menu">
           <MenuIcon className="h-4 w-4" />
-          <span className="hidden sm:inline text-sm font-medium">{t('header.menu', 'Menu')}</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">

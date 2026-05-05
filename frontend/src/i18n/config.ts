@@ -109,6 +109,14 @@ const resources = {
           ctaPost: "Post a Listing",
           ctaSubscribe: "Subscribe Now",
         },
+        search: {
+          placeholder: "Search"
+        },
+        subscribe: {
+          title: "Unlock more with SkillSwap",
+          body: "Get more visibility, better matches, and premium features.",
+          cta: "Subscribe Now"
+        },
         howItWorks: {
           title: "How SkillSwap Works",
           step1: {
