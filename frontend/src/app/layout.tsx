@@ -60,7 +60,7 @@ export default function RootLayout({
         <AuthProvider>
           <KycGate>
             <AppHeader />
-            <main className="flex-grow container mx-auto px-4 sm:px-6 py-4 sm:py-6 md:py-8 max-w-screen-2xl">
+            <main className="flex-grow container mx-auto px-4 pb-24 sm:px-6 sm:pb-28 py-4 sm:py-6 md:py-8 md:pb-8 max-w-screen-2xl">
               {children}
             </main>
             <FloatingChatButton />

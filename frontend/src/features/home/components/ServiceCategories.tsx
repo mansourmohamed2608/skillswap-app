@@ -84,6 +84,7 @@ const CATEGORIES = [
 
 export function ServiceCategories() {
   const { t } = useTranslation();
+  const mobileCategories = CATEGORIES.slice(0, 6);
 
   return (
     <section className="py-12">
@@ -96,7 +97,36 @@ export function ServiceCategories() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="space-y-3 md:hidden">
+        {mobileCategories.map((category) => {
+          const Icon = category.icon;
+          return (
+            <Link
+              key={category.id}
+              href={`/listings?category=${encodeURIComponent(category.category)}`}
+              className="flex h-14 items-center justify-between rounded-xl border border-border/70 bg-card px-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/30"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="truncate font-medium text-sm text-foreground">{category.name}</h3>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+            </Link>
+          );
+        })}
+
+        <div className="pt-1">
+          <Button size="sm" asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href="/listings">{t('home.categories.viewAll', 'View All Categories')}</Link>
+          </Button>
+        </div>
+      </div>
+
+      <div className="hidden grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:grid">
         {CATEGORIES.map((category) => {
           const Icon = category.icon;
           return (
@@ -123,7 +153,7 @@ export function ServiceCategories() {
         })}
       </div>
 
-      <div className="text-center mt-8">
+      <div className="text-center mt-8 hidden md:block">
         <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
           <Link href="/listings">
             {t('home.categories.viewAll', 'View All Categories')}

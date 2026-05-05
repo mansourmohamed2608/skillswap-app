@@ -35,7 +35,7 @@ export function ExpandedSearchBar({ onClose }: { onClose: () => void }) {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
         <Input
           type="text"
-          placeholder={t('home.search.placeholder', 'Search')}
+          placeholder="Search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch(e as any)}

@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
+import { usePathname } from 'next/navigation';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
@@ -101,8 +102,10 @@ function SignOutButton({
 export function AppHeader() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
+  const pathname = usePathname();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isSearchPage = pathname?.startsWith('/search');
 
   return (
     <>
@@ -139,9 +142,11 @@ export function AppHeader() {
             </nav>
 
             {/* Search Bar - Desktop (on the right, after nav) */}
-            <div className="max-w-sm mx-2">
-              <GlobalSearchBar />
-            </div>
+            {!isSearchPage && (
+              <div className="max-w-md mx-2 flex-1 min-w-0">
+                <GlobalSearchBar />
+              </div>
+            )}
 
             {/* Right Actions */}
             <div className="flex items-center gap-1 ml-auto">
@@ -200,30 +205,33 @@ export function AppHeader() {
           {/* Mobile Header Layout - Two Row */}
           <div className="md:hidden">
             {/* Top Row: Logo + Menu */}
-            <div className="flex h-14 items-center justify-between px-4">
+            <div className="flex h-14 items-center justify-between gap-2 px-4">
               <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
                 <AppLogo />
                 <span className="font-bold text-sm">{t('common.appName')}</span>
               </Link>
 
-              {/* Menu Button (hamburger only) */}
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open menu"
-                  >
-                    <MenuIcon className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
+              <div className="flex items-center gap-1">
+                <LanguageSwitcher compact />
 
-                {/* Mobile Menu Content */}
-                <SheetContent
-                  side={i18n.dir() === 'rtl' ? 'left' : 'right'}
-                  className="w-[280px]"
-                >
-                  <div className="mt-8 flex flex-col gap-2">
+                {/* Menu Button (hamburger only) */}
+                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Open menu"
+                    >
+                      <MenuIcon className="h-5 w-5" />
+                    </Button>
+                  </SheetTrigger>
+
+                  {/* Mobile Menu Content */}
+                  <SheetContent
+                    side={i18n.dir() === 'rtl' ? 'left' : 'right'}
+                    className="w-[280px]"
+                  >
+                    <div className="mt-8 flex flex-col gap-2">
                     {/* Primary Nav */}
                     {primaryNavItems.map((item) => (
                       <Button
@@ -326,15 +334,18 @@ export function AppHeader() {
                         ))}
                       </>
                     )}
-                  </div>
-                </SheetContent>
-              </Sheet>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
             </div>
 
             {/* Bottom Row: Full-width Search Bar */}
-            <div className="border-t border-border/40 px-4 py-2">
-              <GlobalSearchBar />
-            </div>
+            {!isSearchPage && (
+              <div className="border-t border-border/40 px-4 py-2">
+                <GlobalSearchBar />
+              </div>
+            )}
           </div>
         </div>
       </header>
