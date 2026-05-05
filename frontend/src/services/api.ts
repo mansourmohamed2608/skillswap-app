@@ -99,8 +99,8 @@ function inferProjectIdFromHostedApp() {
 
 // Hardcoded production base - used as last resort when NEXT_PUBLIC_FUNCTIONS_BASE
 // is not baked into the bundle (e.g. App Hosting build without env injection).
-// Points to Firebase Hosting, which rewrites /api/** → Cloud Function.
-const HARDCODED_PROD_BASE = 'https://skillswap-69yxi.web.app';
+// Points directly at the deployed Firebase Functions HTTPS endpoint.
+const HARDCODED_PROD_BASE = 'https://europe-west3-skillswap-69yxi.cloudfunctions.net/api';
 
 function inferFunctionsBase() {
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
@@ -114,7 +114,7 @@ function inferFunctionsBase() {
   const host = window.location.hostname || '';
   const isLocal = host === 'localhost' || host === '127.0.0.1';
   if (isLocal) return `http://127.0.0.1:5001/${inferredProjectId || 'skillswap-69yxi'}/us-central1`;
-  // Production: always use Firebase Hosting so the /api/** rewrite applies
+  // Production: target the deployed Firebase Functions endpoint directly.
   return HARDCODED_PROD_BASE;
 }
 

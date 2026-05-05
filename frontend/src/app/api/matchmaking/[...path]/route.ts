@@ -4,12 +4,13 @@ function backendBase() {
   // Prefer an explicit functions base if provided (matches frontend `getFunctionsBase` behavior)
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
   const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
+  const region = process.env.NEXT_PUBLIC_FUNCTIONS_REGION || 'europe-west3';
   // During development, proxy to the Functions emulator with the project/region path
   if (process.env.NODE_ENV === 'development') {
     return `http://127.0.0.1:5001/${project || 'skillswap-69yxi'}/us-central1`;
   }
-  // Production: prefer an explicitly configured backend URL, otherwise use Firebase Hosting
-  return process.env.NEXT_PUBLIC_BACKEND_URL || 'https://skillswap-69yxi.web.app';
+  // Production: route directly to the deployed Firebase Functions HTTPS endpoint.
+  return process.env.NEXT_PUBLIC_BACKEND_URL || `https://${region}-${project || 'skillswap-69yxi'}.cloudfunctions.net/api`;
 }
 
 async function proxy(request: NextRequest, segments: string[]) {
