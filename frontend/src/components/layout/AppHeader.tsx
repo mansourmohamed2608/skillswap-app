@@ -29,22 +29,22 @@ import { ExpandedSearchBar } from '@/components/layout/ExpandedSearchBar';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
-  { href: '/', label: 'Home', icon: HomeIcon },
-  { href: '/listings', label: 'Listings', icon: ListIcon },
-  { href: '/matchmaking', label: 'AI Matchmaking', icon: SparklesIcon },
+  { href: '/', label: 'home', icon: HomeIcon },
+  { href: '/listings', label: 'listings', icon: ListIcon },
+  { href: '/matchmaking', label: 'matchmaking', icon: SparklesIcon },
 ];
 
 // Authenticated user items
 const privateNavItems = [
-  { href: '/bookings', label: 'Bookings', icon: CalendarDays },
-  { href: '/chat', label: 'Chat', icon: MessageCircle },
-  { href: '/profile', label: 'Profile', icon: UserIcon },
+  { href: '/bookings', label: 'bookings', icon: CalendarDays },
+  { href: '/chat', label: 'chat', icon: MessageCircle },
+  { href: '/profile', label: 'profile', icon: UserIcon },
 ];
 
 // Unauthenticated user items
 const authNavItems = [
-  { href: '/auth/signin', label: 'Sign In', icon: LogInIcon },
-  { href: '/auth/signup', label: 'Sign Up', icon: UserPlusIcon },
+  { href: '/auth/signin', label: 'signIn', icon: LogInIcon },
+  { href: '/auth/signup', label: 'signUp', icon: UserPlusIcon },
 ];
 
 
@@ -132,10 +132,11 @@ export function AppHeader() {
                   size="sm"
                   asChild
                   className="text-sm"
+                  title={t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
                 >
                   <Link href={item.href} className="flex items-center gap-2">
-                    <item.icon className="h-4 w-4" />
-                    <span className="hidden xl:inline">{t(`header.${item.label.toLowerCase().replace(' ', '')}`)}</span>
+                    <item.icon className="h-4 w-4" aria-hidden="true" />
+                    <span className="hidden xl:inline">{t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}</span>
                   </Link>
                 </Button>
               ))}
@@ -146,23 +147,23 @@ export function AppHeader() {
               {isAuthenticated ? (
                 <>
                   {/* Bookings (primary) */}
-                  <Button variant="ghost" size="icon" asChild aria-label={t('header.bookings')}>
-                    <Link href="/bookings">
-                      <CalendarDays className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" asChild aria-label={t('header.bookings', 'Bookings')}>
+                    <Link href="/bookings" title={t('header.bookings', 'Bookings')}>
+                      <CalendarDays className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
 
                   {/* Chat */}
-                  <Button variant="ghost" size="icon" asChild aria-label={t('header.chat')}>
-                    <Link href="/chat">
-                      <MessageCircle className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" asChild aria-label={t('header.chat', 'Chat')}>
+                    <Link href="/chat" title={t('header.chat', 'Chat')}>
+                      <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
 
                   {/* Profile */}
-                  <Button variant="ghost" size="icon" asChild aria-label={t('header.profile')}>
-                    <Link href="/profile">
-                      <UserIcon className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" asChild aria-label={t('header.profile', 'Profile')}>
+                    <Link href="/profile" title={t('header.profile', 'Profile')}>
+                      <UserIcon className="h-4 w-4" aria-hidden="true" />
                     </Link>
                   </Button>
 
@@ -173,14 +174,14 @@ export function AppHeader() {
                 <>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href="/auth/signin" className="flex items-center gap-2">
-                      <LogInIcon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('header.signIn')}</span>
+                      <LogInIcon className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{t('header.signIn', 'Sign In')}</span>
                     </Link>
                   </Button>
                   <Button size="sm" asChild className="bg-primary hover:bg-primary/90">
                     <Link href="/auth/signup" className="flex items-center gap-2">
-                      <UserPlusIcon className="h-4 w-4" />
-                      <span className="hidden sm:inline">{t('header.signUp')}</span>
+                      <UserPlusIcon className="h-4 w-4" aria-hidden="true" />
+                      <span className="hidden sm:inline">{t('header.signUp', 'Sign Up')}</span>
                     </Link>
                   </Button>
                 </>
@@ -238,8 +239,8 @@ export function AppHeader() {
                           href={item.href}
                           onClick={() => setMobileMenuOpen(false)}
                         >
-                          <item.icon className="h-5 w-5" />
-                          {t(`header.${item.label.toLowerCase().replace(' ', '')}`)}
+                          <item.icon className="h-5 w-5" aria-hidden="true" />
+                          {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
                         </Link>
                       </Button>
                     ))}
@@ -262,8 +263,8 @@ export function AppHeader() {
                               href={item.href}
                               onClick={() => setMobileMenuOpen(false)}
                             >
-                              <item.icon className="h-5 w-5" />
-                              {t(`header.${item.label.toLowerCase().replace(' ', '')}`)}
+                              <item.icon className="h-5 w-5" aria-hidden="true" />
+                              {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
                             </Link>
                           </Button>
                         ))}
@@ -309,8 +310,8 @@ export function AppHeader() {
                               href={item.href}
                               onClick={() => setMobileMenuOpen(false)}
                             >
-                              <item.icon className="h-5 w-5" />
-                              {t(`header.${item.label.toLowerCase().replace(/\s/g, '')}`)}
+                              <item.icon className="h-5 w-5" aria-hidden="true" />
+                              {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
                             </Link>
                           </Button>
                         ))}

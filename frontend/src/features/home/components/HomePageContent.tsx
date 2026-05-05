@@ -10,7 +10,7 @@ import { ServiceCategories } from "@/features/home/components/ServiceCategories"
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
 import { TopContributors } from "@/features/home/components/TopContributors";
 import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
-import type { ServiceListing, User, Wish, Contributor, WishSummary } from "@/types";
+import type { ServiceListing, User, Contributor, WishSummary } from "@/types";
 
 const HeroLogo = () => (
   <svg
@@ -20,7 +20,7 @@ const HeroLogo = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
-    className="h-16 w-16 text-primary-foreground mx-auto mb-6"
+    className="mx-auto mb-6 h-16 w-16 text-primary-foreground"
     xmlns="http://www.w3.org/2000/svg"
     aria-hidden="true"
     focusable="false"
@@ -46,213 +46,175 @@ export function HomePageContent({
   featuredWishes?: WishSummary[];
   topContributors?: Contributor[];
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isArabic = i18n.language?.toLowerCase().startsWith('ar');
+  const communityHeading = isArabic ? 'تَهَادَوْا تَحَابُّوا' : 'Give Gifts, Spread Love';
+  const communitySubtitle = isArabic
+    ? 'ساعد الآخرين على تحقيق أحلامهم وشارك في الخير'
+    : 'Help others achieve their goals and keep generosity moving.';
 
   return (
-    <div className="space-y-12">
-      {/* Hero Section */}
-      <section className="relative text-center py-10 sm:py-16 md:py-24 rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-secondary/80 shadow-xl">
-        <div className="relative z-10 container mx-auto px-4">
+    <div className="mx-auto max-w-screen-xl space-y-10 px-4 py-4 sm:px-6 sm:py-6 md:space-y-12 md:py-8">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/80 to-secondary/80 py-8 text-center shadow-xl sm:py-12 md:py-14">
+        <div className="relative z-10 mx-auto max-w-3xl px-4">
           <HeroLogo />
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6 sm:mb-8 text-primary-foreground">
-            {t("home.hero.title")}
+          <h1 className="mb-4 text-3xl font-bold text-primary-foreground sm:text-4xl md:text-5xl">
+            {t('home.hero.title')}
           </h1>
-
-          <p className="text-base sm:text-lg md:text-xl mb-10 sm:mb-12 max-w-2xl mx-auto text-primary-foreground/90">
-            {t("home.hero.body")}
+          <p className="mx-auto mb-8 max-w-2xl text-base text-primary-foreground/90 sm:text-lg md:text-lg">
+            {t('home.hero.body')}
           </p>
-
-          <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-3 sm:gap-4">
-            <Button
-              size="lg"
-              asChild
-              className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:-translate-y-0.5 w-full sm:w-auto"
-            >
-              <Link href="/listings">{t("home.hero.ctaBrowse")}</Link>
+          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+            <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
+              <Link href="/listings">{t('home.hero.ctaBrowse')}</Link>
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              asChild
-              className="text-accent border-accent hover:bg-accent hover:text-accent-foreground transition-transform hover:-translate-y-0.5 w-full sm:w-auto"
-            >
-              <Link href="/listings/new">{t("home.hero.ctaPost")}</Link>
+            <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
+              <Link href="/listings/new">{t('home.hero.ctaPost')}</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* Service Categories */}
       <ServiceCategories />
 
-      {/* How it Works Section */}
       <section>
-        <h2 className="text-3xl font-semibold text-center mb-8">{t("home.howItWorks.title")}</h2>
-        <div className="grid md:grid-cols-3 gap-8">
-          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+        <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.howItWorks.title')}</h2>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+            <CardHeader className="items-center pb-4 text-center">
+              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
                 <SearchIcon className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>{t("home.howItWorks.step1.title")}</CardTitle>
+              <CardTitle className="text-lg">{t('home.howItWorks.step1.title')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                {t("home.howItWorks.step1.body")}
-              </CardDescription>
+            <CardContent className="flex-1">
+              <CardDescription className="text-center text-sm">{t('home.howItWorks.step1.body')}</CardDescription>
             </CardContent>
           </Card>
-          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+            <CardHeader className="items-center pb-4 text-center">
+              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
                 <SparklesIcon className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>{t("home.howItWorks.step2.title")}</CardTitle>
+              <CardTitle className="text-lg">{t('home.howItWorks.step2.title')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                {t("home.howItWorks.step2.body")}
-              </CardDescription>
+            <CardContent className="flex-1">
+              <CardDescription className="text-center text-sm">{t('home.howItWorks.step2.body')}</CardDescription>
             </CardContent>
           </Card>
-          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+            <CardHeader className="items-center pb-4 text-center">
+              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
                 <UsersIcon className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>{t("home.howItWorks.step3.title")}</CardTitle>
+              <CardTitle className="text-lg">{t('home.howItWorks.step3.title')}</CardTitle>
             </CardHeader>
-            <CardContent>
-              <CardDescription className="text-center">
-                {t("home.howItWorks.step3.body")}
-              </CardDescription>
+            <CardContent className="flex-1">
+              <CardDescription className="text-center text-sm">{t('home.howItWorks.step3.body')}</CardDescription>
             </CardContent>
           </Card>
         </div>
       </section>
 
-      {/* Featured Listings Section */}
       <section>
-        <h2 className="text-3xl font-semibold text-center mb-8">{t("home.featured.title")}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featuredListingsData.map(({ listing, user }) => (
-            <ServiceCard key={listing.id} listing={listing} user={user} />
-          ))}
-        </div>
-        {featuredListingsData.length === 0 && (
-          <div className="text-center py-12 bg-card rounded-lg mt-6 border border-dashed border-destructive/50">
+        <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.featured.title')}</h2>
+        {featuredListingsData.length > 0 ? (
+          <>
+            <div
+              className={`grid gap-6 ${
+                featuredListingsData.length <= 3
+                  ? 'mx-auto max-w-5xl grid-cols-1 justify-items-center sm:grid-cols-2 lg:grid-cols-3'
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+              }`}
+            >
+              {featuredListingsData.map(({ listing, user }) => (
+                <div key={listing.id} className={featuredListingsData.length <= 3 ? 'w-full max-w-sm' : 'w-full'}>
+                  <ServiceCard listing={listing} user={user} />
+                </div>
+              ))}
+            </div>
+            <div className="mt-8 flex justify-center">
+              <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+                <Link href="/listings">{t('home.featured.viewAll')}</Link>
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="rounded-lg border border-dashed border-destructive/50 bg-card py-12 text-center">
             <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-xl font-semibold">{t("home.featured.emptyTitle")}</h3>
-            <p className="mt-2 text-muted-foreground">{t("home.featured.emptyBody")}</p>
+            <h3 className="mt-4 text-xl font-semibold">{t('home.featured.emptyTitle')}</h3>
+            <p className="mt-2 text-muted-foreground">{t('home.featured.emptyBody')}</p>
           </div>
         )}
-        <div className="text-center mt-8">
-          <Button
-            size="lg"
-            asChild
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10 hover:text-primary"
-          >
-            <Link href="/listings">{t("home.featured.viewAll")}</Link>
-          </Button>
-        </div>
       </section>
 
-      {/* Featured Wishes Section - Make a Wish Come True */}
-      {featuredWishes && featuredWishes.length > 0 && (
+      {featuredWishes.length > 0 && (
         <section>
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-semibold mb-2">
-              {t("home.wishesCards.title", "Make a Wish Come True")}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t("home.wishesCards.subtitle", "Help community members achieve their dreams")}
-            </p>
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-semibold">{t('home.wishes.featuredTitle', 'Make a Wish Come True')}</h2>
+            <p className="mt-2 text-lg text-muted-foreground">{t('home.wishes.featuredSubtitle', 'Help community members achieve their dreams')}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {featuredWishes.map((wish) => (
               <WishCard key={wish.id} wish={wish} />
             ))}
           </div>
-          <div className="text-center mt-8">
-            <Button
-              size="lg"
-              asChild
-              className="bg-accent hover:bg-accent/90 text-accent-foreground"
-            >
-              <Link href="/wishes">{t("home.wishesCards.viewAll", "View All Wishes")}</Link>
+          <div className="mt-8 flex justify-center">
+            <Button size="lg" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Link href="/wishes">{t('home.wishes.viewAll', 'View All Wishes')}</Link>
             </Button>
           </div>
         </section>
       )}
 
-      {/* Top Contributors Section */}
-      {topContributors && topContributors.length > 0 && (
+      {topContributors.length > 0 && (
         <section>
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-semibold mb-2">
-              {t("home.contributors.title", "Thank You, Generous Contributors!")}
-            </h2>
-            <p className="text-muted-foreground text-lg">
-              {t("home.contributors.subtitle", "Celebrating those who make wishes come true")}
-            </p>
+          <div className="mb-8 text-center">
+            <h2 className="text-3xl font-semibold">{t('home.contributors.title', 'Thank You, Generous Contributors!')}</h2>
+            <p className="mt-2 text-lg text-muted-foreground">{t('home.contributors.subtitle', 'Celebrating those who make wishes come true')}</p>
           </div>
           <TopContributors initialContributors={topContributors} />
         </section>
       )}
 
-      {/* Community Wishes Section */}
       <section>
-        <div className="relative text-center mb-10">
-          <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border"></div>
-          <h2 className="relative inline-block bg-background px-6 text-4xl font-bold text-primary tracking-wide">
-            {t("home.wishes.title")}
-          </h2>
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-semibold">{communityHeading}</h2>
+          <p className="mt-2 text-lg text-muted-foreground">{communitySubtitle}</p>
         </div>
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Donate Card */}
-          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors flex flex-col">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 bg-accent/10 rounded-full mb-2 inline-block">
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+            <CardHeader className="items-center pb-4 text-center">
+              <div className="mb-2 inline-block rounded-full bg-accent/10 p-3">
                 <Heart className="h-8 w-8 text-accent" />
               </div>
-              <CardTitle>{t("home.wishes.donateTitle")}</CardTitle>
+              <CardTitle className="text-lg">{t('home.wishes.donateTitle')}</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow">
-              <CardDescription className="text-center">
-                {t("home.wishes.donateBody")}
-              </CardDescription>
+            <CardContent className="flex-1 pb-4">
+              <CardDescription className="text-center text-sm">{t('home.wishes.donateBody')}</CardDescription>
             </CardContent>
-            <CardFooter className="justify-center">
-              <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-                <Link href="/wishes/donate">{t("home.wishes.donateCta")}</Link>
+            <CardFooter className="justify-center pt-0">
+              <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Link href="/wishes/donate">{t('home.wishes.donateCta')}</Link>
               </Button>
             </CardFooter>
           </Card>
-          {/* Request Card */}
-          <Card className="shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors flex flex-col">
-            <CardHeader className="items-center text-center">
-              <div className="p-3 bg-primary/10 rounded-full mb-2 inline-block">
+          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+            <CardHeader className="items-center pb-4 text-center">
+              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
                 <Star className="h-8 w-8 text-primary" />
               </div>
-              <CardTitle>{t("home.wishes.requestTitle")}</CardTitle>
+              <CardTitle className="text-lg">{t('home.wishes.requestTitle')}</CardTitle>
             </CardHeader>
-            <CardContent className="flex-grow">
-              <CardDescription className="text-center">
-                {t("home.wishes.requestBody")}
-              </CardDescription>
+            <CardContent className="flex-1 pb-4">
+              <CardDescription className="text-center text-sm">{t('home.wishes.requestBody')}</CardDescription>
             </CardContent>
-            <CardFooter className="justify-center">
+            <CardFooter className="justify-center pt-0">
               <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
-                <Link href="/wishes/request">{t("home.wishes.requestCta")}</Link>
+                <Link href="/wishes/request">{t('home.wishes.requestCta')}</Link>
               </Button>
             </CardFooter>
           </Card>
-        </div>
-        <div className="mt-8 text-center">
-          <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10">
-            <Link href="/wishes">{t("home.wishes.viewDetails")}</Link>
-          </Button>
         </div>
       </section>
 

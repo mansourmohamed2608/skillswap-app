@@ -167,7 +167,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
     <Card className="flex flex-col h-full overflow-hidden shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors duration-300 rounded-lg">
       <CardHeader className="p-0">
         {listing.offeredService?.imageUrl && (
-          <div className="relative w-full h-48">
+          <div className="relative w-full h-36">
             <Image
               src={listing.offeredService.imageUrl}
               alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
@@ -178,31 +178,31 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-4 flex-grow">
-        <div className="mb-2">
+      <CardContent className="p-3 flex-grow">
+        <div className="mb-1">
           <CategoryPill category={offeredCategory} />
         </div>
-        <CardTitle className="mb-1 min-h-[3.25rem] text-lg line-clamp-2 break-words">
+        <CardTitle className="mb-1 text-base line-clamp-2 break-words">
           {listing.offeredService?.title || t('listings.card.untitled')}
         </CardTitle>
-        <CardDescription className="mb-2 text-sm text-muted-foreground line-clamp-2 break-words min-h-[2.5rem]">
+        <CardDescription className="mb-2 text-xs text-muted-foreground line-clamp-1 break-words">
           {listing.offeredService?.description ?? ''}
         </CardDescription>
         
-        <div className="my-3 text-center">
-          <RepeatIcon className="h-6 w-6 text-primary inline-block" />
+        <div className="my-2 text-center">
+          <RepeatIcon className="h-5 w-5 text-primary inline-block" />
         </div>
 
-        <h4 className="font-semibold text-md mb-1">{exchangeLabel}</h4>
-        <p className="mb-1 text-sm font-medium text-primary break-words line-clamp-2 min-h-[2.5rem]">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
+        <h4 className="font-semibold text-sm mb-1">{exchangeLabel}</h4>
+        <p className="mb-1 text-xs font-medium text-primary break-words line-clamp-1">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
         <CategoryPill category={requestedCategory} className="mb-1"/>
-        <CardDescription className="text-xs text-muted-foreground line-clamp-2 break-words min-h-[2rem]">
+        <CardDescription className="text-xs text-muted-foreground line-clamp-1 break-words">
           {listing.requestedService?.description ?? ''}
         </CardDescription>
       </CardContent>
-      <CardFooter className="p-4 border-t">
-        <div className="flex flex-col w-full">
-          <div className="flex items-start justify-between gap-3 mb-3">
+      <CardFooter className="p-3 border-t">
+        <div className="flex flex-col w-full gap-2">
+          <div className="flex items-start justify-between gap-2">
             {resolvedUser ? (
               isOwner ? (
                 <div className="flex items-start gap-2 min-w-0">
@@ -224,37 +224,35 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                 )}
               </div>
             )}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1 shrink-0">
               {isOwner ? (
                 <>
-                  <Button asChild type="button" size="icon" variant="ghost" className="h-8 w-8">
+                  <Button asChild type="button" size="icon" variant="ghost" className="h-7 w-7">
                     <Link href={`/listings/${listing.id}/edit`} aria-label={t('listings.actions.edit', { defaultValue: 'Edit listing' })}>
-                      <PencilIcon className="h-4 w-4" />
+                      <PencilIcon className="h-3 w-3" />
                     </Link>
                   </Button>
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
-                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    className="h-7 w-7 text-destructive hover:text-destructive"
                     aria-label={t('listings.actions.delete', { defaultValue: 'Delete listing' })}
                     onClick={() => setDeleteOpen(true)}
                     disabled={deleting}
                   >
-                    <Trash2Icon className="h-4 w-4" />
+                    <Trash2Icon className="h-3 w-3" />
                   </Button>
                 </>
               ) : null}
-              <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0">
+              <Badge variant={getStatusBadgeVariant(listing.status)} className="self-center shrink-0 text-xs">
                 {getStatusText(listing.status)}
               </Badge>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground mb-3">
+          <div className="grid grid-cols-1 gap-1 text-xs text-muted-foreground">
             <div className="flex items-center gap-1 min-w-0">
               <CalendarIcon className="h-3 w-3" />
-              {/* On initial render (server and client), postedAt is null, so 'Posted recently' is shown.
-                  After client-side hydration, useEffect runs and sets the actual relative time. */}
               <span className="truncate">{postedLabel}</span>
             </div>
             <div className="flex items-center justify-between gap-2">
@@ -263,12 +261,12 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
                   {t('listings.card.distanceKm', { km: roundedDistance })}
                 </div>
               )}
-              {publicListingLocation && <span className="truncate">{publicListingLocation}</span>}
+              {publicListingLocation && <span className="truncate text-xs">{publicListingLocation}</span>}
             </div>
           </div>
-          <Button asChild className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+          <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8">
             <Link href={getListingPath(listing)}>
-              {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-2 h-4 w-4" />
+              {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-1 h-3 w-3" />
             </Link>
           </Button>
         </div>

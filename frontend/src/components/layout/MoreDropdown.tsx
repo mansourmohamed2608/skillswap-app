@@ -4,12 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { BellIcon, GemIcon, MessageCircle, X, CheckCheck, Trash2, MoreVertical } from 'lucide-react';
+import { BellIcon, GemIcon, X, CheckCheck, Trash2, MoreVertical, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase';
+import { auth } from '@/services/firebase';
+import { signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 import type { Notification } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { clearReadNotifications, markNotificationsRead } from '@/services/api';
@@ -17,6 +20,7 @@ import { clearReadNotifications, markNotificationsRead } from '@/services/api';
 export function MoreDropdown() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const router = useRouter();
   const isAuthenticated = !!user;
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -108,6 +112,14 @@ export function MoreDropdown() {
     clearReadNotifications(readIds).catch(() => {
       setNotifications(previous);
     });
+  };
+
+  const handleSignOut = async () => {
+    if (auth) {
+      await signOut(auth);
+    }
+    setDropdownOpen(false);
+    router.push('/');
   };
 
   const notificationTimeLabel = (n: Notification) => {
@@ -202,9 +214,22 @@ export function MoreDropdown() {
           <Button variant="ghost" size="sm" className="justify-start gap-2 w-full" asChild>
             <Link href="/pricing" onClick={() => setDropdownOpen(false)}>
               <GemIcon className="h-4 w-4" />
-              {t('header.pricing')}
+              {t('header.pricing', 'Subscription Plans')}
             </Link>
           </Button>
+
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="justify-start gap-2 w-full"
+              onClick={handleSignOut}
+              aria-label={t('header.logout', 'Logout')}
+            >
+              <LogOut className="h-4 w-4" />
+              {t('header.logout', 'Logout')}
+            </Button>
+          )}
 
           {/* Language Switcher */}
           <div className="px-2">
