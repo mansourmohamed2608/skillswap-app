@@ -100,7 +100,7 @@ function inferProjectIdFromHostedApp() {
 // Hardcoded production base - used as last resort when NEXT_PUBLIC_FUNCTIONS_BASE
 // is not baked into the bundle (e.g. App Hosting build without env injection).
 // Points directly at the deployed Firebase Functions HTTPS endpoint.
-const HARDCODED_PROD_BASE = 'https://europe-west3-skillswap-69yxi.cloudfunctions.net/api';
+const HARDCODED_PROD_BASE = 'https://europe-west3-skillswap-69yxi.cloudfunctions.net';
 
 function inferFunctionsBase() {
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;

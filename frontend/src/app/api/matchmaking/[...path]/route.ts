@@ -10,7 +10,7 @@ function backendBase() {
     return `http://127.0.0.1:5001/${project || 'skillswap-69yxi'}/us-central1`;
   }
   // Production: route directly to the deployed Firebase Functions HTTPS endpoint.
-  return process.env.NEXT_PUBLIC_BACKEND_URL || `https://${region}-${project || 'skillswap-69yxi'}.cloudfunctions.net/api`;
+  return process.env.NEXT_PUBLIC_BACKEND_URL || `https://${region}-${project || 'skillswap-69yxi'}.cloudfunctions.net`;
 }
 
 async function proxy(request: NextRequest, segments: string[]) {
