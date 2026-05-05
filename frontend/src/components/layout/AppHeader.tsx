@@ -6,6 +6,12 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   MenuIcon,
   HomeIcon,
   ListIcon,
@@ -16,6 +22,9 @@ import {
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
+  ChevronDown,
+  ChevronRight,
+  Layers3,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/services/firebase';
@@ -26,6 +35,7 @@ import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { usePathname } from 'next/navigation';
+import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
@@ -105,25 +115,23 @@ export function AppHeader() {
   const pathname = usePathname();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
 
   return (
     <>
       <header className="sticky top-0 z-40 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto max-w-screen-2xl">
+        <div className="mx-auto max-w-[1280px]">
           {/* Desktop Header Layout */}
-          <div className="hidden md:flex h-16 items-center gap-3 px-4 sm:px-6">
+          <div className="hidden h-16 items-center gap-2 px-4 sm:px-6 md:flex">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0 text-primary hover:text-primary/80 transition-colors">
               <AppLogo />
-              <span className="font-bold text-lg hidden lg:inline">{t('common.appName')}</span>
+              <span className="font-bold text-lg">{t('common.appName')}</span>
             </Link>
 
-            {/* Spacer pushes nav/search/actions to the right */}
-            <div className="flex-1" />
-
             {/* Primary Navigation */}
-            <nav className="flex items-center gap-0.5">
+            <nav className="ml-2 flex items-center gap-0.5">
               {primaryNavItems.map((item) => (
                 <Button
                   key={item.href}
@@ -135,7 +143,7 @@ export function AppHeader() {
                 >
                   <Link href={item.href} className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" aria-hidden="true" />
-                    <span className="hidden xl:inline">{t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}</span>
+                    <span>{t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}</span>
                   </Link>
                 </Button>
               ))}
@@ -143,13 +151,14 @@ export function AppHeader() {
 
             {/* Search Bar - Desktop (on the right, after nav) */}
             {!isSearchPage && (
-              <div className="max-w-md mx-2 flex-1 min-w-0">
+              <div className="mx-2 min-w-[220px] flex-1 max-w-md">
                 <GlobalSearchBar />
               </div>
             )}
+            {isSearchPage && <div className="mx-2 flex-1" />}
 
             {/* Right Actions */}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1">
               {isAuthenticated ? (
                 <>
                   {/* Bookings (primary) */}
@@ -173,18 +182,56 @@ export function AppHeader() {
                     </Link>
                   </Button>
 
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label="Categories">
+                        <Layers3 className="h-4 w-4" aria-hidden="true" />
+                        <span>Categories</span>
+                        <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {marketplaceCategories.map((category) => (
+                        <DropdownMenuItem key={category.id} asChild>
+                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                            {category.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   {/* Language Toggle - Visible in desktop */}
-                  <div className="hidden lg:block border-l border-border/40 ml-1 pl-1">
+                  <div className="border-l border-border/40 ml-1 pl-1">
                     <LanguageSwitcher compact />
                   </div>
 
                   {/* Menu Button (burger icon only) */}
-                  <div>
-                    <MoreDropdown />
-                  </div>
+                  <MoreDropdown />
                 </>
               ) : (
                 <>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label="Categories">
+                        <Layers3 className="h-4 w-4" aria-hidden="true" />
+                        <span>Categories</span>
+                        <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {marketplaceCategories.map((category) => (
+                        <DropdownMenuItem key={category.id} asChild>
+                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                            {category.name}
+                          </Link>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <div className="border-l border-border/40 ml-1 pl-1">
+                    <LanguageSwitcher compact />
+                  </div>
                   <Button variant="ghost" size="sm" asChild>
                     <Link href="/auth/signin" className="flex items-center gap-2">
                       <LogInIcon className="h-4 w-4" aria-hidden="true" />
@@ -197,6 +244,7 @@ export function AppHeader() {
                       <span className="hidden sm:inline">{t('header.signUp', 'Sign Up')}</span>
                     </Link>
                   </Button>
+                  <MoreDropdown />
                 </>
               )}
             </div>
@@ -249,6 +297,43 @@ export function AppHeader() {
                         </Link>
                       </Button>
                     ))}
+
+                    {/* Divider */}
+                    <div className="my-2 h-px bg-border" />
+
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="h-11 justify-between text-base"
+                      onClick={() => setMobileCategoriesOpen((prev) => !prev)}
+                      aria-expanded={mobileCategoriesOpen}
+                      aria-label="Toggle categories"
+                    >
+                      <span className="inline-flex items-center gap-2">
+                        <Layers3 className="h-5 w-5" aria-hidden="true" />
+                        Categories
+                      </span>
+                      <ChevronRight className={`h-4 w-4 transition-transform ${mobileCategoriesOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
+                    </Button>
+                    {mobileCategoriesOpen && (
+                      <div className="space-y-1 rounded-md border border-border/70 bg-muted/30 p-2">
+                        {marketplaceCategories.map((category) => (
+                          <Button
+                            key={category.id}
+                            variant="ghost"
+                            asChild
+                            className="h-9 w-full justify-start text-sm"
+                          >
+                            <Link
+                              href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
+                              onClick={() => setMobileMenuOpen(false)}
+                            >
+                              {category.name}
+                            </Link>
+                          </Button>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Divider */}
                     <div className="my-2 h-px bg-border" />

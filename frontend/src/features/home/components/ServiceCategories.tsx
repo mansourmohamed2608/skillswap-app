@@ -14,77 +14,54 @@ import {
   HomeIcon,
   ArrowRight,
 } from 'lucide-react';
+import { featuredMarketplaceCategories } from '@/features/home/constants/categoryLinks';
 
-const CATEGORIES = [
-  {
-    id: 'programming',
-    category: 'Web Development',
-    name: 'Programming',
+const CATEGORY_META = {
+  programming: {
     icon: Code,
     description: 'Web, app, and software development',
     color: 'from-blue-500 to-cyan-500',
   },
-  {
-    id: 'design',
-    category: 'Graphic Design',
-    name: 'Design',
+  design: {
     icon: Palette,
     description: 'UI/UX, graphics, and branding',
     color: 'from-purple-500 to-pink-500',
   },
-  {
-    id: 'music',
-    category: 'Music Lessons',
-    name: 'Music & Audio',
+  'music-audio': {
     icon: Music,
     description: 'Lessons, production, and mixing',
     color: 'from-yellow-500 to-orange-500',
   },
-  {
-    id: 'education',
-    category: 'Tutoring',
-    name: 'Education',
+  education: {
     icon: BookOpen,
     description: 'Languages, tutoring, and courses',
     color: 'from-green-500 to-teal-500',
   },
-  {
-    id: 'fitness',
-    category: 'Fitness Training',
-    name: 'Fitness & Wellness',
+  'fitness-wellness': {
     icon: Dumbbell,
     description: 'Training, yoga, and health coaching',
     color: 'from-red-500 to-rose-500',
   },
-  {
-    id: 'business',
-    category: 'Consulting',
-    name: 'Business & Career',
+  'business-career': {
     icon: Briefcase,
     description: 'Consulting, mentoring, and advice',
     color: 'from-indigo-500 to-blue-500',
   },
-  {
-    id: 'photography',
-    category: 'Photography',
-    name: 'Photography & Video',
+  'photography-video': {
     icon: Camera,
     description: 'Photo services and videography',
     color: 'from-amber-500 to-orange-500',
   },
-  {
-    id: 'home',
-    category: 'Home Repair',
-    name: 'Home & Living',
+  'home-living': {
     icon: HomeIcon,
     description: 'Repairs, cleaning, and maintenance',
     color: 'from-lime-500 to-green-500',
   },
-];
+} as const;
 
 export function ServiceCategories() {
   const { t } = useTranslation();
-  const mobileCategories = CATEGORIES.slice(0, 6);
+  const mobileCategories = featuredMarketplaceCategories.slice(0, 6);
 
   return (
     <section className="py-12">
@@ -99,11 +76,12 @@ export function ServiceCategories() {
 
       <div className="space-y-3 md:hidden">
         {mobileCategories.map((category) => {
-          const Icon = category.icon;
+          const meta = CATEGORY_META[category.id as keyof typeof CATEGORY_META];
+          const Icon = meta.icon;
           return (
             <Link
               key={category.id}
-              href={`/listings?category=${encodeURIComponent(category.category)}`}
+              href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
               className="flex h-14 items-center justify-between rounded-xl border border-border/70 bg-card px-4 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/30"
             >
               <div className="flex min-w-0 items-center gap-3">
@@ -127,12 +105,13 @@ export function ServiceCategories() {
       </div>
 
       <div className="hidden grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 md:grid">
-        {CATEGORIES.map((category) => {
-          const Icon = category.icon;
+        {featuredMarketplaceCategories.map((category) => {
+          const meta = CATEGORY_META[category.id as keyof typeof CATEGORY_META];
+          const Icon = meta.icon;
           return (
-            <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.category)}`} className="group block h-full">
+            <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.listingCategory)}`} className="group block h-full">
               <div className="relative h-full overflow-hidden rounded-2xl border border-border/70 bg-card p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary/30 hover:shadow-lg">
-                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${category.color}`} />
+                <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${meta.color}`} />
                 <div className="mb-5 flex items-center justify-between">
                   <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary shadow-sm ring-1 ring-primary/10">
                     <Icon className="h-6 w-6" />
@@ -141,7 +120,7 @@ export function ServiceCategories() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg text-foreground">{category.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{category.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{meta.description}</p>
                 </div>
                 <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">
                   {t('home.categories.browse', 'Browse')}

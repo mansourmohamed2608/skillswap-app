@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
-import { WishCard } from "@/features/wishes/components/WishCard";
 import { ServiceCategories } from "@/features/home/components/ServiceCategories";
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
 import { TopContributors } from "@/features/home/components/TopContributors";
@@ -15,6 +14,7 @@ import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
 import { getListingPath } from "@/lib/public-ids";
 import { getPublicLocationLabel } from "@/lib/location";
 import { getServiceCategoryLabel } from "@/services/serviceCategories";
+import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
 import type { ServiceListing, User, Contributor, WishSummary } from "@/types";
 
 const HeroLogo = () => (
@@ -119,10 +119,10 @@ export function HomePageContent({
         },
       ];
   const mobileListings = featuredListingsData.slice(0, 3);
-  const mobileWishes = featuredWishes.slice(0, 2);
+  const contributeText = t('wishes.contribute', 'Contribute');
 
   return (
-    <div className="mx-auto max-w-screen-xl space-y-10 px-4 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-28 md:space-y-12 md:py-8 md:pb-8">
+    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-28 md:space-y-12 md:py-8 md:pb-8">
       <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/80 to-secondary/80 py-8 text-center shadow-xl sm:py-12 md:py-14">
         <div className="relative z-10 mx-auto max-w-3xl px-4">
           <HeroLogo />
@@ -200,7 +200,7 @@ export function HomePageContent({
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl">
+      <section>
         <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm md:flex-row md:items-center md:justify-between md:px-6 md:py-5">
           <div className="space-y-1">
             <h3 className="text-lg font-semibold">{t('home.subscribe.title', 'Unlock more with SkillSwap')}</h3>
@@ -284,60 +284,8 @@ export function HomePageContent({
             <h2 className="text-3xl font-semibold">{t('home.wishes.featuredTitle', 'Make a Wish Come True')}</h2>
             <p className="mt-2 text-lg text-muted-foreground">{t('home.wishes.featuredSubtitle', 'Help community members achieve their dreams')}</p>
           </div>
-          <div className="space-y-3 md:hidden">
-            {mobileWishes.map((wish) => {
-              const totalDonated = wish.totalDonated || 0;
-              const goalAmount = wish.goalAmount || 0;
-              const progress = goalAmount ? Math.min(100, Math.round((totalDonated / goalAmount) * 100)) : 0;
-              const remaining = goalAmount ? Math.max(0, goalAmount - totalDonated) : 0;
-              return (
-                <Card key={wish.id} className="overflow-hidden border-border/70 shadow-sm">
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex items-start gap-3">
-                      {wish.imageUrl ? (
-                        <img src={wish.imageUrl} alt={wish.title || ''} className="h-14 w-14 shrink-0 rounded-lg object-cover" />
-                      ) : (
-                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
-                          <Heart className="h-6 w-6" />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <h3 className="line-clamp-2 text-sm font-semibold">{wish.title}</h3>
-                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{wish.description}</p>
-                      </div>
-                    </div>
-                    {goalAmount > 0 && (
-                      <div className="space-y-2">
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${progress}%` }} />
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{totalDonated} / {goalAmount} {wish.currency || 'EGP'}</span>
-                          <span className="font-semibold text-primary">{progress}%</span>
-                        </div>
-                        {remaining > 0 && (
-                          <p className="text-xs text-muted-foreground">{remaining} {wish.currency || 'EGP'} needed</p>
-                        )}
-                      </div>
-                    )}
-                    <Button size="sm" className="h-9 w-full bg-accent text-accent-foreground hover:bg-accent/90" asChild>
-                      <Link href={`/wishes/${wish.id}`}>{t('wishes.contribute')}</Link>
-                    </Button>
-                  </CardContent>
-                </Card>
-              );
-            })}
-            <Button size="lg" asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <Link href="/wishes">{t('home.wishes.viewAll', 'View All Wishes')}</Link>
-            </Button>
-          </div>
-
-          <div className="hidden grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:grid">
-            {featuredWishes.map((wish) => (
-              <WishCard key={wish.id} wish={wish} />
-            ))}
-          </div>
-          <div className="mt-8 hidden justify-center md:flex">
+          <WishesCarousel wishes={featuredWishes} contributeLabel={contributeText} />
+          <div className="mt-8 flex justify-center">
             <Button size="lg" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Link href="/wishes">{t('home.wishes.viewAll', 'View All Wishes')}</Link>
             </Button>
