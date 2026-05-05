@@ -35,7 +35,7 @@ export function GlobalSearchBar() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
           <Input
             type="text"
-            placeholder={t('home.search.placeholder', 'Search listings, wishes, services, categories, locations...')}
+            placeholder={t('home.search.submit', 'Search')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-10 pr-4 py-2 h-12 text-base rounded-lg border-2 border-muted-foreground/20 focus:border-primary transition-colors"
@@ -51,9 +51,6 @@ export function GlobalSearchBar() {
           {t('home.search.submit', 'Search')}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground mt-2 text-center">
-        {t('home.search.hint', 'Search across listings, wishes, services, and more')}
-      </p>
     </form>
   );
 }
