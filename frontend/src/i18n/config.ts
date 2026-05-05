@@ -85,6 +85,7 @@ const resources = {
         signIn: "Sign In",
         signUp: "Sign Up",
         signOut: "Sign Out",
+        subscribe: "Subscribe",
       },
       footer: {
         rights: "© {{year}} {{appName}}. All rights reserved.",
@@ -1356,6 +1357,7 @@ const resources = {
         signIn: "تسجيل الدخول",
         signUp: "إنشاء حساب",
         signOut: "تسجيل الخروج",
+        subscribe: "اشترك",
       },
       footer: {
         rights: "© {{year}} {{appName}}. جميع الحقوق محفوظة.",

@@ -350,6 +350,11 @@ export function AppHeader() {
                 </Link>
               </Button>
               <div className="mx-1 h-5 w-px bg-border/60" />
+              <Button variant="default" asChild className="bg-orange-600 hover:bg-orange-700">
+                <Link href="/pricing" className="flex items-center gap-2">
+                  {t('header.subscribe')}
+                </Link>
+              </Button>
               <LanguageSwitcher compact />
               <SignOutButton iconOnly />
             </div>
@@ -480,6 +485,11 @@ export function AppHeader() {
                     </Link>
                   </Button>
                 ))}
+                <Button variant="default" asChild className="justify-start text-base bg-orange-600 hover:bg-orange-700 mt-2 mb-2">
+                  <Link href="/pricing" onClick={() => setMobileOpen(false)} className="flex items-center gap-2">
+                    {t('header.subscribe')}
+                  </Link>
+                </Button>
                 {isAuthenticated ? (
                   <>
                     {privateNavItems.filter(item => item.href !== '/chat').map((item) => (
