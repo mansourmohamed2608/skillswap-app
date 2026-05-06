@@ -209,8 +209,8 @@ function ListingCard({ listing, user, t }: { listing: ServiceListing; user: AppU
         </div>
 
         <div className="space-y-1 text-xs text-muted-foreground">
-          <p className="truncate">
-            <span className="font-medium text-foreground">Wants:</span> {requestedLabel}
+                        <p className="truncate">
+                          <span className="font-medium text-foreground">{t('listings.card.wants', 'Wants:')}</span> {requestedLabel}
           </p>
           {location && (
             <p className="flex items-center gap-1 truncate">
@@ -407,6 +407,24 @@ export function SearchPageContent() {
     [pageResults]
   );
 
+  const translatedPageResults = useMemo(
+    () => nonBookingPages.map((page) => ({
+      ...page,
+      title: t(`search.pages.${page.id}.title`, page.title),
+      description: t(`search.pages.${page.id}.description`, page.description),
+    })),
+    [nonBookingPages, t]
+  );
+
+  const translatedBookingResults = useMemo(
+    () => bookingResults.map((booking) => ({
+      ...booking,
+      title: t(`search.pages.${booking.id}.title`, booking.title),
+      description: t(`search.pages.${booking.id}.description`, booking.description),
+    })),
+    [bookingResults, t]
+  );
+
   const totalResults =
     nonBookingPages.length +
     categoryResults.length +
@@ -434,13 +452,13 @@ export function SearchPageContent() {
                   type="text"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search"
+                  placeholder={t('search.input', 'Search')}
                   className="h-12 rounded-xl border-border/70 bg-background pl-10 text-base"
                   aria-label={t('search.input', 'Search')}
                 />
               </div>
               <Button type="submit" size="lg" className="h-12 w-full bg-primary text-primary-foreground hover:bg-primary/90 sm:w-auto">
-                {loading ? 'Searching...' : 'Search'}
+                {loading ? t('search.searching', 'Searching...') : t('search.input', 'Search')}
               </Button>
             </div>
           </div>
@@ -448,16 +466,16 @@ export function SearchPageContent() {
 
         {query ? (
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold sm:text-3xl">Search results for &quot;{query}&quot;</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">{t('search.resultsFor', 'Search results for')} &quot;{query}&quot;</h1>
             <p className="text-sm text-muted-foreground sm:text-base">
-              {loading ? 'Loading...' : `${totalResults} result${totalResults === 1 ? '' : 's'} found`}
+              {loading ? t('search.loading', 'Loading...') : t('search.resultCount', { count: totalResults, defaultValue: `${totalResults} results found` })}
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold sm:text-3xl">Search SkillSwap</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">{t('search.title', 'Search SkillSwap')}</h1>
             <p className="text-sm text-muted-foreground sm:text-base">
-              Find pages, categories, listings, wishes, bookings, and more.
+              {t('search.subtitle', 'Find pages, categories, listings, wishes, bookings, and more.')}
             </p>
           </div>
         )}
@@ -471,7 +489,7 @@ export function SearchPageContent() {
               size="sm"
               onClick={() => router.push(`/search?q=${encodeURIComponent(chip)}`)}
               className="rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              aria-label={`Search for ${chip}`}
+              aria-label={t('search.searchFor', { chip, defaultValue: `Search for ${chip}` })}
             >
               {chip}
             </Button>
@@ -483,9 +501,9 @@ export function SearchPageContent() {
             <CardContent className="space-y-6 p-8 text-center sm:p-12">
               <SearchIcon className="mx-auto h-16 w-16 text-muted-foreground/60" />
               <div className="space-y-2">
-                <h2 className="text-2xl font-bold">No results found</h2>
+                <h2 className="text-2xl font-bold">{t('search.noResultsTitle', 'No results found')}</h2>
                 <p className="text-sm text-muted-foreground sm:text-base">
-                  Try another keyword like Home, Listings, Design, Booking, or Subscription.
+                  {t('search.noResultsBody', 'Try another keyword like Home, Listings, Design, Booking, or Subscription.')}
                 </p>
               </div>
               <div className="flex flex-wrap justify-center gap-2">
@@ -503,7 +521,7 @@ export function SearchPageContent() {
                 ))}
               </div>
               <Button onClick={() => router.push('/')} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                Back to home
+                {t('search.backHome', 'Back to home')}
               </Button>
             </CardContent>
           </Card>
@@ -513,9 +531,9 @@ export function SearchPageContent() {
           <div className="space-y-10">
             {nonBookingPages.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Pages</h2>
+                <h2 className="text-xl font-semibold">{t('search.pagesTitle', 'Pages')}</h2>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {nonBookingPages.map((page) => {
+                  {translatedPageResults.map((page) => {
                     const Icon = page.icon;
                     return (
                       <Link key={page.id} href={page.href}>
@@ -542,7 +560,7 @@ export function SearchPageContent() {
 
             {categoryResults.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Categories</h2>
+                <h2 className="text-xl font-semibold">{t('search.categoriesTitle', 'Categories')}</h2>
                 <div className="flex flex-wrap gap-2">
                   {categoryResults.map((category) => (
                     <Button
@@ -563,7 +581,7 @@ export function SearchPageContent() {
 
             {listingResults.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Listings</h2>
+                <h2 className="text-xl font-semibold">{t('search.listingsTitle', 'Listings')}</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {listingResults.map(({ listing, user }) => (
                     <ListingCard key={listing.id} listing={listing} user={user} t={t} />
@@ -574,7 +592,7 @@ export function SearchPageContent() {
 
             {wishResults.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Wishes</h2>
+                <h2 className="text-xl font-semibold">{t('search.wishesTitle', 'Wishes')}</h2>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {wishResults.map((wish) => (
                     <WishCard key={wish.id} wish={wish} t={t} />
@@ -585,9 +603,9 @@ export function SearchPageContent() {
 
             {bookingResults.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-xl font-semibold">Bookings</h2>
+                <h2 className="text-xl font-semibold">{t('search.bookingsTitle', 'Bookings')}</h2>
                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                  {bookingResults.map((booking) => {
+                  {translatedBookingResults.map((booking) => {
                     const Icon = booking.icon || Briefcase;
                     return (
                       <Link key={booking.id} href={booking.href}>

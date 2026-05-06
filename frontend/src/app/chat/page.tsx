@@ -8,8 +8,12 @@ export default function ChatPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="grid flex-1 min-h-0 overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
+    <div className="mx-auto w-full max-w-[1280px] space-y-4">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-primary md:text-4xl">{t('chat.page.title', 'Chat')}</h1>
+        <p className="text-sm text-muted-foreground md:text-base">{t('chat.list.emptyBody')}</p>
+      </header>
+      <div className="grid min-h-[65vh] overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
         <ConversationListPanel className="min-h-0 border-r bg-background" />
         <div className="hidden min-h-0 flex-col items-center justify-center bg-muted/10 p-10 text-center md:flex">
           <div className="rounded-full bg-primary/10 p-5 text-primary">

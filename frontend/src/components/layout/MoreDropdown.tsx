@@ -132,7 +132,7 @@ export function MoreDropdown() {
   return (
     <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label="Open menu">
+        <Button variant="ghost" size="icon" aria-label={t('header.burger', 'Menu')}>
           <MenuIcon className="h-4 w-4" />
         </Button>
       </PopoverTrigger>

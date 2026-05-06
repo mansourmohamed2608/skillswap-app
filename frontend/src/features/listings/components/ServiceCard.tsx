@@ -164,10 +164,10 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
   );
 
   return (
-    <Card className="flex flex-col h-full overflow-hidden shadow-none hover:shadow-none border-border/70 hover:border-primary/40 transition-colors duration-300 rounded-lg">
+    <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-border/70 shadow-none transition-colors duration-300 hover:border-primary/40 hover:shadow-none">
       <CardHeader className="p-0">
         {listing.offeredService?.imageUrl && (
-          <div className="relative w-full h-36">
+          <div className="relative h-36 w-full">
             <Image
               src={listing.offeredService.imageUrl}
               alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
@@ -178,30 +178,30 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
           </div>
         )}
       </CardHeader>
-      <CardContent className="p-3 flex-grow">
-        <div className="mb-1">
+      <CardContent className="flex-1 space-y-2 p-4">
+        <div>
           <CategoryPill category={offeredCategory} />
         </div>
-        <CardTitle className="mb-1 text-base line-clamp-2 break-words">
+        <CardTitle className="line-clamp-2 text-base leading-snug break-words">
           {listing.offeredService?.title || t('listings.card.untitled')}
         </CardTitle>
-        <CardDescription className="mb-2 text-xs text-muted-foreground line-clamp-1 break-words">
+        <CardDescription className="line-clamp-2 text-xs text-muted-foreground break-words">
           {listing.offeredService?.description ?? ''}
         </CardDescription>
         
-        <div className="my-2 text-center">
+        <div className="py-1 text-center">
           <RepeatIcon className="h-5 w-5 text-primary inline-block" />
         </div>
 
-        <h4 className="font-semibold text-sm mb-1">{exchangeLabel}</h4>
-        <p className="mb-1 text-xs font-medium text-primary break-words line-clamp-1">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
-        <CategoryPill category={requestedCategory} className="mb-1"/>
-        <CardDescription className="text-xs text-muted-foreground line-clamp-1 break-words">
+        <h4 className="text-sm font-semibold">{exchangeLabel}</h4>
+        <p className="line-clamp-1 text-xs font-medium break-words text-primary">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
+        <CategoryPill category={requestedCategory} />
+        <CardDescription className="line-clamp-1 text-xs text-muted-foreground break-words">
           {listing.requestedService?.description ?? ''}
         </CardDescription>
       </CardContent>
-      <CardFooter className="p-3 border-t">
-        <div className="flex flex-col w-full gap-2">
+      <CardFooter className="border-t p-4">
+        <div className="flex w-full flex-col gap-3">
           <div className="flex items-center justify-between gap-3">
             {resolvedUser ? (
               isOwner ? (
@@ -264,7 +264,7 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
               {publicListingLocation && <span className="truncate text-xs">{publicListingLocation}</span>}
             </div>
           </div>
-          <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8">
+          <Button asChild size="sm" className="mt-auto h-9 w-full bg-primary text-xs text-primary-foreground hover:bg-primary/90">
             <Link href={getListingPath(listing)}>
               {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-1 h-3 w-3" />
             </Link>

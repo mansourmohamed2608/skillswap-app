@@ -2,6 +2,7 @@
 
 import { use, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import ConversationListPanel from "@/features/chat/components/ConversationListPanel";
 import ActiveConversationPanel from "@/features/chat/components/ActiveConversationPanel";
 
@@ -9,6 +10,7 @@ type Params = { chatId: string };
 type ChatMeta = { name: string; avatarUrl?: string; username?: string };
 
 export default function ChatDetailPage({ params }: { params: Params | Promise<Params> }) {
+  const { t } = useTranslation();
   const resolvedParams = use(Promise.resolve(params));
   const chatId = resolvedParams.chatId;
   const router = useRouter();
@@ -23,8 +25,12 @@ export default function ChatDetailPage({ params }: { params: Params | Promise<Pa
   }, [router]);
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="grid flex-1 min-h-0 overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
+    <div className="mx-auto w-full max-w-[1280px] space-y-4">
+      <header className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight text-primary md:text-4xl">{t('chat.page.title', 'Chat')}</h1>
+        <p className="text-sm text-muted-foreground md:text-base">{t('chat.detail.back')}</p>
+      </header>
+      <div className="grid min-h-[70vh] overflow-hidden rounded-2xl border bg-card shadow-xl md:grid-cols-[22rem,1fr]">
         <ConversationListPanel
           activeChatId={chatId}
           className="hidden min-h-0 border-r bg-background md:flex"

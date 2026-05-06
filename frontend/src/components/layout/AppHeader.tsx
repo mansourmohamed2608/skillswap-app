@@ -185,13 +185,13 @@ export function AppHeader() {
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label="Categories">
+                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label={t('header.categories', 'Categories')}>
                         <Layers3 className="h-4 w-4" aria-hidden="true" />
-                        <span>Categories</span>
+                        <span>{t('header.categories', 'Categories')}</span>
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 z-[100]">
+                    <DropdownMenuContent align="end" className="z-[100] w-56">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -214,13 +214,13 @@ export function AppHeader() {
                 <>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label="Categories">
+                      <Button variant="ghost" size="sm" className="gap-1.5" aria-label={t('header.categories', 'Categories')}>
                         <Layers3 className="h-4 w-4" aria-hidden="true" />
-                        <span>Categories</span>
+                        <span>{t('header.categories', 'Categories')}</span>
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56 z-[100]">
+                    <DropdownMenuContent align="end" className="z-[100] w-56">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -269,7 +269,7 @@ export function AppHeader() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label="Open menu"
+                      aria-label={t('header.burger', 'Menu')}
                     >
                       <MenuIcon className="h-5 w-5" />
                     </Button>
@@ -308,11 +308,11 @@ export function AppHeader() {
                       className="h-11 justify-between text-base"
                       onClick={() => setMobileCategoriesOpen((prev) => !prev)}
                       aria-expanded={mobileCategoriesOpen}
-                      aria-label="Toggle categories"
+                      aria-label={t('header.categories', 'Categories')}
                     >
                       <span className="inline-flex items-center gap-2">
                         <Layers3 className="h-5 w-5" aria-hidden="true" />
-                        Categories
+                        {t('header.categories', 'Categories')}
                       </span>
                       <ChevronRight className={`h-4 w-4 transition-transform ${mobileCategoriesOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
                     </Button>

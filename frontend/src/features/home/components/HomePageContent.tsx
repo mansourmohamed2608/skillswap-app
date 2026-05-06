@@ -122,14 +122,14 @@ export function HomePageContent({
   const contributeText = t('wishes.contribute', 'Contribute');
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-10 px-4 py-3 pb-24 sm:px-6 sm:py-4 sm:pb-28 md:space-y-12 md:py-6 md:pb-8">
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/80 to-secondary/80 py-8 text-center shadow-xl sm:py-12 md:py-14">
-        <div className="relative z-10 mx-auto max-w-3xl px-4">
+    <div className="mx-auto w-full max-w-[1200px] space-y-12 px-4 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-28 md:space-y-16 md:py-8 md:pb-8">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/80 to-secondary/80 py-12 text-center shadow-xl sm:py-16 md:py-20">
+        <div className="relative z-10 mx-auto max-w-4xl px-4">
           <HeroLogo />
-          <h1 className="mb-4 text-3xl font-bold text-primary-foreground sm:text-4xl md:text-5xl">
+          <h1 className="mb-5 text-4xl font-bold text-primary-foreground sm:text-5xl md:text-6xl">
             {t('home.hero.title')}
           </h1>
-          <p className="mx-auto mb-8 max-w-2xl text-base text-primary-foreground/90 sm:text-lg md:text-lg">
+          <p className="mx-auto mb-10 max-w-2xl text-base text-primary-foreground/90 sm:text-lg md:text-xl">
             {t('home.hero.body')}
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
@@ -234,7 +234,7 @@ export function HomePageContent({
                       </div>
                       <div className="space-y-1 text-xs text-muted-foreground">
                         <p className="truncate">
-                          <span className="font-medium text-foreground">Wants:</span> {requestedLabel}
+                          <span className="font-medium text-foreground">{t('listings.card.wants', 'Wants:')}</span> {requestedLabel}
                         </p>
                         <p className="truncate">{locationLabel}</p>
                       </div>

@@ -19,42 +19,42 @@ import { featuredMarketplaceCategories } from '@/features/home/constants/categor
 const CATEGORY_META = {
   programming: {
     icon: Code,
-    description: 'Web, app, and software development',
+    descriptionKey: 'home.categories.meta.programming',
     color: 'from-blue-500 to-cyan-500',
   },
   design: {
     icon: Palette,
-    description: 'UI/UX, graphics, and branding',
+    descriptionKey: 'home.categories.meta.design',
     color: 'from-purple-500 to-pink-500',
   },
   'music-audio': {
     icon: Music,
-    description: 'Lessons, production, and mixing',
+    descriptionKey: 'home.categories.meta.musicAudio',
     color: 'from-yellow-500 to-orange-500',
   },
   education: {
     icon: BookOpen,
-    description: 'Languages, tutoring, and courses',
+    descriptionKey: 'home.categories.meta.education',
     color: 'from-green-500 to-teal-500',
   },
   'fitness-wellness': {
     icon: Dumbbell,
-    description: 'Training, yoga, and health coaching',
+    descriptionKey: 'home.categories.meta.fitnessWellness',
     color: 'from-red-500 to-rose-500',
   },
   'business-career': {
     icon: Briefcase,
-    description: 'Consulting, mentoring, and advice',
+    descriptionKey: 'home.categories.meta.businessCareer',
     color: 'from-indigo-500 to-blue-500',
   },
   'photography-video': {
     icon: Camera,
-    description: 'Photo services and videography',
+    descriptionKey: 'home.categories.meta.photographyVideo',
     color: 'from-amber-500 to-orange-500',
   },
   'home-living': {
     icon: HomeIcon,
-    description: 'Repairs, cleaning, and maintenance',
+    descriptionKey: 'home.categories.meta.homeLiving',
     color: 'from-lime-500 to-green-500',
   },
 } as const;
@@ -65,11 +65,11 @@ export function ServiceCategories() {
 
   return (
     <section className="py-12">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-semibold mb-4">
+      <div className="mb-12 text-center">
+        <h2 className="mb-4 text-3xl font-semibold">
           {t('home.categories.title', 'Explore Service Categories')}
         </h2>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-lg text-muted-foreground">
           {t('home.categories.subtitle', 'Find exactly what you need to learn and teach')}
         </p>
       </div>
@@ -120,7 +120,7 @@ export function ServiceCategories() {
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg text-foreground">{category.name}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{meta.description}</p>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{t(meta.descriptionKey, meta.descriptionKey)}</p>
                 </div>
                 <div className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-primary">
                   {t('home.categories.browse', 'Browse')}

@@ -244,17 +244,23 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
 
   const hasFilters = Boolean(filters.search || filters.category || filters.location || (filters.radius && filters.radius !== 'any') || (filters.country && filters.country !== 'all'));
 
+  const pageTitle = t('listings.page.title', 'Service Exchange Listings');
+  const pageSubtitle = t('listings.page.subtitle', 'Find services you need or offer your skills in exchange.');
+  const countryLabel = t('services.countryLabel', 'Country');
+  const allCountriesLabel = t('services.allCountries', 'All countries');
+  const middleEastLabel = t('services.middleEastOnly', 'Middle East only');
+
   return (
     <div className="w-full space-y-6">
       <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1 text-center md:text-left">
-          <h1 className="text-3xl font-bold tracking-tight text-primary md:text-4xl">Service Exchange Listings</h1>
-          <p className="text-sm text-muted-foreground md:text-base">Find services you need or offer your skills in exchange.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-primary md:text-4xl">{pageTitle}</h1>
+          <p className="text-sm text-muted-foreground md:text-base">{pageSubtitle}</p>
         </div>
         <Button asChild className="w-full bg-accent text-accent-foreground hover:bg-accent/90 md:w-auto shrink-0">
           <Link href="/listings/new">
             <PlusCircleIcon className="mr-2 h-4 w-4" />
-            {t('profile.createNewListing')}
+            {t('listings.page.createNewListing', 'Create New Listing')}
           </Link>
         </Button>
       </header>
@@ -279,13 +285,13 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
         >
           <span className="inline-flex items-center gap-2">
             <FilterIcon className="h-4 w-4" />
-            Filters
+            {t('services.filtersToggle', 'Filters')}
           </span>
-          <span className="text-xs text-muted-foreground">{mobileFiltersOpen ? 'Hide' : 'Show'}</span>
+          <span className="text-xs text-muted-foreground">{mobileFiltersOpen ? t('common.hide', 'Hide') : t('common.show', 'Show')}</span>
         </Button>
       </div>
 
-      <Card className="border-border/70 bg-card/90 shadow-sm">
+      <Card className="border-border/60 bg-card/85 shadow-sm">
         <CardContent className="space-y-4 p-4 sm:p-5">
           <div className={`${mobileFiltersOpen ? 'block' : 'hidden'} space-y-4 md:block`}>
             {/* Row 1: Search, Category, Location, Radius */}
@@ -347,14 +353,14 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
             {/* Row 2: Country, Apply, Clear */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:items-end">
               <div>
-                <label htmlFor="listing-country" className="mb-1 block text-sm font-medium text-foreground">Country</label>
+                <label htmlFor="listing-country" className="mb-1 block text-sm font-medium text-foreground">{countryLabel}</label>
                 <Select value={filters.country} onValueChange={(value) => updateFilters({ country: value })}>
                   <SelectTrigger id="listing-country" className="h-11 rounded-xl border-border/70 bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All countries</SelectItem>
-                    <SelectItem value="middle-east">Middle East only</SelectItem>
+                    <SelectItem value="all">{allCountriesLabel}</SelectItem>
+                    <SelectItem value="middle-east">{middleEastLabel}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -375,7 +381,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
           <Badge variant="secondary" className="gap-2 rounded-full px-3 py-1.5 text-sm">
             {activeCategoryLabel} <button type="button" aria-label="Clear category filter" onClick={() => updateFilters({ category: '' })}><XIcon className="h-3.5 w-3.5" /></button>
           </Badge>
-          <p className="text-sm text-muted-foreground">Showing {activeCategoryLabel} listings</p>
+          <p className="text-sm text-muted-foreground">{t('listings.page.showingCategory', { category: activeCategoryLabel, defaultValue: `Showing ${activeCategoryLabel} listings` })}</p>
         </div>
       ) : null}
 
@@ -386,18 +392,18 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
               <SearchIcon className="h-6 w-6" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-semibold">{filters.category ? `No listings found in ${activeCategoryLabel}` : 'No listings found'}</h2>
-              <p className="text-sm text-muted-foreground">Try adjusting your search or filters, or post the first listing in this category.</p>
+              <h2 className="text-2xl font-semibold">{filters.category ? t('listings.page.noResultsInCategory', { category: activeCategoryLabel, defaultValue: `No listings found in ${activeCategoryLabel}` }) : t('listings.page.noResultsTitle', 'No listings found')}</h2>
+              <p className="text-sm text-muted-foreground">{t('listings.page.noResultsBody', 'Try adjusting your search or filters, or post the first listing in this category.')}</p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
               <Button type="button" variant="outline" onClick={clearFilters} className="h-11 rounded-xl border-primary/30 text-primary hover:bg-primary/10">
-                Clear filters
+                {t('services.clearFilters')}
               </Button>
               <Button asChild className="h-11 rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                <Link href="/listings">Browse all listings</Link>
+                <Link href="/listings">{t('listings.page.browseAll', 'Browse all listings')}</Link>
               </Button>
               <Button asChild className="h-11 rounded-xl bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link href="/listings/new">Post a Listing</Link>
+                <Link href="/listings/new">{t('listings.page.createNewListing', 'Create New Listing')}</Link>
               </Button>
             </div>
           </CardContent>
