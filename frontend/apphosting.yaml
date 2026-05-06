@@ -40,7 +40,7 @@ env:
 
   # ── API / Functions base URL ───────────────────────────────────────────────
   - variable: NEXT_PUBLIC_FUNCTIONS_BASE
-    value: "https://skillswap-69yxi.web.app"
+    value: "https://europe-west3-skillswap-69yxi.cloudfunctions.net"
     availability: [BUILD, RUNTIME]
   - variable: NEXT_PUBLIC_API_BASE
     value: "https://skillswap-69yxi.web.app/api"

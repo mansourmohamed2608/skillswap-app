@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 function backendBase() {
-  // Prefer an explicit functions base if provided (matches frontend `getFunctionsBase` behavior)
-  if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
   const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || '';
   const region = process.env.NEXT_PUBLIC_FUNCTIONS_REGION || 'europe-west3';
   // During development, proxy to the Functions emulator with the project/region path
