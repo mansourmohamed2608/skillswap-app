@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+function backendBase() {
+  if (process.env.NEXT_PUBLIC_BACKEND_URL) return process.env.NEXT_PUBLIC_BACKEND_URL;
+  const project = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'skillswap-69yxi';
+  const region = process.env.NEXT_PUBLIC_FUNCTIONS_REGION || 'europe-west3';
+  if (process.env.NODE_ENV === 'development') {
+    return `http://127.0.0.1:5001/${project}/us-central1`;
+  }
+  return `https://${region}-${project}.cloudfunctions.net`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -15,8 +25,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Call backend search/listings endpoint with nearLat/nearLng & radius
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001';
-    const url = new URL(`${backendUrl}/api/search/listings`);
+    const url = new URL(`${backendBase()}/api/search/listings`);
     url.searchParams.set('nearLat', String(lat));
     url.searchParams.set('nearLng', String(lng));
     url.searchParams.set('radiusKm', String(radius));
