@@ -86,42 +86,6 @@ export function HomePageContent({
   const communitySubtitle = isArabic
     ? 'ساعد الآخرين على تحقيق أحلامهم وشارك في الخير'
     : 'Help others achieve their goals and keep generosity moving.';
-  const mobileHowItWorks = isArabic
-    ? [
-        {
-          icon: SearchIcon,
-          title: t('home.howItWorks.step1.title'),
-          body: 'اعرض ما تقدمه وما تحتاجه.',
-        },
-        {
-          icon: SparklesIcon,
-          title: t('home.howItWorks.step2.title'),
-          body: 'اعثر على أفضل تطابق لمهاراتك.',
-        },
-        {
-          icon: UsersIcon,
-          title: t('home.howItWorks.step3.title'),
-          body: 'راسل الطرف الآخر واتفقا على التفاصيل.',
-        },
-      ]
-    : [
-        {
-          icon: SearchIcon,
-          title: t('home.howItWorks.step1.title'),
-          body: 'Share what you offer and what you need.',
-        },
-        {
-          icon: SparklesIcon,
-          title: t('home.howItWorks.step2.title'),
-          body: 'Find the best swap for your skills.',
-        },
-        {
-          icon: UsersIcon,
-          title: t('home.howItWorks.step3.title'),
-          body: 'Message, agree, and get started.',
-        },
-      ];
-  const mobileListings = featuredListingsData.slice(0, 3);
   const contributeText = t('wishes.contribute', 'Contribute');
 
   return (
@@ -136,13 +100,13 @@ export function HomePageContent({
             {t('home.hero.body')}
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-            <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
-              <Link href="/listings">{t('home.hero.ctaBrowse')}</Link>
-            </Button>
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href={isAuthenticated ? "/listings/new" : "/auth/signup"}>
                 {isAuthenticated ? t('home.hero.ctaPost') : t('events.registerAndPostCta', 'Register and Post a Listing')}
               </Link>
+            </Button>
+            <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
+              <Link href="/listings">{t('home.hero.ctaBrowse')}</Link>
             </Button>
           </div>
         </div>
@@ -150,56 +114,39 @@ export function HomePageContent({
 
       <section>
         <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.howItWorks.title')}</h2>
-        <div className="space-y-3 md:hidden">
-          {mobileHowItWorks.map((step) => {
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            {
+              icon: SearchIcon,
+              title: t('home.howItWorks.step1.title'),
+              body: isArabic ? 'اعرض ما تقدمه وما تحتاجه.' : 'Share what you offer and what you need.',
+            },
+            {
+              icon: SparklesIcon,
+              title: t('home.howItWorks.step2.title'),
+              body: isArabic ? 'اعثر على أفضل تطابق لمهاراتك.' : 'Find the best swap for your skills.',
+            },
+            {
+              icon: UsersIcon,
+              title: t('home.howItWorks.step3.title'),
+              body: isArabic ? 'راسل الطرف الآخر واتفقا على التفاصيل.' : 'Message, agree, and get started.',
+            },
+          ].map((step) => {
             const Icon = step.icon;
             return (
-              <div key={step.title} className="flex items-start gap-3 rounded-xl border border-border/70 bg-card px-4 py-3 shadow-sm">
-                <div className="mt-0.5 inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-semibold">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground">{step.body}</p>
-                </div>
-              </div>
+              <Card key={step.title} className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
+                <CardHeader className="items-center pb-4 text-center">
+                  <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
+                    <Icon className="h-8 w-8 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg">{step.title}</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1">
+                  <CardDescription className="text-center text-sm">{step.body}</CardDescription>
+                </CardContent>
+              </Card>
             );
           })}
-        </div>
-        <div className="hidden gap-6 md:grid md:grid-cols-3">
-          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-            <CardHeader className="items-center pb-4 text-center">
-              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
-                <SearchIcon className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-lg">{t('home.howItWorks.step1.title')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <CardDescription className="text-center text-sm">{t('home.howItWorks.step1.body')}</CardDescription>
-            </CardContent>
-          </Card>
-          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-            <CardHeader className="items-center pb-4 text-center">
-              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
-                <SparklesIcon className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-lg">{t('home.howItWorks.step2.title')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <CardDescription className="text-center text-sm">{t('home.howItWorks.step2.body')}</CardDescription>
-            </CardContent>
-          </Card>
-          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-            <CardHeader className="items-center pb-4 text-center">
-              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
-                <UsersIcon className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-lg">{t('home.howItWorks.step3.title')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1">
-              <CardDescription className="text-center text-sm">{t('home.howItWorks.step3.body')}</CardDescription>
-            </CardContent>
-          </Card>
         </div>
       </section>
 
