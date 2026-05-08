@@ -78,14 +78,9 @@ export function HomePageContent({
   featuredWishes?: WishSummary[];
   topContributors?: Contributor[];
 }) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAuthenticated = !!user;
-  const isArabic = i18n.language?.toLowerCase().startsWith('ar');
-  const communityHeading = isArabic ? 'تَهَادَوْا تَحَابُّوا' : 'Give Gifts, Spread Love';
-  const communitySubtitle = isArabic
-    ? 'ساعد الآخرين على تحقيق أحلامهم وشارك في الخير'
-    : 'Help others achieve their goals and keep generosity moving.';
   const contributeText = t('wishes.contribute', 'Contribute');
 
   return (
@@ -101,7 +96,7 @@ export function HomePageContent({
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
-              <Link href={isAuthenticated ? "/listings/new" : "/auth/signup"}>
+              <Link href={isAuthenticated ? '/listings/new' : '/auth/signup'}>
                 {isAuthenticated ? t('home.hero.ctaPost') : t('events.registerAndPostCta', 'Register and Post a Listing')}
               </Link>
             </Button>
@@ -119,17 +114,17 @@ export function HomePageContent({
             {
               icon: SearchIcon,
               title: t('home.howItWorks.step1.title'),
-              body: isArabic ? 'اعرض ما تقدمه وما تحتاجه.' : 'Share what you offer and what you need.',
+              body: t('home.howItWorks.step1.body'),
             },
             {
               icon: SparklesIcon,
               title: t('home.howItWorks.step2.title'),
-              body: isArabic ? 'اعثر على أفضل تطابق لمهاراتك.' : 'Find the best swap for your skills.',
+              body: t('home.howItWorks.step2.body'),
             },
             {
               icon: UsersIcon,
               title: t('home.howItWorks.step3.title'),
-              body: isArabic ? 'راسل الطرف الآخر واتفقا على التفاصيل.' : 'Message, agree, and get started.',
+              body: t('home.howItWorks.step3.body'),
             },
           ].map((step) => {
             const Icon = step.icon;
@@ -150,12 +145,12 @@ export function HomePageContent({
         </div>
       </section>
 
-      
       <section>
         <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.featured.title')}</h2>
         {featuredListingsData.length > 0 ? (
           <>
-            <div className={`grid gap-6 ${
+            <div
+              className={`grid gap-6 ${
                 featuredListingsData.length <= 3
                   ? 'mx-auto max-w-5xl grid-cols-1 justify-items-center sm:grid-cols-2 lg:grid-cols-3'
                   : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
@@ -167,7 +162,7 @@ export function HomePageContent({
                 </div>
               ))}
             </div>
-            <div className="mt-8 justify-center flex">
+            <div className="mt-8 flex justify-center">
               <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/listings">{t('home.featured.viewAll')}</Link>
               </Button>
@@ -209,8 +204,13 @@ export function HomePageContent({
 
       <section>
         <div className="mb-8 text-center">
-          <h2 className="text-3xl font-semibold">{communityHeading}</h2>
-          <p className="mt-2 text-lg text-muted-foreground">{communitySubtitle}</p>
+          <div className="mb-3 flex items-center justify-center gap-4">
+            <span className="hidden h-px w-20 bg-emerald-300/80 sm:block" />
+            <h2 className="text-4xl font-extrabold tracking-tight text-emerald-700 sm:text-5xl">تَهَادَوْا تَحَابُّوا</h2>
+            <span className="hidden h-px w-20 bg-emerald-300/80 sm:block" />
+          </div>
+          <p className="text-xl font-semibold text-emerald-700/90 sm:text-2xl">Give Gifts, Spread Love</p>
+          <p className="mt-2 text-lg text-muted-foreground">{t('home.wishes.communitySubtitle')}</p>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">

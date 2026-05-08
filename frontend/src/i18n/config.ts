@@ -142,6 +142,7 @@ const resources = {
         },
         wishes: {
           title: "Give Gifts, Spread Love",
+          communitySubtitle: "Help others achieve their goals and keep generosity moving.",
           featuredTitle: "Make a Wish Come True",
           featuredSubtitle: "Help community members achieve their dreams",
           donateTitle: "Make Someone's Wishes Come True!",
@@ -1495,6 +1496,7 @@ const resources = {
         },
         wishes: {
           title: "تَهَادَوْا تَحَابُّوا",
+          communitySubtitle: "ساعد الآخرين على تحقيق أحلامهم وشارك في الخير",
           featuredTitle: "حقّق أمنيات الآخرين!",
           featuredSubtitle: "ساعد أفراد المجتمع على تحقيق أحلامهم",
           donateTitle: "حقّق أمنيات الآخرين!",
