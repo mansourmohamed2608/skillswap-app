@@ -19,6 +19,7 @@ import {
   SparklesIcon,
   MessageCircle,
   CalendarDays,
+  BellIcon,
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
@@ -117,6 +118,7 @@ export function AppHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
+  const mobileNotificationsHref = isAuthenticated ? '/profile?tab=notifications' : '/auth/signin';
 
   return (
     <>
@@ -262,6 +264,12 @@ export function AppHeader() {
 
               <div className="flex items-center gap-1">
                 <LanguageSwitcher compact />
+
+                <Button variant="ghost" size="icon" asChild aria-label={t('header.notifications', 'Notifications')}>
+                  <Link href={mobileNotificationsHref} title={t('header.notifications', 'Notifications')}>
+                    <BellIcon className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
 
                 {/* Menu Button (hamburger only) */}
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
