@@ -134,7 +134,7 @@ export function HomePageContent({
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
             <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
-              <Link href="/auth/signup">{t('events.registerCta', 'Register')}</Link>
+              <Link href="/listings">{t('home.hero.ctaBrowse')}</Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href="/listings/new">{t('home.hero.ctaPost')}</Link>
