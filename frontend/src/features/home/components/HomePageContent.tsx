@@ -141,7 +141,7 @@ export function HomePageContent({
             </Button>
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href={isAuthenticated ? "/listings/new" : "/auth/signup"}>
-                {isAuthenticated ? t('home.hero.ctaPost') : t('events.registerCta', 'Register')}
+                {isAuthenticated ? t('home.hero.ctaPost') : t('events.registerAndPostCta', 'Register and Post a Listing')}
               </Link>
             </Button>
           </div>
