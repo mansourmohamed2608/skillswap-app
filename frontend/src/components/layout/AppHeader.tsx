@@ -26,6 +26,9 @@ import {
   ChevronDown,
   ChevronRight,
   Layers3,
+  X as XIcon,
+  CheckCheck as CheckCheckIcon,
+  Trash2 as Trash2Icon,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/services/firebase';
@@ -33,7 +36,6 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { X, CheckCheck, Trash2 } from 'lucide-react';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { markNotificationsRead, clearReadNotifications } from '@/services/api';
@@ -329,7 +331,7 @@ export function AppHeader() {
                         <p className="text-sm font-semibold">{t('header.notifications')}</p>
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNotificationsOpen(false)}>
-                            <X className="h-3 w-3" />
+                            <XIcon className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
@@ -340,7 +342,7 @@ export function AppHeader() {
                           setNotifications((prev) => prev.map((item) => (unreadIds.includes(item.id) ? { ...item, isRead: true } : item)));
                           try { await markNotificationsRead(unreadIds); } catch { /* ignore */ }
                         }} disabled={unreadNotifications === 0}>
-                          <CheckCheck className="mr-1 h-3 w-3" />{t('profile.notifications.markAll', 'Mark all read')}
+                          <CheckCheckIcon className="mr-1 h-3 w-3" />{t('profile.notifications.markAll', 'Mark all read')}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={async () => {
                           const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
@@ -349,7 +351,7 @@ export function AppHeader() {
                           setNotifications((prev) => prev.filter((item) => !item.isRead));
                           try { await clearReadNotifications(readIds); } catch { setNotifications(previous); }
                         }} disabled={notifications.filter((n) => n.isRead).length === 0}>
-                          <Trash2 className="mr-1 h-3 w-3" />{t('profile.notifications.clearRead', 'Clear read')}
+                          <Trash2Icon className="mr-1 h-3 w-3" />{t('profile.notifications.clearRead', 'Clear read')}
                         </Button>
                       </div>
                     </div>
