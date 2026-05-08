@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -32,6 +32,11 @@ import { auth } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { X, CheckCheck, Trash2 } from 'lucide-react';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { db } from '@/services/firebase';
+import { markNotificationsRead, clearReadNotifications } from '@/services/api';
 import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
@@ -119,6 +124,47 @@ export function AppHeader() {
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
   const mobileNotificationsHref = isAuthenticated ? '/profile?tab=notifications' : '/auth/signin';
+  const [notifications, setNotifications] = useState([] as any[]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+  const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
+
+  // Subscribe to notifications for mobile popover
+  useEffect(() => {
+    if (!db || !user?.uid) return;
+    const qy = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid),
+      orderBy('date', 'desc'),
+      limit(20)
+    );
+    const unsub = onSnapshot(qy, (snap) => {
+      const items = snap.docs.map((d) => {
+        const data: any = d.data();
+        let dateIso: string;
+        const dt = data.date;
+        try {
+          if (dt && typeof dt.toDate === 'function') dateIso = dt.toDate().toISOString();
+          else if (typeof dt === 'string') dateIso = new Date(dt).toISOString();
+          else if (dt instanceof Date) dateIso = dt.toISOString();
+          else dateIso = new Date().toISOString();
+        } catch {
+          dateIso = new Date().toISOString();
+        }
+        return {
+          id: d.id,
+          type: data.type || 'system',
+          content: data.content || '',
+          date: dateIso,
+          isRead: !!data.isRead,
+          link: data.link,
+          userId: data.userId,
+        };
+      });
+      setNotifications(items as any[]);
+    }, () => setNotifications([]));
+    return () => unsub();
+  }, [user?.uid]);
 
   return (
     <>
@@ -265,11 +311,62 @@ export function AppHeader() {
               <div className="flex items-center gap-1">
                 <LanguageSwitcher compact />
 
-                <Button variant="ghost" size="icon" asChild aria-label={t('header.notifications', 'Notifications')}>
-                  <Link href={mobileNotificationsHref} title={t('header.notifications', 'Notifications')}>
-                    <BellIcon className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
+                {/* Mobile notifications popover (mirrors desktop) */}
+                <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label={t('header.notifications', 'Notifications')}>
+                      <BellIcon className="h-4 w-4" aria-hidden="true" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] px-1 py-0.5">
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="left" align="start" className="w-80 p-0">
+                    <div className="border-b px-4 py-3">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNotificationsOpen(false)}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={async () => {
+                          const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+                          if (!unreadIds.length) return;
+                          setNotifications((prev) => prev.map((item) => (unreadIds.includes(item.id) ? { ...item, isRead: true } : item)));
+                          try { await markNotificationsRead(unreadIds); } catch { /* ignore */ }
+                        }} disabled={unreadNotifications === 0}>
+                          <CheckCheck className="mr-1 h-3 w-3" />{t('profile.notifications.markAll', 'Mark all read')}
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={async () => {
+                          const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
+                          if (!readIds.length) return;
+                          const previous = notifications;
+                          setNotifications((prev) => prev.filter((item) => !item.isRead));
+                          try { await clearReadNotifications(readIds); } catch { setNotifications(previous); }
+                        }} disabled={notifications.filter((n) => n.isRead).length === 0}>
+                          <Trash2 className="mr-1 h-3 w-3" />{t('profile.notifications.clearRead', 'Clear read')}
+                        </Button>
+                      </div>
+                    </div>
+                    {previewNotifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t('profile.notifications.emptyBody')}</div>
+                    ) : (
+                      <ul className="max-h-64 overflow-y-auto">
+                        {previewNotifications.map((notif: any) => (
+                          <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
+                            <p className="line-clamp-2">{notif.content}</p>
+                            <p className="text-muted-foreground text-xs mt-1">{new Date(notif.date).toLocaleString()}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </PopoverContent>
+                </Popover>
 
                 {/* Menu Button (hamburger only) */}
                 <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
