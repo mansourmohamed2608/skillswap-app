@@ -39,7 +39,7 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
       const res = await createServiceRequest({ listingId, proposedTime, message });
       recordAnalyticsEvent('exchange_requested', { listingId });
       setOpen(false);
-      toast({ title: t('request.requestSent'), description: t('listings.request.toastId', { id: res.id }) });
+      toast({ title: t('request.requestSent'), description: t('listings.request.toastSent') });
     } catch (e: any) {
       if (e?.status === 403) {
         router.push("/pricing?alert=sub-required");
