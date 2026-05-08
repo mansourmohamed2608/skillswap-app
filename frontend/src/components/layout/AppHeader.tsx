@@ -314,7 +314,7 @@ export function AppHeader() {
                 {/* Mobile notifications popover (mirrors desktop) */}
                 <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label={t('header.notifications', 'Notifications')}>
+                    <Button variant="ghost" size="icon" aria-label={t('header.notifications', 'Notifications')} className="relative">
                       <BellIcon className="h-4 w-4" aria-hidden="true" />
                       {unreadNotifications > 0 && (
                         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] px-1 py-0.5">
@@ -323,7 +323,7 @@ export function AppHeader() {
                       )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="left" align="start" className="w-80 p-0">
+                  <PopoverContent side="left" align="start" className="z-[110] w-80 p-0 mt-2">
                     <div className="border-b px-4 py-3">
                       <div className="flex items-center justify-between gap-2 mb-2">
                         <p className="text-sm font-semibold">{t('header.notifications')}</p>
