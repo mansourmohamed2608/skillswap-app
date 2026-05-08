@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, X } from 'lucide-react';
+import { Search, X as XIcon } from 'lucide-react';
 import { useState } from 'react';
 
 export function ExpandedSearchBar({ onClose }: { onClose: () => void }) {
@@ -50,7 +50,7 @@ export function ExpandedSearchBar({ onClose }: { onClose: () => void }) {
         onClick={onClose}
         aria-label={t('common.close', 'Close')}
       >
-        <X className="h-5 w-5" />
+        <XIcon className="h-5 w-5" />
       </Button>
     </div>
   );

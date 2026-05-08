@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { BellIcon, GemIcon, X, CheckCheck, Trash2, MenuIcon, LogOut } from 'lucide-react';
+import { BellIcon, GemIcon, X as XIcon, CheckCheck as CheckCheckIcon, Trash2 as Trash2Icon, MenuIcon, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
@@ -167,7 +167,7 @@ export function MoreDropdown() {
                       className="h-6 w-6"
                       onClick={() => setNotificationsOpen(false)}
                     >
-                      <X className="h-3 w-3" />
+                      <XIcon className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="flex gap-2">
@@ -177,7 +177,7 @@ export function MoreDropdown() {
                       onClick={markAllAsRead}
                       disabled={unreadNotifications === 0}
                     >
-                      <CheckCheck className="mr-1 h-3 w-3" />
+                      <CheckCheckIcon className="mr-1 h-3 w-3" />
                       Mark all read
                     </Button>
                     <Button
@@ -186,7 +186,7 @@ export function MoreDropdown() {
                       onClick={clearRead}
                       disabled={readNotifications.length === 0}
                     >
-                      <Trash2 className="mr-1 h-3 w-3" />
+                      <Trash2Icon className="mr-1 h-3 w-3" />
                       Clear read
                     </Button>
                   </div>

@@ -103,19 +103,16 @@ function inferProjectIdFromHostedApp() {
 const HARDCODED_PROD_BASE = 'https://europe-west3-skillswap-69yxi.cloudfunctions.net';
 
 function inferFunctionsBase() {
+  // Browser code should use same-origin /api routes so App Hosting rewrites can
+  // proxy requests to the deployed backend. Server-side callers still need an
+  // absolute base, so we only resolve that on the server.
+  if (typeof window !== 'undefined') return '';
   if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
   const inferredProjectId = PROJECT_ID || inferProjectIdFromHostedApp();
-  if (typeof window === 'undefined') {
-    // SSR: use local emulator or hardcoded prod
-    return inferredProjectId
-      ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
-      : HARDCODED_PROD_BASE;
-  }
-  const host = window.location.hostname || '';
-  const isLocal = host === 'localhost' || host === '127.0.0.1';
-  if (isLocal) return `http://127.0.0.1:5001/${inferredProjectId || 'skillswap-69yxi'}/us-central1`;
-  // Production: target the deployed Firebase Functions endpoint directly.
-  return HARDCODED_PROD_BASE;
+  // SSR: use local emulator or hardcoded prod
+  return inferredProjectId
+    ? `http://127.0.0.1:5001/${inferredProjectId}/us-central1`
+    : HARDCODED_PROD_BASE;
 }
 
 export function getFunctionsBase() {
