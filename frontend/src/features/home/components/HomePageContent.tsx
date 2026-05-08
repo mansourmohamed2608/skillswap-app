@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
-import { ServiceCategories } from "@/features/home/components/ServiceCategories";
+// ServiceCategories removed per request
 import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
 import { TopContributors } from "@/features/home/components/TopContributors";
 import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
@@ -148,8 +148,6 @@ export function HomePageContent({
         </div>
       </section>
 
-      <ServiceCategories />
-
       <section>
         <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.howItWorks.title')}</h2>
         <div className="space-y-3 md:hidden">
@@ -205,58 +203,12 @@ export function HomePageContent({
         </div>
       </section>
 
-      <section>
-        <div className="flex flex-col gap-4 rounded-2xl border border-border/60 bg-card p-4 shadow-sm md:flex-row md:items-center md:justify-between md:px-6 md:py-5">
-          <div className="space-y-1">
-            <h3 className="text-lg font-semibold">{t('home.subscribe.title', 'Unlock more with SkillSwap')}</h3>
-            <p className="text-sm text-muted-foreground">{t('home.subscribe.body', 'Get more visibility, better matches, and premium features.')}</p>
-          </div>
-          <Button asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90 md:w-auto">
-            <Link href="/pricing">{t('home.subscribe.cta', 'Subscribe Now')}</Link>
-          </Button>
-        </div>
-      </section>
-
+      
       <section>
         <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.featured.title')}</h2>
         {featuredListingsData.length > 0 ? (
           <>
-            <div className="space-y-3 md:hidden">
-              {mobileListings.map(({ listing }) => {
-                const categoryLabel = getServiceCategoryLabel(listing.offeredService.category, t);
-                const requestedLabel = getRequestedLabel(listing, t);
-                const locationLabel = getPublicLocationLabel(listing.location, t('listings.card.locationApprox', 'Approx. location'));
-                return (
-                  <Card key={listing.id} className="overflow-hidden border-border/70 shadow-sm">
-                    <CardContent className="space-y-3 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <Badge variant="secondary" className="mb-2 max-w-full truncate">{categoryLabel}</Badge>
-                          <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{listing.offeredService?.title || t('listings.card.untitled')}</h3>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{listing.offeredService?.description || ''}</p>
-                        </div>
-                        <Badge variant="outline" className="shrink-0 text-[11px]">{getListingStatusLabel(listing.status, t)}</Badge>
-                      </div>
-                      <div className="space-y-1 text-xs text-muted-foreground">
-                        <p className="truncate">
-                          <span className="font-medium text-foreground">{t('listings.card.wants', 'Wants:')}</span> {requestedLabel}
-                        </p>
-                        <p className="truncate">{locationLabel}</p>
-                      </div>
-                      <Button asChild size="sm" className="h-9 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                        <Link href={getListingPath(listing)}>View Details</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-              <Button size="lg" asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-                <Link href="/listings">{t('home.featured.viewAll')}</Link>
-              </Button>
-            </div>
-
-            <div
-              className={`hidden gap-6 md:grid ${
+            <div className={`grid gap-6 ${
                 featuredListingsData.length <= 3
                   ? 'mx-auto max-w-5xl grid-cols-1 justify-items-center sm:grid-cols-2 lg:grid-cols-3'
                   : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
@@ -268,7 +220,7 @@ export function HomePageContent({
                 </div>
               ))}
             </div>
-            <div className="mt-8 hidden justify-center md:flex">
+            <div className="mt-8 justify-center flex">
               <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/listings">{t('home.featured.viewAll')}</Link>
               </Button>
