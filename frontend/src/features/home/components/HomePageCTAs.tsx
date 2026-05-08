@@ -19,7 +19,7 @@ export function HomePageCTAs() {
     <>
       <div className="text-center mt-8">
         <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:scale-105">
-          <Link href="/auth/signup">{t('cta.getStarted')}</Link>
+          <Link href="/auth/signup">{t('home.subscribe.cta', 'Subscribe Now')}</Link>
         </Button>
       </div>
       
