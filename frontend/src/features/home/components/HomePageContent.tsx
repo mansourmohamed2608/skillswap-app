@@ -15,7 +15,6 @@ import { getListingPath } from "@/lib/public-ids";
 import { getPublicLocationLabel } from "@/lib/location";
 import { getServiceCategoryLabel } from "@/services/serviceCategories";
 import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
-import { useAuth } from "@/context/AuthContext";
 import type { ServiceListing, User, Contributor, WishSummary } from "@/types";
 
 const HeroLogo = () => (
@@ -79,8 +78,6 @@ export function HomePageContent({
   topContributors?: Contributor[];
 }) {
   const { t, i18n } = useTranslation();
-  const { user } = useAuth();
-  const isAuthenticated = !!user;
   const isArabic = i18n.language?.toLowerCase().startsWith('ar');
   const communityHeading = isArabic ? 'تَهَادَوْا تَحَابُّوا' : 'Give Gifts, Spread Love';
   const communitySubtitle = isArabic
@@ -137,9 +134,7 @@ export function HomePageContent({
           </p>
           <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
             <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
-              <Link href={isAuthenticated ? "/listings" : "/auth/signup"}>
-                {isAuthenticated ? t('home.hero.ctaBrowse') : t('events.registerCta', 'Register')}
-              </Link>
+              <Link href="/auth/signup">{t('events.registerCta', 'Register')}</Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
               <Link href="/listings/new">{t('home.hero.ctaPost')}</Link>
