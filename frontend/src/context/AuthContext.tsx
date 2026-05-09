@@ -3,6 +3,7 @@
 
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
+import { getUserById } from '@/services/data';
 import { auth, isFirebaseConfigured, rtdb } from '@/services/firebase';
 import { ensurePushRegistered } from '@/services/push';
 import { onDisconnect, ref, set } from 'firebase/database';
@@ -47,6 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (u) {
           // Best-effort: try to register push token when a user signs in
           try { await ensurePushRegistered(); } catch { /* noop */ }
+          // Populate userCountry in localStorage from app profile (if available)
+          try {
+            const profile = await getUserById(u.uid);
+            const country = (profile as any)?.locationMeta?.country || (profile as any)?.country || '';
+            if (country) {
+              try { localStorage.setItem('userCountry', String(country)); } catch {}
+            }
+          } catch {
+            // ignore profile fetch failures
+          }
         }
       },
       e => {
