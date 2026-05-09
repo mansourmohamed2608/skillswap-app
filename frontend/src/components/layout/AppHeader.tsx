@@ -313,6 +313,13 @@ export function AppHeader() {
               <div className="flex items-center gap-1">
                 <LanguageSwitcher compact />
 
+                {/* Categories icon (mobile) - quick access to listings/categories */}
+                <Button variant="ghost" size="icon" asChild aria-label={t('header.categories', 'Categories')}>
+                  <Link href="/listings" title={t('header.categories', 'Categories')}>
+                    <Layers3 className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                </Button>
+
                 {/* Mobile notifications popover (mirrors desktop) */}
                 <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
                   <PopoverTrigger asChild>
