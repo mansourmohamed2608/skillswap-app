@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon, PlusCircleIcon, MapPinIcon } from 'lucide-react';
 import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
 import { useEffect, useRef, useState } from 'react';
@@ -546,6 +546,10 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
       {/* Nearby Filter Modal */}
       <Dialog open={showNearbyFilter} onOpenChange={setShowNearbyFilter}>
         <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="sr-only">{t('listings.nearby.title', { defaultValue: 'Find nearby listings' })}</DialogTitle>
+            <DialogDescription className="sr-only">{t('listings.nearby.description', { defaultValue: 'Filter listings by distance from your location.' })}</DialogDescription>
+          </DialogHeader>
           <NearbyFilter 
             onFiltered={handleNearbyFiltered}
           />
