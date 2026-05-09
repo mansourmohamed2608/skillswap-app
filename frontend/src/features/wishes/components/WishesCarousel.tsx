@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { i18n } from '@/i18n/config';
 import type { WishSummary } from '@/types';
 
 type WishesCarouselProps = {
@@ -23,6 +24,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [isRTL, setIsRTL] = useState(false);
 
   useEffect(() => {
     const updateCards = () => {
@@ -32,6 +34,19 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
     updateCards();
     window.addEventListener('resize', updateCards);
     return () => window.removeEventListener('resize', updateCards);
+  }, []);
+
+  useEffect(() => {
+    const syncDirection = () => {
+      const nextIsRTL = typeof document !== 'undefined' && document.documentElement.dir === 'rtl';
+      setIsRTL(nextIsRTL);
+    };
+
+    syncDirection();
+    i18n.on('languageChanged', syncDirection);
+    return () => {
+      i18n.off('languageChanged', syncDirection);
+    };
   }, []);
 
   const maxStartIndex = Math.max(0, wishes.length - cardsPerView);
@@ -99,7 +114,7 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
         <div className="overflow-hidden rounded-2xl">
           <div
             className="flex transition-transform duration-500 ease-out"
-            style={{ transform: `translateX(-${(100 / cardsPerView) * activePage}%)` }}
+            style={{ transform: `translateX(${isRTL ? '' : '-'}${(100 / cardsPerView) * activePage}%)` }}
           >
             {wishes.map((wish) => {
               const totalDonated = wish.totalDonated || 0;
