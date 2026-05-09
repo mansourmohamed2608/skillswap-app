@@ -50,6 +50,9 @@ export const onListingWrite = onDocumentWritten('listings/{id}', async (event) =
       title: data.title || data.offeredService?.title || '',
       description: data.description || data.offeredService?.description || '',
       category: data.category || data.offeredService?.category || '',
+      imageUrl: data.offeredService?.imageUrl || data.imageUrl || '',
+      offeredService: data.offeredService || { title: '', description: '', category: '', imageUrl: '' },
+      requestedService: data.requestedService || null,
       requestedKind,
       requestedProduct: data.requestedProduct || null,
       requestedMoney: data.requestedMoney || null,
@@ -61,7 +64,11 @@ export const onListingWrite = onDocumentWritten('listings/{id}', async (event) =
       createdAt: (data.createdAt && typeof (data.createdAt as any).toDate === 'function')
         ? (data.createdAt as any).toDate().toISOString()
         : (data.createdAt || new Date()).toString(),
+      postedDate: (data.postedDate && typeof (data.postedDate as any).toDate === 'function')
+        ? (data.postedDate as any).toDate().toISOString()
+        : (data.postedDate || (data.createdAt && typeof (data.createdAt as any).toDate === 'function' ? (data.createdAt as any).toDate().toISOString() : new Date().toString())),
       userId: data.userId || data.offeredByUserId || '',
+      offeredByUserId: data.offeredByUserId || data.userId || '',
       ...(Number.isFinite(lat) && Number.isFinite(lng) ? { _geoloc: { lat, lng } } : {}),
     };
     try {
