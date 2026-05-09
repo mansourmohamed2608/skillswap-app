@@ -24,7 +24,6 @@ import {
   UserPlusIcon,
   LogOutIcon,
   ChevronDown,
-  ChevronRight,
   Layers3,
   X as XIcon,
   CheckCheck as CheckCheckIcon,
@@ -124,7 +123,6 @@ export function AppHeader() {
   const router = useRouter();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
   const mobileNotificationsHref = isAuthenticated ? '/profile?tab=notifications' : '/auth/signin';
   const [notifications, setNotifications] = useState([] as any[]);
@@ -433,36 +431,14 @@ export function AppHeader() {
                     <Button
                       type="button"
                       variant="ghost"
-                      className="h-11 justify-between text-base"
-                      onClick={() => setMobileCategoriesOpen((prev) => !prev)}
-                      aria-expanded={mobileCategoriesOpen}
-                      aria-label={t('header.categories', 'Categories')}
+                      asChild
+                      className="h-11 justify-start gap-2 text-base"
                     >
-                      <span className="inline-flex items-center gap-2">
+                      <Link href="/listings" onClick={() => setMobileMenuOpen(false)} aria-label={t('header.categories', 'Categories')}>
                         <Layers3 className="h-5 w-5" aria-hidden="true" />
                         {t('header.categories', 'Categories')}
-                      </span>
-                      <ChevronRight className={`h-4 w-4 transition-transform ${mobileCategoriesOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
+                      </Link>
                     </Button>
-                    {mobileCategoriesOpen && (
-                      <div className="space-y-1 rounded-md border border-border/70 bg-muted/30 p-2">
-                        {marketplaceCategories.map((category) => (
-                          <Button
-                            key={category.id}
-                            variant="ghost"
-                            asChild
-                            className="h-9 w-full justify-start text-sm"
-                          >
-                            <Link
-                              href={`/listings?category=${encodeURIComponent(category.name)}`}
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              {category.name}
-                            </Link>
-                          </Button>
-                        ))}
-                      </div>
-                    )}
 
                     {/* Divider */}
                     <div className="my-2 h-px bg-border" />
