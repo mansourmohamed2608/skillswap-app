@@ -425,23 +425,7 @@ export function AppHeader() {
                       </Button>
                     ))}
 
-                    {/* Divider */}
-                    <div className="my-2 h-px bg-border" />
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      asChild
-                      className="h-11 justify-start gap-2 text-base"
-                    >
-                      <Link href="/listings" onClick={() => setMobileMenuOpen(false)} aria-label={t('header.categories', 'Categories')}>
-                        <Layers3 className="h-5 w-5" aria-hidden="true" />
-                        {t('header.categories', 'Categories')}
-                      </Link>
-                    </Button>
-
-                    {/* Divider */}
-                    <div className="my-2 h-px bg-border" />
+                    {/* Categories removed from sidebar per request */}
 
                     {/* Auth or Authenticated Section */}
                     {isAuthenticated ? (
