@@ -17,6 +17,7 @@ import { serviceCategories, getServiceCategoryLabel } from '@/services/serviceCa
 import { getPublicLocationLabel } from '@/lib/location';
 import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
 import type { ServiceListing, User } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export type ListingWithUser = {
   listing: ServiceListing;
@@ -147,6 +148,8 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user, selectedPlan } = useAuth();
+  const [userCountry, setUserCountry] = useState<string | null>(null);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
@@ -192,7 +195,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   }
 
   const filteredItems = useMemo(() => {
-    return initialItems.filter(({ listing, user }) => {
+    return initialItems.filter(({ listing, user: listingUser }) => {
       if (filters.search && !matchesText([
         listing.offeredService?.title,
         listing.offeredService?.description,
@@ -202,8 +205,8 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
         listing.requestedService?.category,
         listing.requestedProduct?.name,
         listing.location,
-        user?.name,
-        user?.username,
+        listingUser?.name,
+        listingUser?.username,
       ], filters.search)) {
         return false;
       }
@@ -216,15 +219,20 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
       if (filters.location) {
         const locationText = normalizeText([
           listing.location,
-          user?.location,
-          user?.country,
+          listingUser?.location,
+          listingUser?.country,
         ].filter(Boolean).join(' '));
         if (!locationText.includes(normalizeText(filters.location))) return false;
       }
 
       if (filters.country === 'middle-east') {
-        const countryText = [listing.location, user?.country].filter(Boolean);
+        const countryText = [listing.location, listingUser?.country].filter(Boolean);
         if (!countryText.some((value) => isMiddleEastLobbyEligible(String(value)))) return false;
+      } else if (filters.country && filters.country !== 'all') {
+        // If a specific country (e.g., 'Egypt') is selected, limit results to that country
+        const listingCountry = String(listingUser?.country || listing.location || '').trim().toLowerCase();
+        const filterCountry = String(filters.country || '').trim().toLowerCase();
+        if (!listingCountry.includes(filterCountry)) return false;
       }
 
       if (filters.radius !== 'any' && origin && listing.geo && Number.isFinite(listing.geo.lat) && Number.isFinite(listing.geo.lng)) {
@@ -249,6 +257,17 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const countryLabel = t('services.countryLabel', 'Country');
   const allCountriesLabel = t('services.allCountries', 'All countries');
   const middleEastLabel = t('services.middleEastOnly', 'Middle East only');
+
+  const isPro = selectedPlan === 'pro';
+
+  useEffect(() => {
+    try {
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
+      setUserCountry(stored || null);
+    } catch {
+      setUserCountry(null);
+    }
+  }, [user?.uid]);
 
   return (
     <div className="w-full space-y-6">
@@ -354,13 +373,27 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1fr_auto_auto] lg:items-end">
               <div>
                 <label htmlFor="listing-country" className="mb-1 block text-sm font-medium text-foreground">{countryLabel}</label>
-                <Select value={filters.country} onValueChange={(value) => updateFilters({ country: value })}>
+                <Select
+                  value={isPro ? filters.country : (userCountry || 'all')}
+                  onValueChange={(value) => {
+                    if (!isPro) return; // non-pro users cannot change country filter
+                    updateFilters({ country: value });
+                  }}
+                >
                   <SelectTrigger id="listing-country" className="h-11 rounded-xl border-border/70 bg-background">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{allCountriesLabel}</SelectItem>
-                    <SelectItem value="middle-east">{middleEastLabel}</SelectItem>
+                    {isPro ? (
+                      <>
+                        <SelectItem value="all">{allCountriesLabel}</SelectItem>
+                        <SelectItem value="middle-east">{middleEastLabel}</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value={userCountry || 'all'}>{userCountry || allCountriesLabel}</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
