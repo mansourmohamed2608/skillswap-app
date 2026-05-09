@@ -121,6 +121,7 @@ export function AppHeader() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
@@ -313,12 +314,7 @@ export function AppHeader() {
               <div className="flex items-center gap-1">
                 <LanguageSwitcher compact />
 
-                {/* Categories icon (mobile) - quick access to listings/categories */}
-                <Button variant="ghost" size="icon" asChild aria-label={t('header.categories', 'Categories')}>
-                  <Link href="/listings" title={t('header.categories', 'Categories')}>
-                    <Layers3 className="h-4 w-4" aria-hidden="true" />
-                  </Link>
-                </Button>
+                {/* Categories icon (mobile) - handled by popover below */}
 
                 {/* Mobile notifications popover (mirrors desktop) */}
                 <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
@@ -374,6 +370,24 @@ export function AppHeader() {
                         ))}
                       </ul>
                     )}
+                  </PopoverContent>
+                </Popover>
+
+                {/* Categories popover (mobile) */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" aria-label={t('header.categories', 'Categories')}>
+                      <Layers3 className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="bottom" align="end" className="z-[110] w-56 p-0">
+                    <div className="space-y-1 p-2">
+                      {marketplaceCategories.map((category) => (
+                        <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.name)}`} className="block px-3 py-2 text-sm rounded hover:bg-muted">
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
                   </PopoverContent>
                 </Popover>
 
