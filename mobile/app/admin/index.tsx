@@ -534,12 +534,12 @@ export default function AdminScreen() {
                   const date = ts && typeof ts.toDate === 'function' ? ts.toDate() : ts ? new Date(ts) : null;
                   return (
                     <View key={entry.id} style={cn('rounded-md border border-border p-3 gap-1')}>
-                      <Text style={cn('text-xs font-semibold text-primary')}>{entry.action || '—'}</Text>
+                      <Text style={cn('text-xs font-semibold text-primary')}>{entry.action || '-'}</Text>
                       <Text style={cn('text-xs text-muted-foreground')} numberOfLines={1}>
-                        {t('admin.audit_actor') || 'Actor'}: {entry.actorId || '—'}
+                        {t('admin.audit_actor') || 'Actor'}: {entry.actorId || '-'}
                       </Text>
                       <Text style={cn('text-xs text-muted-foreground')} numberOfLines={1}>
-                        {t('admin.audit_target') || 'Target'}: {entry.targetId || '—'}
+                        {t('admin.audit_target') || 'Target'}: {entry.targetId || '-'}
                       </Text>
                       {date && (
                         <Text style={cn('text-xs text-muted-foreground')}>{date.toLocaleString()}</Text>

@@ -283,7 +283,7 @@ export default function EditProfilePage() {
             <CardTitle>{t('profile.edit.title')}</CardTitle>
           </CardHeader>
           <CardContent>
-            {error ? <Text style={cn('text-destructive mb-2')}>{error}</Text> : null}            {/* Business Profile Section — Business plan only */}
+            {error ? <Text style={cn('text-destructive mb-2')}>{error}</Text> : null}            {/* Business Profile Section - Business plan only */}
             {isBusinessPlan ? (
               <View style={cn('mt-4 rounded-md border border-border bg-muted/10 p-4 gap-3')}>
                 <Text style={cn('text-lg font-semibold text-foreground')}>{t('profile.edit.business.title')}</Text>

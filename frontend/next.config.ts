@@ -16,7 +16,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
-  // Required for Firebase App Hosting — adapter reads .next/standalone
+  // Required for Firebase App Hosting - adapter reads .next/standalone
   output: 'standalone',
 
   images: {
@@ -42,7 +42,7 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // SECURITY: Always enforce type checking — never silently ship broken types
+  // SECURITY: Always enforce type checking - never silently ship broken types
   // Note: eslint config moved to eslint.config.mjs per Next.js 16+ requirements
   typescript: { ignoreBuildErrors: false },
 };
