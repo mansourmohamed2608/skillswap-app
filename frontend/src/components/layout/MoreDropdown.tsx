@@ -157,7 +157,7 @@ export function MoreDropdown() {
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent side="left" align="start" className="w-80 p-0">
+              <PopoverContent side="left" align="start" className="w-screen sm:w-80 p-0 max-w-sm sm:max-w-none">
                 <div className="border-b px-4 py-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <p className="text-sm font-semibold">{t('header.notifications')}</p>
@@ -170,12 +170,13 @@ export function MoreDropdown() {
                       <XIcon className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={markAllAsRead}
                       disabled={unreadNotifications === 0}
+                      className="flex-1"
                     >
                       <CheckCheckIcon className="mr-1 h-3 w-3" />
                       Mark all read
@@ -185,6 +186,7 @@ export function MoreDropdown() {
                       size="sm"
                       onClick={clearRead}
                       disabled={readNotifications.length === 0}
+                      className="flex-1"
                     >
                       <Trash2Icon className="mr-1 h-3 w-3" />
                       Clear read
