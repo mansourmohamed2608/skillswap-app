@@ -142,7 +142,7 @@ export function MoreDropdown() {
           {/* Notifications - Sheet on mobile, Popover on desktop */}
           {isAuthenticated && (
             <>
-              {/* Mobile: Simple button that opens Sheet */}
+              {/* Mobile: Button that opens Sheet */}
               <div className="sm:hidden">
                 <Button
                   variant="ghost"
@@ -150,8 +150,8 @@ export function MoreDropdown() {
                   className="justify-start gap-2 relative w-full text-left"
                   aria-label={t('header.notifications')}
                   onClick={() => {
-                    setNotificationsOpen(true);
                     setDropdownOpen(false);
+                    setNotificationsOpen(true);
                   }}
                 >
                   <BellIcon className="h-4 w-4" />
@@ -235,7 +235,7 @@ export function MoreDropdown() {
                 </Popover>
               </div>
 
-              {/* Mobile Sheet */}
+              {/* Mobile Sheet - rendered outside dropdown */}
               <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
                 <SheetContent side="bottom" className="sm:hidden">
                   <SheetHeader>
