@@ -64,8 +64,8 @@ export function ConversationListPanel({
     (async () => {
       if (!otherIds.length) {
         if (mounted) {
-          setUserMetaById({});
           setLoadingUsers(false);
+          setUserMetaById((prev) => (Object.keys(prev).length === 0 ? prev : {}));
         }
         return;
       }

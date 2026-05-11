@@ -9,8 +9,8 @@ export function useConversationsRTDB() {
   const { user } = useAuth();
   const [items, setItems] = useState<any[]>([]);
   useEffect(() => {
-    if (!rtdb || !user) return;
-  const ucRef = ref(rtdb!, `userConversations/${user.uid}`);
+    if (!rtdb || !user?.uid) return;
+    const ucRef = ref(rtdb!, `userConversations/${user.uid}`);
     const unsub = onValue(ucRef, async (snap) => {
       const ids = Object.keys(snap.val() || {});
       const snapshots = await Promise.all(
@@ -23,7 +23,7 @@ export function useConversationsRTDB() {
       setItems(results);
     });
     return () => unsub();
-  }, [user]);
+  }, [user?.uid]);
   return items;
 }
 
