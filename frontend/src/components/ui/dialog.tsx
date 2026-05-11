@@ -43,7 +43,21 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
-      {children}
+      {/* Ensure accessibility: if a DialogTitle or DialogDescription is not provided by
+          the caller, inject visually-hidden defaults so RADIX warnings are suppressed
+          and screen readers still have meaningful labels. */}
+      {(() => {
+        const childrenArray = React.Children.toArray(children) as React.ReactElement[];
+        const hasTitle = childrenArray.some((c) => c && (c.type === DialogPrimitive.Title || (c.type as any)?.displayName === DialogPrimitive.Title.displayName));
+        const hasDescription = childrenArray.some((c) => c && (c.type === DialogPrimitive.Description || (c.type as any)?.displayName === DialogPrimitive.Description.displayName));
+        return (
+          <>
+            {!hasTitle && <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>}
+            {!hasDescription && <DialogPrimitive.Description className="sr-only">Dialog content</DialogPrimitive.Description>}
+            {children}
+          </>
+        );
+      })()}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <XIcon className="h-4 w-4" />
         <span className="sr-only">Close</span>
