@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BellIcon, GemIcon, X as XIcon, CheckCheck as CheckCheckIcon, Trash2 as Trash2Icon, MenuIcon, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -25,6 +24,13 @@ export function MoreDropdown() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+
+  const handleDropdownOpenChange = (open: boolean) => {
+    setDropdownOpen(open);
+    if (open) {
+      setNotificationsOpen(false);
+    }
+  };
 
   // Helper: When opening notifications, close menu dropdown to avoid stacking
   const handleOpenNotifications = () => {
@@ -186,7 +192,7 @@ export function MoreDropdown() {
   return (
     <>
       {/* Main Menu Dropdown */}
-      <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
+      <Popover open={dropdownOpen} onOpenChange={handleDropdownOpenChange}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" aria-label={t('header.burger', 'Menu')}>
             <MenuIcon className="h-4 w-4" />
@@ -237,15 +243,14 @@ export function MoreDropdown() {
         </PopoverContent>
       </Popover>
 
-      {/* Desktop Notifications Popover - Separate from main menu */}
-      {isAuthenticated && (
+      {/* Desktop Notifications Popover - no sheet/dialog overlay on desktop */}
+      {isAuthenticated && notificationsOpen && (
         <div className="hidden sm:block">
           <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
             <PopoverTrigger asChild>
-              {/* Hidden trigger - button in dropdown triggers this popover */}
-              <div className="hidden" />
+              <span aria-hidden className="hidden" />
             </PopoverTrigger>
-            <PopoverContent side="left" align="start" className="w-80 p-0">
+            <PopoverContent side="bottom" align="end" sideOffset={12} className="w-80 p-0">
               <div className="border-b px-4 py-3 flex items-center justify-between">
                 <p className="text-sm font-semibold">{t('header.notifications')}</p>
                 <Button
@@ -263,20 +268,6 @@ export function MoreDropdown() {
             </PopoverContent>
           </Popover>
         </div>
-      )}
-
-      {/* Mobile Notifications Sheet */}
-      {isAuthenticated && (
-        <Sheet open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
-          <SheetContent side="bottom" className="sm:hidden w-full max-w-full h-auto rounded-t-lg">
-            <SheetHeader className="text-left mb-4">
-              <SheetTitle className="text-base">{t('header.notifications')}</SheetTitle>
-            </SheetHeader>
-            <div className="px-2 pb-4">
-              <NotificationsContent />
-            </div>
-          </SheetContent>
-        </Sheet>
       )}
     </>
   );

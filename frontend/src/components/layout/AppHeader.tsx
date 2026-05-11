@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -129,6 +129,21 @@ export function AppHeader() {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
   const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
+
+  const openNotifications = () => {
+    setMobileMenuOpen(false);
+    setNotificationsOpen(true);
+  };
+
+  const handleNotificationsOpenChange = (open: boolean) => {
+    setNotificationsOpen(open);
+    if (open) setMobileMenuOpen(false);
+  };
+
+  const handleMobileMenuOpenChange = (open: boolean) => {
+    setMobileMenuOpen(open);
+    if (open) setNotificationsOpen(false);
+  };
 
   // Subscribe to notifications for mobile popover
   useEffect(() => {
@@ -314,10 +329,16 @@ export function AppHeader() {
 
                 {/* Categories icon (mobile) - handled by popover below */}
 
-                {/* Mobile notifications popover (mirrors desktop) */}
-                <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label={t('header.notifications', 'Notifications')} className="relative">
+                {/* Mobile notifications sheet */}
+                <Sheet open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('header.notifications', 'Notifications')}
+                      className="relative"
+                      onClick={openNotifications}
+                    >
                       <BellIcon className="h-4 w-4" aria-hidden="true" />
                       {unreadNotifications > 0 && (
                         <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] px-1 py-0.5">
@@ -325,51 +346,67 @@ export function AppHeader() {
                         </span>
                       )}
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="left" align="start" className="z-[110] w-80 p-0 mt-2">
-                    <div className="border-b px-4 py-3">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="bottom"
+                    className="left-2 right-2 bottom-2 top-auto h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] box-border rounded-t-xl p-0 overflow-hidden"
+                  >
+                    <SheetHeader className="border-b px-4 py-3 text-left">
+                      <div className="flex items-center justify-between gap-2">
+                        <SheetTitle className="text-sm font-semibold">{t('header.notifications')}</SheetTitle>
+                        <SheetDescription className="sr-only">{t('profile.notifications.emptyBody')}</SheetDescription>
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNotificationsOpen(false)}>
                             <XIcon className="h-3 w-3" />
                           </Button>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={async () => {
-                          const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-                          if (!unreadIds.length) return;
-                          setNotifications((prev) => prev.map((item) => (unreadIds.includes(item.id) ? { ...item, isRead: true } : item)));
-                          try { await markNotificationsRead(unreadIds); } catch { /* ignore */ }
-                        }} disabled={unreadNotifications === 0}>
+                      <div className="mt-3 flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+                            if (!unreadIds.length) return;
+                            setNotifications((prev) => prev.map((item) => (unreadIds.includes(item.id) ? { ...item, isRead: true } : item)));
+                            try { await markNotificationsRead(unreadIds); } catch { /* ignore */ }
+                          }}
+                          disabled={unreadNotifications === 0}
+                        >
                           <CheckCheckIcon className="mr-1 h-3 w-3" />{t('profile.notifications.markAll', 'Mark all read')}
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={async () => {
-                          const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
-                          if (!readIds.length) return;
-                          const previous = notifications;
-                          setNotifications((prev) => prev.filter((item) => !item.isRead));
-                          try { await clearReadNotifications(readIds); } catch { setNotifications(previous); }
-                        }} disabled={notifications.filter((n) => n.isRead).length === 0}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={async () => {
+                            const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
+                            if (!readIds.length) return;
+                            const previous = notifications;
+                            setNotifications((prev) => prev.filter((item) => !item.isRead));
+                            try { await clearReadNotifications(readIds); } catch { setNotifications(previous); }
+                          }}
+                          disabled={notifications.filter((n) => n.isRead).length === 0}
+                        >
                           <Trash2Icon className="mr-1 h-3 w-3" />{t('profile.notifications.clearRead', 'Clear read')}
                         </Button>
                       </div>
+                    </SheetHeader>
+                    <div className="px-4 pb-4 pt-3">
+                      {previewNotifications.length === 0 ? (
+                        <div className="py-6 text-center text-sm text-muted-foreground">{t('profile.notifications.emptyBody')}</div>
+                      ) : (
+                        <ul className="max-h-[60vh] overflow-y-auto">
+                          {previewNotifications.map((notif: any) => (
+                            <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
+                              <p className="break-words">{notif.content}</p>
+                              <p className="text-muted-foreground text-xs mt-1">{new Date(notif.date).toLocaleString()}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                    {previewNotifications.length === 0 ? (
-                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">{t('profile.notifications.emptyBody')}</div>
-                    ) : (
-                      <ul className="max-h-64 overflow-y-auto">
-                        {previewNotifications.map((notif: any) => (
-                          <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
-                            <p className="line-clamp-2">{notif.content}</p>
-                            <p className="text-muted-foreground text-xs mt-1">{new Date(notif.date).toLocaleString()}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </PopoverContent>
-                </Popover>
+                  </SheetContent>
+                </Sheet>
 
                 {/* Categories popover (mobile) */}
                 <Popover>
@@ -390,7 +427,7 @@ export function AppHeader() {
                 </Popover>
 
                 {/* Menu Button (hamburger only) */}
-                <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <Sheet open={mobileMenuOpen} onOpenChange={handleMobileMenuOpenChange}>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
