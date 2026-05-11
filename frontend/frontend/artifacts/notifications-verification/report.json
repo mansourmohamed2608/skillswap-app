@@ -1,0 +1,64 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "authResult": {
+    "signedIn": false,
+    "method": "signup-failed",
+    "email": "notif.verify.177850204134552@example.com"
+  },
+  "desktop": [
+    {
+      "width": 1440,
+      "height": 900,
+      "ok": false,
+      "reason": "notification bell not visible (not authenticated?)"
+    },
+    {
+      "width": 1024,
+      "height": 900,
+      "ok": false,
+      "reason": "notification bell not visible (not authenticated?)"
+    },
+    {
+      "width": 768,
+      "height": 900,
+      "ok": false,
+      "reason": "notification bell not visible (not authenticated?)"
+    }
+  ],
+  "mobile": [
+    {
+      "width": 430,
+      "height": 812,
+      "titleVisible": true,
+      "sheetVisible": false,
+      "sheetBox": null,
+      "noHorizontalOverflow": true,
+      "controlsTappable": true,
+      "screenshot": "D:\\Downloads\\SkillSwap\\Webapp\\Webapp\\frontend\\frontend\\artifacts\\notifications-verification\\mobile-430.png",
+      "ok": false
+    },
+    {
+      "width": 390,
+      "height": 812,
+      "titleVisible": true,
+      "sheetVisible": false,
+      "sheetBox": null,
+      "noHorizontalOverflow": true,
+      "controlsTappable": true,
+      "screenshot": "D:\\Downloads\\SkillSwap\\Webapp\\Webapp\\frontend\\frontend\\artifacts\\notifications-verification\\mobile-390.png",
+      "ok": false
+    },
+    {
+      "width": 375,
+      "height": 812,
+      "titleVisible": true,
+      "sheetVisible": false,
+      "sheetBox": null,
+      "noHorizontalOverflow": true,
+      "controlsTappable": true,
+      "screenshot": "D:\\Downloads\\SkillSwap\\Webapp\\Webapp\\frontend\\frontend\\artifacts\\notifications-verification\\mobile-375.png",
+      "ok": false
+    }
+  ],
+  "generatedAt": "2026-05-11T12:28:33.683Z"
+}

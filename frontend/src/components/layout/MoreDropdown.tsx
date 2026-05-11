@@ -4,7 +4,15 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { BellIcon, GemIcon, X as XIcon, CheckCheck as CheckCheckIcon, Trash2 as Trash2Icon, MenuIcon, LogOut } from 'lucide-react';
+import {
+  BellIcon,
+  GemIcon,
+  X as XIcon,
+  CheckCheck as CheckCheckIcon,
+  Trash2 as Trash2Icon,
+  MenuIcon,
+  LogOut,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
@@ -32,22 +40,17 @@ export function MoreDropdown() {
     }
   };
 
-  // Helper: When opening notifications, close menu dropdown to avoid stacking
-  const handleOpenNotifications = () => {
-    setNotificationsOpen(true);
-    setDropdownOpen(false);
-  };
-
-  // Helper: When closing notifications state, ensure consistency
   const handleNotificationsOpenChange = (open: boolean) => {
     setNotificationsOpen(open);
+    if (open) {
+      setDropdownOpen(false);
+    }
   };
 
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
   const readNotifications = useMemo(() => notifications.filter((n) => n.isRead), [notifications]);
   const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
 
-  // Notification icon based on type
   const notificationIcon = (type: Notification['type']) => {
     if (type === 'review') return '⭐';
     if (type === 'message') return '💬';
@@ -55,7 +58,6 @@ export function MoreDropdown() {
     return 'ℹ️';
   };
 
-  // Fetch notifications
   useEffect(() => {
     if (!db || !user?.uid) return;
     const qy = query(
@@ -94,7 +96,6 @@ export function MoreDropdown() {
     return () => unsub();
   }, [user?.uid]);
 
-  // Mark unread as read when opening
   useEffect(() => {
     if (!notificationsOpen) return;
     const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
@@ -104,7 +105,7 @@ export function MoreDropdown() {
         unreadIds.includes(item.id) ? { ...item, isRead: true } : item
       )));
     }).catch(() => {
-      // On error, don't update state
+      // On error, do not mutate state.
     });
   }, [notificationsOpen, notifications]);
 
@@ -136,6 +137,7 @@ export function MoreDropdown() {
       await signOut(auth);
     }
     setDropdownOpen(false);
+    setNotificationsOpen(false);
     router.push('/');
   };
 
@@ -147,8 +149,7 @@ export function MoreDropdown() {
     }
   };
 
-  // Notifications content (shared between mobile and desktop)
-  const NotificationsContent = () => (
+  const notificationsContent = (
     <>
       <div className="flex gap-2">
         <Button
@@ -191,7 +192,48 @@ export function MoreDropdown() {
 
   return (
     <>
-      {/* Main Menu Dropdown */}
+      {isAuthenticated && (
+        <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative hidden md:inline-flex"
+              aria-label={t('header.notifications', 'Notifications')}
+            >
+              <BellIcon className="h-4 w-4" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] px-1 py-0.5">
+                  {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            side="bottom"
+            sideOffset={8}
+            className="w-80 md:w-96 p-0 z-50"
+          >
+            <div className="border-b px-4 py-3 flex items-center justify-between">
+              <p className="text-sm font-semibold">{t('header.notifications')}</p>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6"
+                onClick={() => setNotificationsOpen(false)}
+                aria-label={t('common.close', 'Close')}
+              >
+                <XIcon className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="p-4">
+              {notificationsContent}
+            </div>
+          </PopoverContent>
+        </Popover>
+      )}
+
       <Popover open={dropdownOpen} onOpenChange={handleDropdownOpenChange}>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" aria-label={t('header.burger', 'Menu')}>
@@ -200,26 +242,6 @@ export function MoreDropdown() {
         </PopoverTrigger>
         <PopoverContent align="end" className="w-56 p-0">
           <div className="p-4 border-b flex flex-col gap-3">
-            {/* Notifications Button (opens Sheet on mobile, Popover on desktop) */}
-            {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="justify-start gap-2 relative w-full text-left"
-                aria-label={t('header.notifications')}
-                onClick={handleOpenNotifications}
-              >
-                <BellIcon className="h-4 w-4" />
-                <span className="flex-1">{t('header.notifications')}</span>
-                {unreadNotifications > 0 && (
-                  <span className="text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </span>
-                )}
-              </Button>
-            )}
-
-            {/* Subscription Plans */}
             <Button variant="ghost" size="sm" className="justify-start gap-2 w-full" asChild>
               <Link href="/pricing" onClick={() => setDropdownOpen(false)}>
                 <GemIcon className="h-4 w-4" />
@@ -242,33 +264,6 @@ export function MoreDropdown() {
           </div>
         </PopoverContent>
       </Popover>
-
-      {/* Desktop Notifications Popover - no sheet/dialog overlay on desktop */}
-      {isAuthenticated && notificationsOpen && (
-        <div className="hidden sm:block">
-          <Popover open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
-            <PopoverTrigger asChild>
-              <span aria-hidden className="hidden" />
-            </PopoverTrigger>
-            <PopoverContent side="bottom" align="end" sideOffset={12} className="w-80 p-0">
-              <div className="border-b px-4 py-3 flex items-center justify-between">
-                <p className="text-sm font-semibold">{t('header.notifications')}</p>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setNotificationsOpen(false)}
-                >
-                  <XIcon className="h-3 w-3" />
-                </Button>
-              </div>
-              <div className="p-4">
-                <NotificationsContent />
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
     </>
   );
 }

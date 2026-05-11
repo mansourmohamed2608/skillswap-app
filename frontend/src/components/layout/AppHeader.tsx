@@ -349,7 +349,7 @@ export function AppHeader() {
                   </SheetTrigger>
                   <SheetContent
                     side="bottom"
-                    className="left-2 right-2 bottom-2 top-auto h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] box-border rounded-t-xl p-0 overflow-hidden"
+                    className="md:hidden left-2 right-2 bottom-2 top-auto h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] box-border rounded-t-xl p-0 overflow-hidden"
                   >
                     <SheetHeader className="border-b px-4 py-3 text-left">
                       <div className="flex items-center justify-between gap-2">
