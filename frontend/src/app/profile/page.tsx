@@ -395,7 +395,7 @@ function CurrentUserProfilePageContent() {
         <TabsContent value="active-listings">
            <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.yourActiveListings')}</h2>
           {activeListings.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {activeListings.map((listing) => (
                 <ServiceCard key={listing.id} listing={listing} user={userProfile} />
               ))}
@@ -407,7 +407,7 @@ function CurrentUserProfilePageContent() {
         <TabsContent value="past-exchanges">
           <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.yourPastExchanges')}</h2>
            {pastExchanges.length > 0 ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {pastExchanges.map((listing) => (
                 <ServiceCard key={listing.id} listing={listing} user={userProfile} />
               ))}

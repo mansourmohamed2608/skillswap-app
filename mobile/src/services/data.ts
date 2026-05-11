@@ -93,6 +93,37 @@ export async function getUserById(userId: string): Promise<User | null> {
   };
 }
 
+function normalizeUsername(value: string) {
+  return String(value || '').trim().toLowerCase();
+}
+
+export async function getUserByIdentifier(identifier: string): Promise<User | null> {
+  const raw = String(identifier || '').trim();
+  if (!raw || !isFirebaseConfigured() || !db) return null;
+
+  const byId = await getUserById(raw);
+  if (byId) return byId;
+
+  const usernameLower = normalizeUsername(raw.replace(/^@+/, ''));
+  try {
+    const snap = await getDocs(query(collection(db, 'publicProfiles'), where('usernameLower', '==', usernameLower), limit(1)));
+    if (!snap.empty) {
+      const hit = snap.docs[0];
+      return { id: hit.id, ...(hit.data() as any) } as User;
+    }
+  } catch {}
+
+  try {
+    const snap = await getDocs(query(collection(db, 'publicProfiles'), where('username', '==', raw.replace(/^@+/, '')), limit(1)));
+    if (!snap.empty) {
+      const hit = snap.docs[0];
+      return { id: hit.id, ...(hit.data() as any) } as User;
+    }
+  } catch {}
+
+  return null;
+}
+
 export async function getListingsWithUsers(): Promise<Array<{ listing: ServiceListing; user: any | null }>> {
   if (!isFirebaseConfigured() || !db) return [];
   const listings = await getListings();

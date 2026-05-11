@@ -103,11 +103,11 @@ function inferProjectIdFromHostedApp() {
 const HARDCODED_PROD_BASE = 'https://europe-west3-skillswap-69yxi.cloudfunctions.net';
 
 function inferFunctionsBase() {
-  // Browser code should use same-origin /api routes so App Hosting rewrites can
-  // proxy requests to the deployed backend. Server-side callers still need an
-  // absolute base, so we only resolve that on the server.
+  const envBase = process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
+  // Prefer the build-time backend base everywhere when available. This avoids
+  // brittle same-origin /api assumptions on deployed App Hosting domains.
+  if (envBase) return envBase;
   if (typeof window !== 'undefined') return '';
-  if (process.env.NEXT_PUBLIC_FUNCTIONS_BASE) return process.env.NEXT_PUBLIC_FUNCTIONS_BASE;
   const inferredProjectId = PROJECT_ID || inferProjectIdFromHostedApp();
   // SSR: use local emulator or hardcoded prod
   return inferredProjectId

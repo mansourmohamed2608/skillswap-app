@@ -11,7 +11,7 @@ import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
 import { getErrorMessage } from '@/lib/errors';
 import { useTranslation } from 'react-i18next';
-import { getUserById } from '@/services/data';
+import { getUserById, getUserByIdentifier } from '@/services/data';
 
 export default function ChatThreadScreen() {
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
@@ -28,6 +28,7 @@ export default function ChatThreadScreen() {
     }
     return { convId: conversationIdWith(raw, user.uid), otherUserId: raw };
   }, [chatId, user?.uid]);
+  const [resolvedRecipientId, setResolvedRecipientId] = useState<string>(otherUserId || '');
   const msgs = useMessagesRTDB(convId);
   const { active, canSendMessage } = useMembership();
   const [text, setText] = useState('');
@@ -44,13 +45,21 @@ export default function ChatThreadScreen() {
 
   useEffect(() => {
     if (!otherUserId) return;
-    getUserById(otherUserId).then((u) => {
-      if (u) setPartnerName((u as any).name || '');
+    setResolvedRecipientId(otherUserId);
+    getUserByIdentifier(otherUserId).then((u) => {
+      if (u) {
+        setPartnerName((u as any).name || '');
+        setResolvedRecipientId(u.id || otherUserId);
+      } else {
+        getUserById(otherUserId).then((fallback) => {
+          if (fallback) setPartnerName((fallback as any).name || '');
+        });
+      }
     });
   }, [otherUserId]);
 
   async function onSend() {
-    if (!otherUserId || !user?.uid) return;
+    if (!resolvedRecipientId || !user?.uid) return;
     if (!text.trim()) return;
     if (!active || !canSendMessage) {
       Alert.alert(t('chat.subscriptionRequiredTitle'), t('chat.subscriptionRequiredBody'));
@@ -58,7 +67,7 @@ export default function ChatThreadScreen() {
     }
     try {
       setSending(true);
-      await sendChatMessageMobile({ recipientId: otherUserId, text: text.trim() });
+      await sendChatMessageMobile({ recipientId: resolvedRecipientId, text: text.trim() });
       setText('');
     } catch (e: any) {
       Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('errors.generic')));
@@ -78,7 +87,7 @@ export default function ChatThreadScreen() {
         }}
         scrollEventThrottle={16}
       >
-        <Text style={cn('text-2xl font-bold text-foreground mb-4')}>
+        <Text style={cn('text-2xl font-bold text-foreground mb-4')} numberOfLines={2} ellipsizeMode="tail">
           {partnerName || otherUserId || t('chat.thread.title')}
         </Text>
         <Card>
