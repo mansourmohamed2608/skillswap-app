@@ -25,7 +25,6 @@ import {
   LogOutIcon,
   ChevronDown,
   Layers3,
-  X as XIcon,
   CheckCheck as CheckCheckIcon,
   Trash2 as Trash2Icon,
 } from 'lucide-react';
@@ -355,11 +354,6 @@ export function AppHeader() {
                       <div className="flex items-center justify-between gap-2">
                         <SheetTitle className="text-sm font-semibold">{t('header.notifications')}</SheetTitle>
                         <SheetDescription className="sr-only">{t('profile.notifications.emptyBody')}</SheetDescription>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setNotificationsOpen(false)}>
-                            <XIcon className="h-3 w-3" />
-                          </Button>
-                        </div>
                       </div>
                       <div className="mt-3 flex gap-2">
                         <Button
