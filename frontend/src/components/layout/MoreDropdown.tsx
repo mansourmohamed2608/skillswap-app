@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { BellIcon, GemIcon, X as XIcon, CheckCheck as CheckCheckIcon, Trash2 as Trash2Icon, MenuIcon, LogOut } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -138,40 +139,110 @@ export function MoreDropdown() {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-0">
         <div className="p-4 border-b flex flex-col gap-3">
-          {/* Notifications (when authenticated) */}
+          {/* Notifications - Sheet on mobile, Popover on desktop */}
           {isAuthenticated && (
-            <div className="w-full">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="justify-start gap-2 relative w-full text-left"
-                aria-label={t('header.notifications')}
-                onClick={() => setNotificationsOpen((v) => !v)}
-              >
-                <BellIcon className="h-4 w-4" />
-                <span className="flex-1">{t('header.notifications')}</span>
-                {unreadNotifications > 0 && (
-                  <span className="text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5">
-                    {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                  </span>
-                )}
-              </Button>
+            <>
+              {/* Mobile: Simple button that opens Sheet */}
+              <div className="sm:hidden">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start gap-2 relative w-full text-left"
+                  aria-label={t('header.notifications')}
+                  onClick={() => {
+                    setNotificationsOpen(true);
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <BellIcon className="h-4 w-4" />
+                  <span className="flex-1">{t('header.notifications')}</span>
+                  {unreadNotifications > 0 && (
+                    <span className="text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5">
+                      {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                    </span>
+                  )}
+                </Button>
+              </div>
 
-              {notificationsOpen && (
-                <div className="mt-2 bg-popover rounded-md border">
-                  <div className="border-b px-4 py-3">
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <p className="text-sm font-semibold">{t('header.notifications')}</p>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => setNotificationsOpen(false)}
-                      >
-                        <XIcon className="h-3 w-3" />
-                      </Button>
+              {/* Desktop: Nested Popover */}
+              <div className="hidden sm:block">
+                <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="justify-start gap-2 relative w-full text-left"
+                      aria-label={t('header.notifications')}
+                    >
+                      <BellIcon className="h-4 w-4" />
+                      <span className="flex-1">{t('header.notifications')}</span>
+                      {unreadNotifications > 0 && (
+                        <span className="text-xs bg-accent text-accent-foreground rounded-full px-2 py-0.5">
+                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent side="left" align="start" className="w-80 p-0">
+                    <div className="border-b px-4 py-3">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-sm font-semibold">{t('header.notifications')}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => setNotificationsOpen(false)}
+                        >
+                          <XIcon className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={markAllAsRead}
+                          disabled={unreadNotifications === 0}
+                        >
+                          <CheckCheckIcon className="mr-1 h-3 w-3" />
+                          Mark all read
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearRead}
+                          disabled={readNotifications.length === 0}
+                        >
+                          <Trash2Icon className="mr-1 h-3 w-3" />
+                          Clear read
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    {previewNotifications.length === 0 ? (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                        {t('profile.notifications.emptyBody')}
+                      </div>
+                    ) : (
+                      <ul className="max-h-64 overflow-y-auto">
+                        {previewNotifications.map((notif) => (
+                          <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
+                            <p className="line-clamp-2">{notificationIcon(notif.type)} {notif.content}</p>
+                            <p className="text-muted-foreground text-xs mt-1">{notificationTimeLabel(notif)}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Mobile Sheet */}
+              <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                <SheetContent side="bottom" className="sm:hidden">
+                  <SheetHeader>
+                    <SheetTitle>{t('header.notifications')}</SheetTitle>
+                  </SheetHeader>
+                  <div className="mt-4 flex flex-col gap-2">
+                    <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -193,25 +264,24 @@ export function MoreDropdown() {
                         Clear read
                       </Button>
                     </div>
+                    {previewNotifications.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        {t('profile.notifications.emptyBody')}
+                      </div>
+                    ) : (
+                      <ul className="max-h-96 overflow-y-auto space-y-1">
+                        {previewNotifications.map((notif) => (
+                          <li key={notif.id} className={`px-3 py-2 text-xs rounded border ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
+                            <p className="line-clamp-2">{notificationIcon(notif.type)} {notif.content}</p>
+                            <p className="text-muted-foreground text-xs mt-1">{notificationTimeLabel(notif)}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-
-                  {previewNotifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">
-                      {t('profile.notifications.emptyBody')}
-                    </div>
-                  ) : (
-                    <ul className="max-h-64 overflow-y-auto">
-                      {previewNotifications.map((notif) => (
-                        <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
-                          <p className="line-clamp-2">{notificationIcon(notif.type)} {notif.content}</p>
-                          <p className="text-muted-foreground text-xs mt-1">{notificationTimeLabel(notif)}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
+                </SheetContent>
+              </Sheet>
+            </>
           )}
 
           {/* Subscription Plans */}
