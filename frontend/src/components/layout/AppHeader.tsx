@@ -350,7 +350,7 @@ export function AppHeader() {
                     side="bottom"
                     className="md:hidden left-2 right-2 bottom-2 top-auto h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] box-border rounded-t-xl p-0 overflow-hidden"
                   >
-                    <SheetHeader className="border-b px-4 py-3 text-left">
+                    <SheetHeader className="border-b px-4 py-3 text-start">
                       <div className="flex items-center justify-between gap-2">
                         <SheetTitle className="text-sm font-semibold">{t('header.notifications')}</SheetTitle>
                         <SheetDescription className="sr-only">{t('profile.notifications.emptyBody')}</SheetDescription>
