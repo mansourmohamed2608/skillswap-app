@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { LogInIcon, AlertCircleIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { auth } from '@/services/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -44,11 +44,23 @@ export function SignInForm() {
     try {
       if (!auth) throw new Error(t('auth.signIn.configError'));
       await signInWithEmailAndPassword(auth, email, password);
+      await new Promise<void>((resolve) => {
+        if (auth.currentUser) {
+          resolve();
+          return;
+        }
+        const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+          if (nextUser) {
+            unsubscribe();
+            resolve();
+          }
+        });
+      });
       toast({
         title: t('auth.signIn.successTitle'),
         description: t('auth.signIn.successDescription'),
       });
-      router.push('/profile');
+      router.replace('/profile');
     } catch (err: any) {
       // Provide a generic error message but log the real error for debugging.
       const message = getErrorMessage(err, t('auth.signIn.invalidCredentials'));
