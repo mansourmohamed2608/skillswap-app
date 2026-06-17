@@ -9,6 +9,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "skillswap-69yxi.appspot.com",
         "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     },
@@ -22,6 +23,7 @@
       },
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "skillswap-69yxi.appspot.com",
         "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     },
@@ -36,6 +38,7 @@
       "env": {
         "EXPO_PUBLIC_USE_EMULATORS": "false",
         "EXPO_PUBLIC_USE_MOCK_PAYMENTS": "false",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "skillswap-69yxi.appspot.com",
         "EXPO_PUBLIC_FUNCTIONS_BASE": "https://skillswap-69yxi.web.app"
       }
     }
