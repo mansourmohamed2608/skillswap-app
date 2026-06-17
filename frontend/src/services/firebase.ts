@@ -22,7 +22,7 @@ const FALLBACK_CONFIG: FirebaseOptions = {
   apiKey: "AIzaSyAF_5Bruj0iP0pbuSGwZgB5bqwTcOwWhUc",
   authDomain: "skillswap-69yxi.firebaseapp.com",
   projectId: "skillswap-69yxi",
-  storageBucket: "skillswap-69yxi.firebasestorage.app",
+  storageBucket: "skillswap-69yxi.appspot.com",
   messagingSenderId: "1088811861633",
   appId: "1:1088811861633:web:50cdabc07ce7535f55af80",
   databaseURL: "https://skillswap-69yxi-default-rtdb.europe-west1.firebasedatabase.app",
@@ -79,6 +79,11 @@ export const db: Firestore | null = app ? getFirestore(app) : null;
 export const storage: FirebaseStorage | null = app ? getStorage(app) : null;
 export const rtdb: Database | null = app ? getDatabase(app) : null;
 
+function shouldUseEmulators(): boolean {
+  const flag = process.env.NEXT_PUBLIC_USE_EMULATORS || process.env.USE_FIREBASE_EMULATORS;
+  return String(flag || '').toLowerCase() === 'true';
+}
+
 // ---------- Emulator wiring (Studio-aware) ----------
 declare global {
   interface Window {
@@ -104,6 +109,7 @@ function detectStudioBaseHost(): string | null {
 
 function connectEmulatorsIfNeeded() {
   if (process.env.NODE_ENV !== "development") return;
+  if (!shouldUseEmulators()) return;
   if (typeof window === "undefined") return;
   if (window.__EMULATORS_CONNECTED__) return;
   if (!auth || !db || !storage) return;
@@ -184,6 +190,7 @@ function connectEmulatorsForServer(): void {
   // Only run on the server in development mode.
   if (typeof window !== 'undefined') return;
   if (process.env.NODE_ENV !== 'development') return;
+  if (!shouldUseEmulators()) return;
   if (!auth || !db || !storage) return;
   // Prevent connecting more than once
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
