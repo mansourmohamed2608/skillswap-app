@@ -21,6 +21,52 @@ import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
 import { LocateFixedIcon, Loader2, CheckCircle2Icon } from 'lucide-react';
 
+const PERSONAL_EMAIL_DOMAINS = new Set([
+  'gmail.com',
+  'googlemail.com',
+  'yahoo.com',
+  'yahoo.co.uk',
+  'outlook.com',
+  'hotmail.com',
+  'live.com',
+  'msn.com',
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  'aol.com',
+  'proton.me',
+  'protonmail.com',
+  'zoho.com',
+  'gmx.com',
+  'mail.com',
+  'yandex.com',
+  'yandex.ru',
+  'tuta.com',
+  'tutanota.com',
+]);
+
+function normalizeBusinessTeamEmails(value: string): string[] {
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((item) => item.toLowerCase());
+}
+
+function validateBusinessTeamEmails(value: string): string | null {
+  const emails = normalizeBusinessTeamEmails(value);
+  for (const email of emails) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return 'Team member emails must be valid email addresses.';
+    }
+    const domain = email.split('@')[1] || '';
+    if (PERSONAL_EMAIL_DOMAINS.has(domain)) {
+      return 'Team member emails must use a business or domain-based address, not Gmail or another personal account.';
+    }
+  }
+  return null;
+}
+
 // Lazy-load the cropper dialog on client only to keep initial bundle smaller
 const CoverCropperDialog = dynamic(() => import('@/features/profile/components/CoverCropperDialog'), { ssr: false });
 
@@ -256,7 +302,13 @@ export default function EditProfilePage() {
         if (businessWebsite.trim()) businessProfile.website = businessWebsite.trim();
         if (businessBrandColor.trim()) businessProfile.brandColor = businessBrandColor.trim();
         if (resolvedBusinessLogoUrl) businessProfile.logoUrl = resolvedBusinessLogoUrl;
-        const teamList = teamMembers.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 5);
+          const teamValidationError = validateBusinessTeamEmails(teamMembers);
+          if (teamValidationError) {
+            setError(teamValidationError);
+            setLoading(false);
+            return;
+          }
+          const teamList = normalizeBusinessTeamEmails(teamMembers).slice(0, 5);
         if (teamList.length) businessProfile.teamMembers = teamList;
         const customList = customCategories.split(',').map((item) => item.trim()).filter(Boolean).slice(0, 10);
         if (customList.length) businessProfile.customCategories = customList;

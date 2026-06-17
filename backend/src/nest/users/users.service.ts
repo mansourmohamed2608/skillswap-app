@@ -14,6 +14,30 @@ export class StatusError extends Error {
 
 @Injectable()
 export class UsersService {
+  private readonly personalEmailDomains = new Set([
+    'gmail.com',
+    'googlemail.com',
+    'yahoo.com',
+    'yahoo.co.uk',
+    'outlook.com',
+    'hotmail.com',
+    'live.com',
+    'msn.com',
+    'icloud.com',
+    'me.com',
+    'mac.com',
+    'aol.com',
+    'proton.me',
+    'protonmail.com',
+    'zoho.com',
+    'gmx.com',
+    'mail.com',
+    'yandex.com',
+    'yandex.ru',
+    'tuta.com',
+    'tutanota.com',
+  ]);
+
   private normalizeUsername(value: string): string {
     return String(value || '').trim().toLowerCase();
   }
@@ -35,6 +59,19 @@ export class UsersService {
       throw new StatusError(400, 'Invalid username format');
     }
     return username;
+  }
+
+  private validateBusinessEmailOrThrow(value: string): string {
+    const email = String(value || '').trim().toLowerCase();
+    const match = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!match) {
+      throw new StatusError(400, 'Each teamMembers entry must be a valid email address');
+    }
+    const domain = email.split('@')[1] || '';
+    if (this.personalEmailDomains.has(domain)) {
+      throw new StatusError(400, 'Team member emails must use a business or domain-based address');
+    }
+    return email;
   }
 
   private toNameSlug(name: string): string {
@@ -200,7 +237,7 @@ export class UsersService {
             .filter(Boolean)
             .map((item: string) => {
               if (item.length > 100) throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
-              return item;
+              return this.validateBusinessEmailOrThrow(item);
             })
             .slice(0, 5)
         : [];
