@@ -8,7 +8,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { db, storage, auth } from '@/services/firebase';
 import { updateUserProfile } from '@/services/api';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -67,6 +67,10 @@ function validateBusinessTeamEmails(value: string): string | null {
   return null;
 }
 
+function isAllowedPortfolioFile(file: File): boolean {
+  return file.type.startsWith('image/') || file.type === 'application/pdf';
+}
+
 // Lazy-load the cropper dialog on client only to keep initial bundle smaller
 const CoverCropperDialog = dynamic(() => import('@/features/profile/components/CoverCropperDialog'), { ssr: false });
 
@@ -109,6 +113,11 @@ export default function EditProfilePage() {
   const [businessLogoFile, setBusinessLogoFile] = useState<File | null>(null);
   const [businessLogoUrl, setBusinessLogoUrl] = useState<string | null>(null);
   const [businessLogoPreview, setBusinessLogoPreview] = useState<string | null>(null);
+  const [portfolioItems, setPortfolioItems] = useState<Array<any>>([]);
+  const [pendingPortfolioDeletes, setPendingPortfolioDeletes] = useState<string[]>([]);
+  const [newPortfolioTitle, setNewPortfolioTitle] = useState('');
+  const [newPortfolioUrl, setNewPortfolioUrl] = useState('');
+  const [newPortfolioFile, setNewPortfolioFile] = useState<File | null>(null);
   const [teamMembers, setTeamMembers] = useState('');
   const [customCategories, setCustomCategories] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -139,6 +148,9 @@ export default function EditProfilePage() {
           setBusinessLogoPreview(business.logoUrl ?? null);
           setTeamMembers(Array.isArray(business.teamMembers) ? business.teamMembers.join(', ') : '');
           setCustomCategories(Array.isArray(business.customCategories) ? business.customCategories.join(', ') : '');
+          // load portfolio (business or personal)
+          const rawPortfolio = Array.isArray(business.portfolio) ? business.portfolio : Array.isArray(data.portfolio) ? data.portfolio : [];
+          setPortfolioItems(rawPortfolio.map((p: any) => ({ ...p })));
         }
         setEmail(user.email ?? '');
       } catch (err: any) {
@@ -166,6 +178,43 @@ export default function EditProfilePage() {
       setBusinessLogoPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleNewPortfolioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0] || null;
+    if (f && !isAllowedPortfolioFile(f)) {
+      setError(t('profile.edit.portfolio.invalidFile'));
+      setNewPortfolioFile(null);
+      e.target.value = '';
+      return;
+    }
+    setNewPortfolioFile(f);
+  };
+
+  const handleAddPortfolioItem = () => {
+    if (!newPortfolioTitle && !newPortfolioUrl && !newPortfolioFile) return;
+    const id = String(Date.now());
+    const item: any = {
+      id,
+      title: newPortfolioTitle.trim() || undefined,
+      url: newPortfolioUrl.trim() || undefined,
+      file: newPortfolioFile || undefined,
+      fileUrl: undefined,
+      thumbnail: undefined,
+      type: newPortfolioFile ? (newPortfolioFile.type.startsWith('image/') ? 'image' : 'file') : (newPortfolioUrl ? 'link' : undefined),
+    };
+    setPortfolioItems((prev) => [item, ...prev].slice(0, 50));
+    setNewPortfolioTitle('');
+    setNewPortfolioUrl('');
+    setNewPortfolioFile(null);
+  };
+
+  const handleRemovePortfolioItem = async (id: string) => {
+    const item = portfolioItems.find((p) => p.id === id);
+    if (item?.fileUrl) {
+      setPendingPortfolioDeletes((prev) => Array.from(new Set([...prev, item.fileUrl])));
+    }
+    setPortfolioItems((prev) => prev.filter((p) => p.id !== id));
   };
 
   async function fetchCurrentLocation() {
@@ -282,6 +331,31 @@ export default function EditProfilePage() {
         await uploadBytes(logoRef, businessLogoFile);
         resolvedBusinessLogoUrl = await getDownloadURL(logoRef);
       }
+
+      // Upload any portfolio files that were added with a File object
+      for (let i = 0; i < portfolioItems.length; i++) {
+        const it = portfolioItems[i];
+        if (it.file && !it.fileUrl && storage) {
+          if (!isAllowedPortfolioFile(it.file)) {
+            throw new Error(t('profile.edit.portfolio.invalidFile'));
+          }
+          const ext = it.file.name.split('.').pop() ?? 'bin';
+          const fileName = `${Date.now()}.${ext}`;
+          const pRef = ref(storage, `portfolio/${user.uid}/${it.id}/${fileName}`);
+          // upload and capture URL
+          // eslint-disable-next-line no-await-in-loop
+          await uploadBytes(pRef, it.file);
+          // eslint-disable-next-line no-await-in-loop
+          const url = await getDownloadURL(pRef);
+          // update local item
+          /* eslint-disable no-param-reassign */
+          it.fileUrl = url;
+          if (!it.thumbnail && it.file.type && it.file.type.startsWith('image/')) it.thumbnail = url;
+          delete it.file;
+          /* eslint-enable no-param-reassign */
+          setPortfolioItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, fileUrl: it.fileUrl, thumbnail: it.thumbnail } : p)));
+        }
+      }
       // Build profile update object
       const profileUpdate: any = {
         name: displayName,
@@ -302,6 +376,18 @@ export default function EditProfilePage() {
         if (businessWebsite.trim()) businessProfile.website = businessWebsite.trim();
         if (businessBrandColor.trim()) businessProfile.brandColor = businessBrandColor.trim();
         if (resolvedBusinessLogoUrl) businessProfile.logoUrl = resolvedBusinessLogoUrl;
+        // Attach portfolio entries for business profile if any
+        if (portfolioItems.length) {
+          businessProfile.portfolio = portfolioItems.map((it) => ({
+            id: it.id,
+            title: it.title,
+            description: it.description,
+            url: it.url,
+            fileUrl: it.fileUrl,
+            thumbnail: it.thumbnail,
+            type: it.type,
+          }));
+        }
           const teamValidationError = validateBusinessTeamEmails(teamMembers);
           if (teamValidationError) {
             setError(teamValidationError);
@@ -316,8 +402,29 @@ export default function EditProfilePage() {
           profileUpdate.businessProfile = businessProfile;
         }
       }
+
+      // If personal (non-business) portfolio entries exist and not under businessProfile
+      if (!isBusinessPlan && portfolioItems.length) {
+        profileUpdate.portfolio = portfolioItems.map((it) => ({
+          id: it.id,
+          title: it.title,
+          description: it.description,
+          url: it.url,
+          fileUrl: it.fileUrl,
+          thumbnail: it.thumbnail,
+          type: it.type,
+        }));
+      }
       // First update the profile in Firestore using the current valid ID token.
       await updateUserProfile(profileUpdate);
+      if (pendingPortfolioDeletes.length && storage) {
+        const storageClient = storage;
+        const results = await Promise.allSettled(
+          pendingPortfolioDeletes.map((fileUrl) => deleteObject(ref(storageClient, fileUrl)))
+        );
+        const failedDeletes = pendingPortfolioDeletes.filter((_, index) => results[index].status === 'rejected');
+        setPendingPortfolioDeletes(failedDeletes);
+      }
       // Only after updating the profile do we change email/password. Updating
       // email or password invalidates the existing ID token, which can cause
       // subsequent authenticated API calls to fail with "token revoked".
@@ -359,6 +466,56 @@ export default function EditProfilePage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder={t('profile.edit.namePlaceholder')}
               />
+            </div>
+            <div className="rounded-md border bg-muted/10 p-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">{t('profile.edit.portfolio.title') || 'Portfolio'}</h3>
+                <p className="text-xs text-muted-foreground">{t('profile.edit.portfolio.help') || 'Add past work links or uploads.'}</p>
+              </div>
+              <div className="mt-3 space-y-2">
+                {portfolioItems.length ? (
+                  <div className="space-y-2">
+                    {portfolioItems.map((it) => (
+                      <div key={it.id} className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          {it.thumbnail ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={it.thumbnail} alt={it.title || ''} className="h-10 w-10 rounded object-cover" />
+                          ) : (
+                            <div className="h-10 w-10 rounded bg-slate-100 flex items-center justify-center text-xs text-muted-foreground">{it.type || 'item'}</div>
+                          )}
+                          <div className="text-sm">
+                            <div className="font-medium">{it.title || it.url}</div>
+                            <div className="text-xs text-muted-foreground">{it.url}</div>
+                          </div>
+                        </div>
+                        <div>
+                          <Button type="button" variant="ghost" onClick={() => handleRemovePortfolioItem(it.id)}>{t('profile.edit.portfolio.remove') || 'Remove'}</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">{t('profile.edit.portfolio.empty') || 'No portfolio items yet.'}</p>
+                )}
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:items-end">
+                  <div className="sm:col-span-1">
+                    <Label htmlFor="newPortfolioTitle">{t('profile.edit.portfolio.titleLabel') || 'Title'}</Label>
+                    <Input id="newPortfolioTitle" value={newPortfolioTitle} onChange={(e) => setNewPortfolioTitle(e.target.value)} placeholder={t('profile.edit.portfolio.titlePlaceholder') || 'Project title'} />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <Label htmlFor="newPortfolioUrl">{t('profile.edit.portfolio.urlLabel') || 'URL'}</Label>
+                    <Input id="newPortfolioUrl" value={newPortfolioUrl} onChange={(e) => setNewPortfolioUrl(e.target.value)} placeholder={t('profile.edit.portfolio.urlPlaceholder') || 'https://example.com'} />
+                  </div>
+                  <div className="sm:col-span-1">
+                    <Label htmlFor="newPortfolioFile">{t('profile.edit.portfolio.fileLabel') || 'Upload file'}</Label>
+                    <Input id="newPortfolioFile" type="file" accept="image/*,application/pdf" onChange={handleNewPortfolioFileChange} />
+                    <div className="mt-2 flex gap-2">
+                      <Button type="button" onClick={handleAddPortfolioItem}>{t('profile.edit.portfolio.add') || 'Add'}</Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div>
               <Label htmlFor="username">{t('profile.edit.usernameLabel')}</Label>

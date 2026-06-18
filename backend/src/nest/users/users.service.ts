@@ -146,6 +146,19 @@ export class UsersService {
     if (bpWebsite) businessProfile.website = bpWebsite;
     if (bpBrandColor) businessProfile.brandColor = bpBrandColor;
     if (bpLogoUrl) businessProfile.logoUrl = bpLogoUrl;
+    // include portfolio entries if present
+    const rawPortfolio = Array.isArray(bp.portfolio) ? bp.portfolio : Array.isArray(data?.portfolio) ? data.portfolio : [];
+    if (rawPortfolio.length) {
+      businessProfile.portfolio = rawPortfolio.map((item: any) => ({
+        id: item?.id || undefined,
+        title: item?.title || undefined,
+        description: item?.description || undefined,
+        url: item?.url || undefined,
+        fileUrl: item?.fileUrl || undefined,
+        thumbnail: item?.thumbnail || undefined,
+        type: item?.type || undefined,
+      }));
+    }
     const username = String(data?.profile?.username || data?.username || '').trim();
     const usernameLower = String(data?.profile?.usernameLower || data?.usernameLower || username.toLowerCase()).trim().toLowerCase();
     const name = String(data?.name || data?.fullName || data?.displayName || 'Member').trim();
@@ -253,6 +266,37 @@ export class UsersService {
             .slice(0, 10)
         : [];
       if (customCategories.length) cleaned.customCategories = customCategories;
+      // Portfolio entries (for business profiles)
+      const portfolio = Array.isArray(bp.portfolio)
+        ? bp.portfolio
+            .map((item: any) => item || {})
+            .map((item: any) => {
+              const title = String(item.title || '').trim();
+              const description = String(item.description || '').trim();
+              const url = String(item.url || '').trim();
+              const fileUrl = String(item.fileUrl || '').trim();
+              const thumbnail = String(item.thumbnail || '').trim();
+              const type = String(item.type || '').trim(); // e.g., 'image','link','pdf','video'
+              if (!title && !url && !fileUrl) return null;
+              if (title.length > 200) throw new StatusError(400, 'Each portfolio title must be 200 characters or fewer');
+              if (description.length > 2000) throw new StatusError(400, 'Each portfolio description must be 2000 characters or fewer');
+              if (url && url.length > 2000) throw new StatusError(400, 'Each portfolio URL must be 2000 characters or fewer');
+              if (fileUrl && fileUrl.length > 2000) throw new StatusError(400, 'Each portfolio fileUrl must be 2000 characters or fewer');
+              return {
+                id: String(item.id || '').trim() || undefined,
+                title: title || undefined,
+                description: description || undefined,
+                url: url || undefined,
+                fileUrl: fileUrl || undefined,
+                thumbnail: thumbnail || undefined,
+                type: type || undefined,
+                updatedAt: this.serverTimestamp(),
+              };
+            })
+            .filter(Boolean)
+            .slice(0, 50)
+        : [];
+      if (portfolio.length) cleaned.portfolio = portfolio;
       if (Object.keys(cleaned).length > 0) {
         sanitized.businessProfile = cleaned;
       } else {
@@ -261,6 +305,40 @@ export class UsersService {
     }
     if (!Object.keys(sanitized).length) {
       throw new StatusError(400, 'No updatable profile fields provided');
+    }
+    // Top-level portfolio for personal profiles (non-business)
+    if (Object.prototype.hasOwnProperty.call(sanitized, 'portfolio')) {
+      const rawPortfolio = Array.isArray(sanitized.portfolio) ? sanitized.portfolio : [];
+      const personalPortfolio = rawPortfolio
+        .map((item: any) => item || {})
+        .map((item: any) => {
+          const title = String(item.title || '').trim();
+          const description = String(item.description || '').trim();
+          const url = String(item.url || '').trim();
+          const fileUrl = String(item.fileUrl || '').trim();
+          const thumbnail = String(item.thumbnail || '').trim();
+          const type = String(item.type || '').trim();
+          if (!title && !url && !fileUrl) return null;
+          if (title.length > 200) throw new StatusError(400, 'Each portfolio title must be 200 characters or fewer');
+          if (description.length > 2000) throw new StatusError(400, 'Each portfolio description must be 2000 characters or fewer');
+          return {
+            id: String(item.id || '').trim() || undefined,
+            title: title || undefined,
+            description: description || undefined,
+            url: url || undefined,
+            fileUrl: fileUrl || undefined,
+            thumbnail: thumbnail || undefined,
+            type: type || undefined,
+            updatedAt: this.serverTimestamp(),
+          };
+        })
+        .filter(Boolean)
+        .slice(0, 20);
+      if (personalPortfolio.length) {
+        sanitized.portfolio = personalPortfolio;
+      } else {
+        delete sanitized.portfolio;
+      }
     }
     if (sanitized.profile && typeof sanitized.profile === 'object') {
       const profileObj = { ...(sanitized.profile as Record<string, any>) };

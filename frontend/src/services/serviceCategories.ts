@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-export { serviceCategories } from '../../../backend/src/core/categories';
+export { serviceCategories } from './categories';
 
 function normalizeCategory(category: string): string {
   return category

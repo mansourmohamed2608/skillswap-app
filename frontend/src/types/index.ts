@@ -1,4 +1,15 @@
 
+export interface PortfolioItem {
+  id?: string;
+  title?: string;
+  description?: string;
+  url?: string;
+  fileUrl?: string;
+  thumbnail?: string;
+  type?: string;
+  updatedAt?: unknown;
+}
+
 export interface User {
   id: string;
   username?: string;
@@ -34,7 +45,9 @@ export interface User {
     teamMembers?: string[];
     customCategories?: string[];
     accountManager?: string;
+    portfolio?: PortfolioItem[];
   };
+  portfolio?: PortfolioItem[];
   kyc?: {
     status?: string;
     provider?: string;

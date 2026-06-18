@@ -328,6 +328,32 @@ function CurrentUserProfilePageContent() {
         </div>
       )}
 
+      {(userProfile?.portfolio?.length || businessProfile?.portfolio?.length) && (
+        <div className="rounded-md border bg-muted/30 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-primary">{t('profile.portfolio.title') || 'Portfolio'}</h3>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {(businessProfile?.portfolio || userProfile?.portfolio || []).map((item: any) => (
+              <div key={item.id || item.url} className="rounded border p-3 bg-white/60">
+                {item.thumbnail ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.thumbnail} alt={item.title || ''} className="w-full h-36 object-cover rounded" />
+                ) : null}
+                <div className="mt-2">
+                  <div className="font-medium text-sm">{item.title || item.url}</div>
+                  {item.url ? (
+                    <a href={item.url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">{t('profile.portfolio.view') || 'View'}</a>
+                  ) : item.fileUrl ? (
+                    <a href={item.fileUrl} target="_blank" rel="noreferrer" className="text-xs text-primary underline">{t('profile.portfolio.download') || 'Download'}</a>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* KYC status and retry */}
       <div className="flex flex-col gap-3 rounded-xl border bg-muted/30 px-4 py-4 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">

@@ -1,1 +1,1 @@
-export { marketplaceCategories, featuredMarketplaceCategories, type CategoryLink } from '../../../../backend/src/core/categories';
+export { marketplaceCategories, featuredMarketplaceCategories, type CategoryLink } from '@/services/categories';

@@ -1200,6 +1200,11 @@ const resources = {
           categoriesLabel: "Custom categories:",
           managerLabel: "Account manager:",
         },
+        portfolio: {
+          title: "Portfolio",
+          view: "View",
+          download: "Download",
+        },
         edit: {
           title: "Update Your Profile",
           errorLoad: "Failed to load profile",
@@ -1237,6 +1242,19 @@ const resources = {
           locationUnavailable: "Location unavailable. Check your device location settings.",
           locationTimeout: "Location request timed out. Please try again.",
           locationUnknownError: "Unable to get your current location.",
+          portfolio: {
+            title: "Portfolio",
+            help: "Add past work links or uploads.",
+            remove: "Remove",
+            empty: "No portfolio items yet.",
+            titleLabel: "Title",
+            titlePlaceholder: "Project title",
+            urlLabel: "URL",
+            urlPlaceholder: "https://example.com",
+            fileLabel: "Upload file",
+            add: "Add",
+            invalidFile: "Only images and PDF files are allowed.",
+          },
           business: {
             title: "Business Profile",
             subtitle: "Customize branding and team details for your Business plan.",
@@ -2550,6 +2568,11 @@ const resources = {
           categoriesLabel: "الفئات المخصّصة:",
           managerLabel: "مدير الحساب:",
         },
+        portfolio: {
+          title: "معرض الأعمال",
+          view: "عرض",
+          download: "تنزيل",
+        },
         edit: {
           title: "تحديث ملفك الشخصي",
           errorLoad: "فشل تحميل الملف الشخصي",
@@ -2587,6 +2610,19 @@ const resources = {
           locationUnavailable: "الموقع غير متاح. تحقق من إعدادات الموقع في الجهاز.",
           locationTimeout: "انتهت مهلة طلب الموقع. حاول مرة أخرى.",
           locationUnknownError: "تعذر الحصول على موقعك الحالي.",
+          portfolio: {
+            title: "معرض الأعمال",
+            help: "أضف روابط أعمال سابقة أو ملفات مرفوعة.",
+            remove: "حذف",
+            empty: "لا توجد عناصر في المعرض بعد.",
+            titleLabel: "العنوان",
+            titlePlaceholder: "عنوان المشروع",
+            urlLabel: "الرابط",
+            urlPlaceholder: "https://example.com",
+            fileLabel: "رفع ملف",
+            add: "إضافة",
+            invalidFile: "يسمح فقط بملفات الصور وPDF.",
+          },
           business: {
             title: "ملف الأعمال",
             subtitle: "خصّص العلامة التجارية والفريق لخطة الأعمال.",
