@@ -19,6 +19,15 @@ const nextConfig: NextConfig = {
   // Required for Firebase App Hosting - adapter reads .next/standalone
   output: 'standalone',
 
+  experimental: {
+    externalDir: true,
+  },
+
+  // Keep Turbopack scoped to the frontend workspace even when launched from repo root.
+  turbopack: {
+    root: __dirname,
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'placehold.co', port: '', pathname: '/**' },

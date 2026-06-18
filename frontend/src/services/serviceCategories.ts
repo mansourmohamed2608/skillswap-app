@@ -1,46 +1,5 @@
-import type { ServiceCategory } from '@/types';
 import type { TFunction } from 'i18next';
-
-export const serviceCategories: ServiceCategory[] = [
-  'Graphic Design',
-  'Gardening',
-  'Web Development',
-  'Home Repair',
-  'Tech Support',
-  'Tutoring',
-  'Pet Care',
-  'Photography',
-  'Videography',
-  'Repair Services',
-  'Cooking',
-  'Writing',
-  'Music Lessons',
-  'Fitness Training',
-  'Event Planning',
-  'Consulting',
-  'Language Lessons',
-  'Arts & Crafts',
-  'Moving Help',
-  'Beauty Services',
-  'Personal Care',
-  'Transportation',
-  'Study buddy',
-  'Modeling',
-  'Pets zone',
-  'Ladies hangout',
-  'Delicious food',
-  'Sporty',
-  "Hear me out / I'm all ears",
-  'Babysitting',
-  'Diet guide',
-  'Share a ride / Carpooling',
-  'Beauty and makeup',
-  'Hobby and happy',
-  'Business consulting',
-  'Social media platforms management',
-  'Content creation',
-  'Other',
-];
+export { serviceCategories } from '../../../backend/src/core/categories';
 
 function normalizeCategory(category: string): string {
   return category
