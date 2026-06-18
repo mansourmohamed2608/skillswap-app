@@ -24,6 +24,22 @@ export const serviceCategories: ServiceCategory[] = [
   'Beauty Services',
   'Personal Care',
   'Transportation',
+  'Study buddy',
+  'Modeling',
+  'Pets zone',
+  'Ladies hangout',
+  'Delicious food',
+  'Sporty',
+  "Hear me out / I'm all ears",
+  'Babysitting',
+  'Diet guide',
+  'Share a ride / Carpooling',
+  'Beauty and makeup',
+  'Hobby and happy',
+  'Business consulting',
+  'Social media platforms management',
+  'Content creation',
+  'Other',
 ];
 
 function normalizeCategory(category: string): string {

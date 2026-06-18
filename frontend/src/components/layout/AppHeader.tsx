@@ -254,7 +254,7 @@ export function AppHeader() {
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-[100] w-56">
+                    <DropdownMenuContent align="end" className="z-[100] w-56 max-h-[60vh] overflow-y-auto">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -283,7 +283,7 @@ export function AppHeader() {
                         <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="z-[100] w-56">
+                    <DropdownMenuContent align="end" className="z-[100] w-56 max-h-[60vh] overflow-y-auto">
                       {marketplaceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
                           <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
@@ -409,7 +409,7 @@ export function AppHeader() {
                       <Layers3 className="h-4 w-4" aria-hidden="true" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent side="bottom" align="end" className="z-[110] w-56 p-0">
+                  <PopoverContent side="bottom" align="end" className="z-[110] w-56 max-h-[60vh] overflow-y-auto p-0">
                     <div className="space-y-1 p-2">
                       {marketplaceCategories.map((category) => (
                         <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.name)}`} className="block px-3 py-2 text-sm rounded hover:bg-muted">
