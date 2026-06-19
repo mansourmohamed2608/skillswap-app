@@ -1,10 +1,10 @@
 'use client';
 
-// src/app/auth/signup/page.tsx
 import { SignUpForm } from '@/features/auth/components/SignUpForm';
-import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Section } from '@/components/layout/Section';
 
 const AuthLogo = () => (
   <svg
@@ -29,28 +29,20 @@ const AuthLogo = () => (
 export default function SignUpPage() {
   const { t } = useTranslation();
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem-5rem)] py-8">
-      <div className="absolute inset-0 opacity-5 -z-10">
-        <Image 
-            src="https://placehold.co/1920x1080.png" 
-            alt={t('auth.backgroundAlt')} 
-            fill
-            style={{objectFit: 'cover'}}
-            data-ai-hint="abstract pattern"
-            priority={false}
-        />
-      </div>
-      <Link href="/" className="flex items-center gap-2 text-primary mb-8">
-        <AuthLogo />
-        <span className="font-bold text-2xl">{t('common.appName')}</span>
-      </Link>
-      <SignUpForm />
-       <p className="mt-8 text-center text-sm text-muted-foreground">
-        {t('auth.signUp.termsPrefix')}{' '}
-        <Link href="/legal/terms" className="underline hover:text-primary">
-          {t('auth.signUp.termsLink')}
-        </Link>.
-      </p>
-    </div>
+    <Section tight className="py-8">
+      <PageContainer className="mx-auto w-full max-w-lg">
+        <Link href="/" className="mb-6 flex items-center justify-center gap-2 text-primary">
+          <AuthLogo />
+          <span className="text-2xl font-bold">{t('common.appName')}</span>
+        </Link>
+        <SignUpForm />
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          {t('auth.signUp.termsPrefix')}{' '}
+          <Link href="/legal/terms" className="underline hover:text-primary">
+            {t('auth.signUp.termsLink')}
+          </Link>.
+        </p>
+      </PageContainer>
+    </Section>
   );
 }

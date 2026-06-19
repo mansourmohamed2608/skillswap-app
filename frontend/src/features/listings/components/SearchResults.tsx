@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { ServiceCard } from '@/features/listings/components/ServiceCard';
+import { ListingCard } from '@/features/listings/components/ListingCard';
 import type { ServiceListing, User } from '@/types';
 import { track } from '@/services/analytics';
 import { useTranslation } from 'react-i18next';
@@ -80,11 +80,11 @@ export function SearchResults({ params }: { params: SearchParams }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((hit: any) => {
         const listing = toServiceListing(hit);
         const user: User | null = null; // optional: fetch user by listing.offeredByUserId for richer cards
-        return <ServiceCard key={listing.id} listing={listing} user={user} />;
+        return <ListingCard key={listing.id} listing={listing} user={user} />;
       })}
     </div>
   );

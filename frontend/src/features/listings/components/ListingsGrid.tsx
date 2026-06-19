@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { ServiceListing, User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
-import { ServiceCard } from '@/features/listings/components/ServiceCard';
+import { ListingCard } from '@/features/listings/components/ListingCard';
 
 type ListingWithUser = {
   listing: ServiceListing;
@@ -27,9 +27,9 @@ export function ListingsGrid({ items }: { items: ListingWithUser[] }) {
   }, [items, user?.uid]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
       {sortedItems.map(({ listing, user: listingUser }) => (
-        <ServiceCard key={listing.id} listing={listing} user={listingUser} />
+        <ListingCard key={listing.id} listing={listing} user={listingUser} />
       ))}
     </div>
   );

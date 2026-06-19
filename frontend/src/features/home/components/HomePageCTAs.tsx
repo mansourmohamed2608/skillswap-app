@@ -12,26 +12,18 @@ export function HomePageCTAs() {
   const { t } = useTranslation();
 
   if (isAuthenticated) {
-    return null; // Don't show any CTAs if the user is logged in
+    return null;
   }
 
   return (
-    <>
-      <div className="text-center mt-8">
-        <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:scale-105">
-          <Link href="/auth/signup">{t('cta.getStarted')}</Link>
-        </Button>
-      </div>
-      
-      <section className="bg-secondary/30 p-8 md:p-12 rounded-lg text-center shadow-md mt-12">
-          <h2 className="text-3xl font-semibold mb-4 text-secondary-foreground">{t('cta.joinTitle')}</h2>
-          <p className="text-lg mb-6 text-secondary-foreground/80 max-w-xl mx-auto">
-            {t('cta.joinBody')}
-          </p>
-          <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground transition-transform hover:scale-105">
-            <Link href="/auth/signup">{t('cta.signUpNow')}</Link>
-          </Button>
-      </section>
-    </>
+    <section className="mt-8 rounded-2xl border border-[#c8d5b9] bg-[#739b7a]/15 px-5 py-8 text-center sm:px-8 sm:py-10">
+      <h2 className="text-2xl font-semibold text-[#3f7752] sm:text-3xl">{t('cta.joinTitle')}</h2>
+      <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
+        {t('cta.joinBody')}
+      </p>
+      <Button asChild variant="accent" size="lg" className="mt-6 w-full sm:w-auto">
+        <Link href="/auth/signup">{t('cta.signUpNow')}</Link>
+      </Button>
+    </section>
   );
 }

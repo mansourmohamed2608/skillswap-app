@@ -8,29 +8,30 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { SparklesIcon, CheckCircleIcon, AlertCircleIcon, Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { SparklesIcon, CheckCircleIcon, AlertCircleIcon, Loader2, LogInIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const initialState: MatchmakingFormState = {
   message: null,
 };
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton() {
   const { pending } = useFormStatus();
   const { t } = useTranslation();
   return (
-    <Button type="submit" disabled={pending || disabled} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+    <Button type="submit" disabled={pending} variant="accent" className="h-11 w-full">
       {pending ? (
         <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="me-2 h-4 w-4 animate-spin" />
           {t('matchmaking.form.submitting')}
         </>
       ) : (
-         <>
-           <SparklesIcon className="mr-2 h-4 w-4" /> {t('matchmaking.form.submit')}
-         </>
+        <>
+          <SparklesIcon className="me-2 h-4 w-4" /> {t('matchmaking.form.submit')}
+        </>
       )}
     </Button>
   );
@@ -40,7 +41,6 @@ export function MatchmakingForm() {
   const [state, formAction] = useActionState(findMatchesAction, initialState);
   const { t } = useTranslation();
   const { user, loading } = useAuth();
-  const router = useRouter();
   const isGuest = !loading && !user;
 
   const message = user && state?.messageKey ? t(state.messageKey) : state?.message;
@@ -65,7 +65,7 @@ export function MatchmakingForm() {
           <AlertTitle>{hasServerError ? t('matchmaking.form.errorTitle') : t('matchmaking.form.validationTitle')}</AlertTitle>
           <AlertDescription>
             {message}
-            {hasServerError && <p className="mt-2">{serverErrors.join(', ')}</p>}
+            {hasServerError ? <p className="mt-2">{serverErrors.join(', ')}</p> : null}
           </AlertDescription>
         </Alert>
       );
@@ -74,9 +74,7 @@ export function MatchmakingForm() {
         <Alert variant="default" className="border-green-500 bg-green-50 text-green-700">
           <CheckCircleIcon className="h-5 w-5 text-green-500" />
           <AlertTitle className="text-green-700">{t('matchmaking.form.matchesTitle')}</AlertTitle>
-          <AlertDescription className="text-green-600">
-            {message}
-          </AlertDescription>
+          <AlertDescription className="text-green-600">{message}</AlertDescription>
         </Alert>
       );
     } else {
@@ -84,97 +82,92 @@ export function MatchmakingForm() {
         <Alert variant="default" className="border-blue-500 bg-blue-50 text-blue-700">
           <AlertCircleIcon className="h-5 w-5 text-blue-500" />
           <AlertTitle className="text-blue-700">{t('matchmaking.form.noMatchesTitle')}</AlertTitle>
-          <AlertDescription className="text-blue-600">
-            {message}
-          </AlertDescription>
+          <AlertDescription className="text-blue-600">{message}</AlertDescription>
         </Alert>
       );
     }
   }
 
+  if (loading) {
+    return null;
+  }
+
+  if (isGuest) {
+    return (
+      <EmptyState
+        icon={<SparklesIcon className="h-10 w-10" />}
+        title={t('matchmaking.form.signInTitle')}
+        description={t('matchmaking.form.signInBody')}
+        action={
+          <Button asChild variant="accent" className="h-11 w-full sm:w-auto">
+            <Link href="/auth/signin">
+              <LogInIcon className="me-2 h-4 w-4" />
+              {t('matchmaking.form.signInCta')}
+            </Link>
+          </Button>
+        }
+      />
+    );
+  }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-xl">
+    <Card className="mx-auto w-full max-w-2xl shadow-md">
       <CardHeader>
-        <CardTitle className="text-2xl flex items-center">
-          <SparklesIcon className="mr-2 h-6 w-6 text-accent" />
+        <CardTitle className="flex items-center text-xl sm:text-2xl">
+          <SparklesIcon className="me-2 h-6 w-6 text-[#d4642f]" />
           {t('matchmaking.form.title')}
         </CardTitle>
-        <CardDescription>
-          {t('matchmaking.form.subtitle')}
-        </CardDescription>
+        <CardDescription>{t('matchmaking.form.subtitle')}</CardDescription>
       </CardHeader>
       <form action={formAction}>
-        <CardContent className="space-y-6">
-          {isGuest && (
-            <div className="rounded-md border border-dashed border-border bg-muted/40 p-4 text-sm">
-              <div className="flex items-start gap-2">
-                <AlertCircleIcon className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                <div className="space-y-2">
-                  <div>
-                    <p className="font-medium text-foreground">{t('matchmaking.form.signInTitle')}</p>
-                    <p className="text-muted-foreground">{t('matchmaking.form.signInBody')}</p>
-                  </div>
-                  <Button size="sm" variant="outline" onClick={() => router.push('/auth/signin')}>
-                    {t('matchmaking.form.signInCta')}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
+        <CardContent className="mx-auto max-w-xl space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="userProfile" className="text-lg font-medium">{t('matchmaking.form.offeredLabel')}</Label>
+            <Label htmlFor="userProfile">{t('matchmaking.form.offeredLabel')}</Label>
             <Textarea
               id="userProfile"
               name="userProfile"
-              placeholder={t('matchmaking.form.offeredPlaceholder')}
               rows={4}
               required
               className="resize-none"
-              disabled={isGuest}
             />
-            {state?.errors?.userProfile && (
+            <p className="text-xs text-muted-foreground">{t('matchmaking.form.offeredPlaceholder')}</p>
+            {state?.errors?.userProfile ? (
               <p className="text-sm text-destructive">{state.errors.userProfile.join(', ')}</p>
-            )}
+            ) : null}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="serviceRequests" className="text-lg font-medium">{t('matchmaking.form.requestedLabel')}</Label>
+            <Label htmlFor="serviceRequests">{t('matchmaking.form.requestedLabel')}</Label>
             <Textarea
               id="serviceRequests"
               name="serviceRequests"
-              placeholder={t('matchmaking.form.requestedPlaceholder')}
               rows={4}
               required
               className="resize-none"
-              disabled={isGuest}
             />
-            {state?.errors?.serviceRequests && (
+            <p className="text-xs text-muted-foreground">{t('matchmaking.form.requestedPlaceholder')}</p>
+            {state?.errors?.serviceRequests ? (
               <p className="text-sm text-destructive">{state.errors.serviceRequests.join(', ')}</p>
-            )}
+            ) : null}
           </div>
         </CardContent>
-        <CardFooter className="flex flex-col items-stretch">
-          <SubmitButton disabled={isGuest} />
-           {resultAlert && (
-            <div className="mt-4 w-full">
-              {resultAlert}
-            </div>
-          )}
+        <CardFooter className="mx-auto flex max-w-xl flex-col items-stretch">
+          <SubmitButton />
+          {resultAlert ? <div className="mt-4 w-full">{resultAlert}</div> : null}
         </CardFooter>
       </form>
 
-      {user && state?.matches && state.matches.length > 0 && (
-        <div className="p-6 mt-0 border-t">
-          <h3 className="text-xl font-semibold mb-4 text-primary">{t('matchmaking.form.potentialTitle')}</h3>
-          <ul className="space-y-3 list-disc list-inside bg-background p-4 rounded-md">
+      {state?.matches && state.matches.length > 0 ? (
+        <div className="border-t border-[#c8d5b9]/60 p-5 sm:p-6">
+          <h3 className="mb-4 text-lg font-semibold text-[#3f7752]">{t('matchmaking.form.potentialTitle')}</h3>
+          <ul className="space-y-2 rounded-xl border border-[#c8d5b9] bg-[#f7f6df]/50 p-4">
             {state.matches.map((match, index) => (
-              <li key={index} className="text-foreground/90 leading-relaxed p-2 border-b last:border-b-0">
+              <li key={index} className="border-b border-[#c8d5b9]/40 pb-2 text-sm leading-relaxed last:border-b-0 last:pb-0">
                 {match}
               </li>
             ))}
           </ul>
         </div>
-      )}
+      ) : null}
     </Card>
   );
 }

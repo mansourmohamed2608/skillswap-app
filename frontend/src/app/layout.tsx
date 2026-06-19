@@ -39,7 +39,7 @@ export default function RootLayout({
         <AuthProvider>
           <KycGate>
             <AppHeader />
-            <main className="flex-grow container mx-auto px-4 py-8 max-w-screen-2xl">
+            <main className="flex-grow">
               {children}
             </main>
             <Toaster />
