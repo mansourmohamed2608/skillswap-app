@@ -61,6 +61,7 @@ export function TahaduSection() {
                 variant="outline"
                 size="sm"
                 className="mt-4 h-10 w-full rounded-xl border-[#3f7752] text-[#3f7752] sm:w-auto sm:self-start"
+                data-fab-collision
               >
                 <Link href={card.href}>{card.cta}</Link>
               </Button>

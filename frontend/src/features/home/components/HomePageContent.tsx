@@ -106,7 +106,7 @@ export function HomePageContent({
             <>
               <WishesCarousel wishes={displayWishes} />
               <div className="mt-4 flex justify-center">
-                <Button asChild variant="outline" className="h-11 min-w-[200px] rounded-xl border-[#3f7752] text-[#3f7752]">
+                <Button asChild variant="outline" className="h-11 min-w-[200px] rounded-xl border-[#3f7752] text-[#3f7752]" data-fab-collision>
                   <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
                 </Button>
               </div>

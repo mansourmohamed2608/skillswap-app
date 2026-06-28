@@ -195,7 +195,9 @@ button, a, [role="button"] {
       + var(--mobile-safe-bottom)
       + 24px
     );
+    --floating-chat-lift: 0px;
     --floating-chat-size: 48px;
+    --floating-chat-compact-size: 40px;
     --floating-chat-bottom: calc(
       var(--mobile-bottom-nav-height)
       + var(--mobile-safe-bottom)
@@ -250,6 +252,95 @@ button, a, [role="button"] {
     position: relative;
   }
 
+  .category-carousel-shell {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .category-carousel-shell::before,
+  .category-carousel-shell::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    width: 2.75rem;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .category-carousel-shell::before {
+    inset-inline-start: 0;
+    background: linear-gradient(to right, hsl(var(--background)), transparent);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .category-carousel-shell::after {
+    inset-inline-end: 0;
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+  }
+
+  .category-carousel-shell.is-scrolled::before {
+    opacity: 1;
+  }
+
+  [dir='rtl'] .category-carousel-shell::before {
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+  }
+
+  [dir='rtl'] .category-carousel-shell::after {
+    background: linear-gradient(to right, hsl(var(--background)), transparent);
+  }
+
+  .category-carousel-track {
+    display: flex;
+    gap: 0.625rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1rem;
+    padding-inline: 1rem 3.25rem;
+    padding-block-end: 0.25rem;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black 0,
+      black calc(100% - 2.75rem),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      black 0,
+      black calc(100% - 2.75rem),
+      transparent 100%
+    );
+  }
+
+  [dir='rtl'] .category-carousel-track {
+    -webkit-mask-image: linear-gradient(
+      to left,
+      black 0,
+      black calc(100% - 2.75rem),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to left,
+      black 0,
+      black calc(100% - 2.75rem),
+      transparent 100%
+    );
+  }
+
+  .category-carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-carousel-item {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    scroll-margin-inline: 1rem;
+  }
+
   .carousel-fade-edges::after {
     content: '';
     position: absolute;
@@ -288,7 +379,7 @@ button, a, [role="button"] {
 
   @media (max-width: 767px) {
     body.has-floating-chat .home-page {
-      padding-inline-end: calc(var(--floating-chat-size) + 12px);
+      padding-inline-end: 0;
     }
   }
 
@@ -296,7 +387,24 @@ button, a, [role="button"] {
     position: fixed;
     z-index: 68;
     inset-inline-end: 16px;
-    bottom: var(--floating-chat-bottom);
+    bottom: calc(var(--floating-chat-bottom) + var(--floating-chat-lift, 0px));
+    transition:
+      bottom 0.28s ease,
+      inset-inline-end 0.28s ease,
+      opacity 0.2s ease;
+  }
+
+  .app-floating-chat.is-compact {
+    inset-inline-end: 12px;
+  }
+
+  .app-floating-chat.is-compact .app-floating-chat-btn {
+    width: var(--floating-chat-compact-size);
+    height: var(--floating-chat-compact-size);
+    min-width: var(--floating-chat-compact-size);
+    min-height: var(--floating-chat-compact-size);
+    border-radius: 9999px;
+    box-shadow: 0 4px 14px rgba(45, 74, 56, 0.28);
   }
 
   @media (min-width: 768px) {

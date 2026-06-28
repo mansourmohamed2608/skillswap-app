@@ -219,7 +219,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
         </CardContent>
 
         <CardFooter className="p-3.5 pt-0">
-          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
+          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90" data-fab-collision>
             <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
           </Button>
         </CardFooter>

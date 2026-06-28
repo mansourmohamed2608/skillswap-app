@@ -57,6 +57,7 @@ export function WishCard({ wish, className }: WishCardProps) {
           asChild
           size="sm"
           className="mt-4 h-10 w-full rounded-xl bg-[#3f7752] text-white hover:bg-[#3f7752]/90"
+          data-fab-collision
         >
           <Link href={`/wishes/${wish.id}`}>
             <HandHeart className="me-1.5 size-4" aria-hidden="true" />
