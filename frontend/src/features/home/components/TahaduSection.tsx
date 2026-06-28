@@ -30,7 +30,12 @@ export function TahaduSection() {
     <Reveal>
       <section aria-labelledby="tahadu-title" className="space-y-4">
         <div className="text-center">
-          <h2 id="tahadu-title" className="text-xl font-bold text-[#3f7752] sm:text-2xl" dir="rtl" lang="ar">
+          <h2
+            id="tahadu-title"
+            className="text-xl font-bold text-[#3f7752] sm:text-2xl [font-family:var(--font-cairo),Cairo,sans-serif]"
+            dir="rtl"
+            lang="ar"
+          >
             {t('home.tahadu.title')}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">{t('home.tahadu.subtitle')}</p>

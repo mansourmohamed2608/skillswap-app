@@ -66,7 +66,7 @@ export function HorizontalSnapCarousel({
     <div className={cn('space-y-3', className)}>
       <div
         ref={scrollRef}
-        className="carousel-track flex snap-x snap-mandatory gap-3 overflow-x-auto pb-1"
+        className="carousel-track flex gap-3 overflow-x-auto pb-1"
         aria-label={ariaLabel}
         role="region"
       >
@@ -103,19 +103,27 @@ export function HorizontalSnapCarousel({
 export function CarouselSlide({
   children,
   index,
+  count,
   className,
-  slideClassName = 'w-[88%] sm:w-[85%]',
+  slideClassName = 'w-[calc(100%-1.25rem)] max-w-[360px]',
 }: {
   children: ReactNode;
   index: number;
+  count?: number;
   className?: string;
   slideClassName?: string;
 }) {
+  const isLast = count != null && index === count - 1;
   return (
     <div
       data-carousel-slide
       data-index={index}
-      className={cn('shrink-0 snap-center', slideClassName, index === 0 && 'scroll-ms-4', className)}
+      className={cn(
+        'shrink-0 snap-start',
+        slideClassName,
+        isLast && 'me-4',
+        className
+      )}
     >
       {children}
     </div>

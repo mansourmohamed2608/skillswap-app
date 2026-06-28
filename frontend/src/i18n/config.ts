@@ -117,6 +117,7 @@ const resources = {
         tagline: "Exchange Skills • Connect Communities • Grow Together",
         hero: {
           title: "Welcome to SkillSwap!",
+          bodyShort: "Offer what you do best, discover what you need, and connect with people in your community through meaningful exchanges.",
           body: "SkillSwap is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
           ctaBrowse: "Browse Listings",
           ctaPost: "Post a Listing",
@@ -158,7 +159,7 @@ const resources = {
           explore: "Explore Listings",
         },
         tahadu: {
-          title: "تَهَادَوْا تَحَابُّوا",
+          title: "تهادوا تحابوا",
           subtitle: "Kindness and helpful exchanges strengthen our community.",
           giveTitle: "Give Something Helpful",
           giveBody: "Offer a useful item, service, skill, or kind gesture to someone in your community.",
@@ -1542,6 +1543,7 @@ const resources = {
         tagline: "تبادل المهارات • تواصل مع المجتمع • نمّ معًا",
         hero: {
           title: "مرحبًا بك في سكيل سواپ!",
+          bodyShort: "اعرض ما تتقنه، واكتشف ما تحتاج إليه، وتواصل مع أفراد مجتمعك من خلال تبادلات مفيدة وذات معنى.",
           body: "سكيل سواپ هو منصّتك الحيوية لمشاركة مهاراتك وخدماتك مع مجتمعك، أطلق إمكاناتك، وشارك بما تتقنه، واكتشف ما تحتاجه في المقابل. سواء كنت تتبادل خدمة بخدمة أو منتجًا بمنتج، أو تحوّل موهبتك إلى دخل، سكيل سواپ يساعدك على تحقيق أقصى استفادة مما تتقنه.",
           ctaBrowse: "تصفّح العروض",
           ctaPost: "Post a Listing",
@@ -1583,7 +1585,7 @@ const resources = {
           explore: "استكشف العروض",
         },
         tahadu: {
-          title: "تَهَادَوْا تَحَابُّوا",
+          title: "تهادوا تحابوا",
           subtitle: "اللطف والتبادل المفيد يقوّيان مجتمعنا.",
           giveTitle: "قدّم شيئًا مفيدًا",
           giveBody: "قدّم عنصرًا أو خدمة أو مهارة أو لفتة لطيفة لأحد أفراد مجتمعك.",
@@ -2857,12 +2859,24 @@ if (!i18n.isInitialized) {
     .use(initReactI18next)
     .init({
       resources,
-      fallbackLng: defaultLang,
+      fallbackLng: {
+        ar: ['ar', 'en'],
+        en: ['en'],
+        default: ['en'],
+      },
       interpolation: { escapeValue: false },
+      returnEmptyString: false,
+      returnNull: false,
+      parseMissingKeyHandler: (key: string) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn(`[i18n] Missing translation key: ${key}`);
+        }
+        return '';
+      },
       detection: {
-        order: ["htmlTag"],
-        caches: ["localStorage"],
-        lookupLocalStorage: "i18nextLng",
+        order: ['htmlTag', 'localStorage', 'navigator'],
+        caches: ['localStorage'],
+        lookupLocalStorage: 'i18nextLng',
       },
     });
 }

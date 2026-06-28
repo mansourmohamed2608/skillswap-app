@@ -187,7 +187,9 @@ button, a, [role="button"] {
 
 @layer components {
   :root {
-    --bottom-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
+    --mobile-bottom-nav-height: 72px;
+    --bottom-nav-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
+    --floating-chat-bottom: calc(var(--bottom-nav-height) + 16px);
   }
 
   .app-glass-hero {
@@ -217,6 +219,7 @@ button, a, [role="button"] {
   .carousel-track {
     padding-inline: 1rem;
     scroll-padding-inline: 1rem;
+    scroll-snap-type: x mandatory;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -248,10 +251,21 @@ button, a, [role="button"] {
   }
 
   .pb-nav-mobile {
-    padding-bottom: var(--bottom-nav-height);
+    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+  }
+
+  .app-floating-chat {
+    position: fixed;
+    z-index: 68;
+    inset-inline-end: 16px;
+    bottom: var(--floating-chat-bottom);
   }
 
   @media (min-width: 768px) {
+    .app-floating-chat {
+      bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+    }
+
     .pb-nav-mobile {
       padding-bottom: 2rem;
     }

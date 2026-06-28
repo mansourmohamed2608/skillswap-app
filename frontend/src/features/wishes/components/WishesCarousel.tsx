@@ -20,10 +20,10 @@ export function WishesCarousel({ wishes }: WishesCarouselProps) {
         <HorizontalSnapCarousel
           ariaLabel={t('home.wishes.title')}
           showHint
-          hintLabel={t('home.carousel.swipeHint', 'Swipe to explore')}
+          hintLabel={t('home.carousel.swipeHint')}
         >
           {wishes.map((wish, index) => (
-            <CarouselSlide key={wish.id} index={index}>
+            <CarouselSlide key={wish.id} index={index} count={wishes.length}>
               <WishCard wish={wish} />
             </CarouselSlide>
           ))}

@@ -28,9 +28,10 @@ export function HomePageContent({
   topContributors?: unknown[];
 }) {
   const { t } = useTranslation();
+  const listingCount = featuredListingsData.length;
 
   return (
-    <div className="home-page mx-auto w-full max-w-6xl space-y-10 pb-2 sm:space-y-12 md:pb-4">
+    <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-4 sm:space-y-12 md:pb-6">
       <HomeHero featuredListings={featuredListingsData} />
 
       <CategoriesSection />
@@ -47,7 +48,7 @@ export function HomePageContent({
             subtitle={t('home.featured.subtitle')}
             action={
               featuredListingsData.length > 0 ? (
-                <Button variant="outline" size="sm" asChild className="rounded-xl border-[#3f7752] text-[#3f7752]">
+                <Button variant="outline" size="sm" asChild className="hidden rounded-xl border-[#3f7752] text-[#3f7752] sm:inline-flex">
                   <Link href="/listings">{t('home.featured.viewAll')}</Link>
                 </Button>
               ) : undefined
@@ -65,10 +66,10 @@ export function HomePageContent({
                 <HorizontalSnapCarousel
                   ariaLabel={t('home.featured.title')}
                   showHint
-                  hintLabel={t('home.carousel.swipeHint', 'Swipe to explore')}
+                  hintLabel={t('home.carousel.swipeHint')}
                 >
                   {featuredListingsData.map(({ listing, user }, index) => (
-                    <CarouselSlide key={listing.id} index={index}>
+                    <CarouselSlide key={listing.id} index={index} count={listingCount}>
                       <ServiceCard listing={listing} user={user} variant="compact" />
                     </CarouselSlide>
                   ))}
@@ -90,39 +91,31 @@ export function HomePageContent({
       <TahaduSection />
 
       <Reveal>
-        <section aria-labelledby="wishes-title">
+        <section aria-labelledby="wishes-title" className="pb-2">
           <SectionHeader
             id="wishes-title"
             title={t('home.wishes.title')}
             subtitle={t('home.wishes.subtitle')}
-            action={
-              featuredWishes.length > 0 ? (
-                <Button variant="outline" size="sm" asChild className="rounded-xl border-[#3f7752] text-[#3f7752]">
-                  <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
-                </Button>
-              ) : undefined
-            }
           />
 
           {featuredWishes.length > 0 ? (
-            <WishesCarousel wishes={featuredWishes} />
+            <>
+              <WishesCarousel wishes={featuredWishes} />
+              <div className="mt-4 flex justify-center">
+                <Button asChild variant="outline" className="h-11 min-w-[200px] rounded-xl border-[#3f7752] text-[#3f7752]">
+                  <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
+                </Button>
+              </div>
+            </>
           ) : (
             <EmptyState
               icon={<SearchIcon className="size-6" aria-hidden="true" />}
-              title={t('home.wishes.emptyTitle', 'No community wishes yet')}
-              description={t('home.wishes.emptyBody', 'Be the first to share something you need help with.')}
+              title={t('home.wishes.emptyTitle')}
+              description={t('home.wishes.emptyBody')}
               actionLabel={t('home.tahadu.shareCta')}
               actionHref="/wishes/request"
             />
           )}
-
-          {featuredWishes.length > 0 ? (
-            <div className="mt-4 text-center md:hidden">
-              <Button asChild variant="outline" className="h-11 rounded-xl border-[#3f7752] text-[#3f7752]">
-                <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
-              </Button>
-            </div>
-          ) : null}
         </section>
       </Reveal>
     </div>

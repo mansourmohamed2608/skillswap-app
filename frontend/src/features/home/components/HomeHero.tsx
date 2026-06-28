@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { HeroIllustration } from '@/features/home/components/HeroIllustration';
 import { HeroSearchBar } from '@/features/home/components/HeroSearchBar';
+import { safeT } from '@/lib/i18n-safe';
 import type { ServiceListing } from '@/types';
 
 type HomeHeroProps = {
@@ -14,13 +15,13 @@ type HomeHeroProps = {
 };
 
 export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const reduced = useReducedMotion();
   const postHref = user ? '/listings/new' : '/auth/signup';
 
   return (
-    <section className="space-y-4 pt-1">
+    <section className="space-y-3.5 pt-0">
       <motion.div
         initial={reduced ? false : { opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -37,13 +38,13 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
         className="text-center"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-[#739b7a]">
-          {t('home.tagline')}
+          {safeT(t, 'home.tagline', i18n.language)}
         </p>
-        <h1 className="mt-2 text-2xl font-bold text-[#2d4a38] sm:text-3xl">
-          {t('home.hero.title')}
+        <h1 className="mt-1.5 text-2xl font-bold text-[#2d4a38] sm:text-3xl">
+          {safeT(t, 'home.hero.title', i18n.language)}
         </h1>
         <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">
-          {t('home.hero.bodyShort')}
+          {safeT(t, 'home.hero.bodyShort', i18n.language)}
         </p>
       </motion.div>
 

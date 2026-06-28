@@ -53,10 +53,10 @@ export function HowItWorksScroll() {
           <HorizontalSnapCarousel
             ariaLabel={t('home.howItWorks.title')}
             showHint
-            hintLabel={t('home.carousel.swipeHint', 'Swipe to explore')}
+            hintLabel={t('home.carousel.swipeHint')}
           >
             {steps.map((_, index) => (
-              <CarouselSlide key={index} index={index} slideClassName="w-[88%]">
+              <CarouselSlide key={index} index={index} count={steps.length} slideClassName="w-[calc(100%-1.5rem)] max-w-[340px]">
                 <StepCard index={index} />
               </CarouselSlide>
             ))}

@@ -50,7 +50,7 @@ export function CategoriesSection() {
       <Link
         key={category.id}
         href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
-        className={cn('block shrink-0 snap-start scroll-ms-4 last:scroll-me-4', extraClass)}
+        className={cn('block shrink-0 snap-start', extraClass)}
       >
         <motion.span
           whileHover={reduced ? undefined : { scale: 1.02 }}
@@ -78,9 +78,9 @@ export function CategoriesSection() {
           }
         />
 
-        <div className="carousel-fade-edges -mx-4 sm:-mx-0">
-          <div className="carousel-track flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 md:hidden">
-            {categories.map((c) => chip(c))}
+        <div className="carousel-fade-edges">
+          <div className="carousel-track flex gap-2.5 overflow-x-auto pb-1 md:hidden">
+            {categories.map((c, index) => chip(c, index === categories.length - 1 ? 'me-4' : undefined))}
           </div>
         </div>
 
