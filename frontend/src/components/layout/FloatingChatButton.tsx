@@ -39,6 +39,14 @@ export function FloatingChatButton() {
   }, []);
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
+    document.body.classList.add('has-floating-chat');
+    return () => {
+      document.body.classList.remove('has-floating-chat');
+    };
+  }, []);
+
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const media = window.matchMedia("(min-width: 768px)");
     const update = () => setIsDesktop(media.matches);
@@ -83,11 +91,11 @@ export function FloatingChatButton() {
       <Button
         type="button"
         size="icon"
-        className="app-floating-chat-btn relative size-[52px] rounded-full bg-[#3f7752] text-white shadow-lg hover:bg-[#3f7752]/90 focus-visible:ring-2 focus-visible:ring-[#3f7752]/40"
+        className="app-floating-chat-btn relative size-[var(--floating-chat-size)] rounded-full bg-[#3f7752] text-white shadow-lg hover:bg-[#3f7752]/90 focus-visible:ring-2 focus-visible:ring-[#3f7752]/40"
         onClick={() => setOpen((value) => (isDesktop ? !value : true))}
         aria-label={chatLabel}
       >
-        <MessageCircle className="size-6" aria-hidden="true" />
+        <MessageCircle className="size-5" aria-hidden="true" />
         {unreadChats > 0 ? (
           <span className="absolute -end-0.5 -top-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-[#d4642f] px-1.5 py-0.5 text-[10px] font-bold leading-none text-white">
             {unreadChats > 99 ? "99+" : unreadChats}

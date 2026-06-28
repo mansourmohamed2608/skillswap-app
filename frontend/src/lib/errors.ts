@@ -129,6 +129,7 @@ function isSafeMessage(message: string) {
   if (message.length > SAFE_MESSAGE_MAX) return false;
   if (message.includes('\n') || message.includes('\r')) return false;
   if (UNSAFE_MESSAGE_RE.test(message)) return false;
+  if (/cannot get\s+\//i.test(message)) return false;
   return true;
 }
 
@@ -187,7 +188,8 @@ export function getErrorMessage(error: unknown, fallback: string, options?: Erro
   if (isApiLikeError(error)) {
     const mapped = resolveCodeMessage(error.message, merged);
     if (mapped) return mapped;
-    return error.message || fallback;
+    if (error.message && isSafeMessage(error.message)) return error.message;
+    return fallback;
   }
 
   if (typeof error === 'string') {

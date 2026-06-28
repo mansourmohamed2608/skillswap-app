@@ -178,6 +178,12 @@ describe('Error Utilities', () => {
         const result = getErrorMessage(error, 'Server error fallback');
         expect(result).toBe('Server error fallback');
       });
+
+      it('should not expose raw Express Cannot GET messages', () => {
+        const error = { status: 404, message: 'Cannot GET /matchmaking/cycles3' };
+        const result = getErrorMessage(error, 'Friendly fallback');
+        expect(result).toBe('Friendly fallback');
+      });
     });
 
     describe('Custom Options Override', () => {

@@ -20,6 +20,7 @@ function isSafeServerMessage(message: string) {
   if (message.length > SAFE_MESSAGE_MAX) return false;
   if (message.includes('\n') || message.includes('\r')) return false;
   if (/exception|stack|trace|at\s/i.test(message)) return false;
+  if (/cannot get\s+\//i.test(message)) return false;
   return true;
 }
 
@@ -473,8 +474,8 @@ async function authHeaders() {
   return { Authorization: `Bearer ${token}` };
 }
 
-export async function fetchTriadCycles() {
-  const res = await authedFetch(`/api/matchmaking/cycles3`, { method: 'GET' });
+export async function fetchTriadCycles(signal?: AbortSignal) {
+  const res = await authedFetch(`/api/matchmaking/cycles3`, { method: 'GET', signal });
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as {
     cycles: Array<{
@@ -487,8 +488,8 @@ export async function fetchTriadCycles() {
   };
 }
 
-export async function fetchMutualPairs() {
-  const res = await authedFetch(`/api/matchmaking/mutual2`, { method: 'GET' });
+export async function fetchMutualPairs(signal?: AbortSignal) {
+  const res = await authedFetch(`/api/matchmaking/mutual2`, { method: 'GET', signal });
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as {
     pairs: Array<{
@@ -516,8 +517,8 @@ export type ListingMatch = {
   participant?: { uid: string; name?: string | null; photoURL?: string | null };
 };
 
-export async function fetchListingMatches() {
-  const res = await authedFetch(`/api/matchmaking/listing-matches`, { method: 'GET' });
+export async function fetchListingMatches(signal?: AbortSignal) {
+  const res = await authedFetch(`/api/matchmaking/listing-matches`, { method: 'GET', signal });
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { matches: ListingMatch[] };
 }

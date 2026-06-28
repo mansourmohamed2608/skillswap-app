@@ -33,7 +33,7 @@ export function HomePageContent({
   const displayWishes = normalizeWishesForDisplay(featuredWishes);
 
   return (
-    <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-4 sm:space-y-12 md:pb-6">
+    <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-6 sm:space-y-12 md:pb-6">
       <HomeHero featuredListings={featuredListingsData} />
 
       <CategoriesSection />

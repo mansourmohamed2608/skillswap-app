@@ -188,8 +188,15 @@ button, a, [role="button"] {
 @layer components {
   :root {
     --mobile-bottom-nav-height: 72px;
-    --bottom-nav-height: calc(var(--mobile-bottom-nav-height) + env(safe-area-inset-bottom, 0px));
-    --floating-chat-bottom: calc(var(--bottom-nav-height) + 20px);
+    --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --bottom-nav-height: calc(var(--mobile-bottom-nav-height) + var(--mobile-safe-bottom));
+    --mobile-page-bottom-inset: calc(
+      var(--mobile-bottom-nav-height)
+      + var(--mobile-safe-bottom)
+      + 24px
+    );
+    --floating-chat-size: 48px;
+    --floating-chat-bottom: calc(var(--bottom-nav-height) + 24px);
   }
 
   .app-glass-hero {
@@ -198,10 +205,10 @@ button, a, [role="button"] {
   }
 
   .app-floating-chat-btn {
-    width: 52px;
-    height: 52px;
-    min-width: 52px;
-    min-height: 52px;
+    width: var(--floating-chat-size);
+    height: var(--floating-chat-size);
+    min-width: var(--floating-chat-size);
+    min-height: var(--floating-chat-size);
   }
 
   .app-bottom-nav {
@@ -258,7 +265,21 @@ button, a, [role="button"] {
   }
 
   .pb-nav-mobile {
-    padding-bottom: calc(var(--bottom-nav-height) + 16px);
+    padding-bottom: var(--mobile-page-bottom-inset);
+  }
+
+  body.has-floating-chat #main-content {
+    padding-bottom: calc(var(--mobile-page-bottom-inset) + var(--floating-chat-size) + 16px);
+  }
+
+  @media (min-width: 768px) {
+    body.has-floating-chat #main-content {
+      padding-bottom: 2rem;
+    }
+  }
+
+  .home-page {
+    scroll-padding-bottom: calc(var(--mobile-page-bottom-inset) + var(--floating-chat-size));
   }
 
   .app-floating-chat {
@@ -266,6 +287,13 @@ button, a, [role="button"] {
     z-index: 68;
     inset-inline-end: 16px;
     bottom: var(--floating-chat-bottom);
+  }
+
+  @media (max-width: 767px) {
+    .app-floating-chat {
+      inset-inline-end: auto;
+      inset-inline-start: 16px;
+    }
   }
 
   @media (min-width: 768px) {
