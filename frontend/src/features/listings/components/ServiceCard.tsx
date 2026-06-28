@@ -158,6 +158,12 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
   const hasCustomImage = Boolean(listing.offeredService?.imageUrl);
 
   if (isCompact) {
+    const lookingForText =
+      listing.requestedService?.title ||
+      listing.requestedService?.description ||
+      requestedCategory ||
+      t('listings.card.openToOffers');
+
     return (
       <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-[#c8d5b9]/80 bg-white shadow-sm transition-shadow hover:shadow-md">
         <div className="relative h-24 overflow-hidden">
@@ -190,11 +196,11 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
             </p>
             <p>
               <span className="font-semibold text-[#739b7a]">{t('listings.card.lookingForLabel', 'Looking for')}:</span>{' '}
-              <span className="text-muted-foreground">{listing.requestedService?.title || t('listings.card.openToOffers')}</span>
+              <span className="text-muted-foreground">{lookingForText}</span>
             </p>
           </div>
 
-          <div className="mt-auto flex items-center gap-2 border-t border-[#c8d5b9]/50 pt-2.5">
+          <div className="flex items-center gap-2 border-t border-[#c8d5b9]/50 pt-2.5">
             <Avatar className="size-7 shrink-0">
               <AvatarImage src={resolvedUser?.avatarUrl} alt="" />
               <AvatarFallback className="text-[10px]">{displayName.slice(0, 1)}</AvatarFallback>
@@ -202,13 +208,14 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium">{displayName}</p>
               <p className="truncate text-[10px] text-muted-foreground">
-                {[publicListingLocation || publicOwnerLocation, postedLabel].filter(Boolean).join(' · ')}
+                {publicListingLocation || publicOwnerLocation || t('listings.card.locationApprox')}
               </p>
             </div>
-            <Badge variant={getStatusBadgeVariant(listing.status)} className="shrink-0 text-[10px]">
-              {getStatusText(listing.status)}
-            </Badge>
           </div>
+
+          <Badge variant={getStatusBadgeVariant(listing.status)} className="w-fit text-[10px]">
+            {getStatusText(listing.status)}
+          </Badge>
         </CardContent>
 
         <CardFooter className="p-3.5 pt-0">

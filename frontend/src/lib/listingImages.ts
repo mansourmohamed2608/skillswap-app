@@ -8,6 +8,8 @@ const CATEGORY_COVER_SLUGS: Record<string, string> = {
   'music lessons': 'music',
   'music & audio': 'music',
   consulting: 'business',
+  marketing: 'business',
+  career: 'career',
   'business & career': 'business',
   photography: 'photography',
   videography: 'photography',

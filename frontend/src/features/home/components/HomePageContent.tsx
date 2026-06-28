@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
 import type { ServiceListing, User, WishSummary } from "@/types";
 import { normalizeWishesForDisplay } from "@/lib/wish-display";
+import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
@@ -29,12 +30,13 @@ export function HomePageContent({
   topContributors?: unknown[];
 }) {
   const { t } = useTranslation();
-  const listingCount = featuredListingsData.length;
+  const displayListings = normalizeFeaturedListingsForDisplay(featuredListingsData);
+  const listingCount = displayListings.length;
   const displayWishes = normalizeWishesForDisplay(featuredWishes);
 
   return (
     <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-6 sm:space-y-12 md:pb-6">
-      <HomeHero featuredListings={featuredListingsData} />
+      <HomeHero featuredListings={displayListings} />
 
       <CategoriesSection />
 
@@ -49,7 +51,7 @@ export function HomePageContent({
             title={t('home.featured.title')}
             subtitle={t('home.featured.subtitle')}
             action={
-              featuredListingsData.length > 0 ? (
+              displayListings.length > 0 ? (
                 <Button variant="outline" size="sm" asChild className="hidden rounded-xl border-[#3f7752] text-[#3f7752] sm:inline-flex">
                   <Link href="/listings">{t('home.featured.viewAll')}</Link>
                 </Button>
@@ -57,10 +59,10 @@ export function HomePageContent({
             }
           />
 
-          {featuredListingsData.length > 0 ? (
+          {displayListings.length > 0 ? (
             <>
               <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
-                {featuredListingsData.map(({ listing, user }) => (
+                {displayListings.map(({ listing, user }) => (
                   <ServiceCard key={listing.id} listing={listing} user={user} variant="compact" />
                 ))}
               </div>
@@ -70,7 +72,7 @@ export function HomePageContent({
                   showHint
                   hintLabel={t('home.carousel.swipeHint')}
                 >
-                  {featuredListingsData.map(({ listing, user }, index) => (
+                  {displayListings.map(({ listing, user }, index) => (
                     <CarouselSlide key={listing.id} index={index} count={listingCount}>
                       <ServiceCard listing={listing} user={user} variant="compact" />
                     </CarouselSlide>

@@ -196,7 +196,11 @@ button, a, [role="button"] {
       + 24px
     );
     --floating-chat-size: 48px;
-    --floating-chat-bottom: calc(var(--bottom-nav-height) + 24px);
+    --floating-chat-bottom: calc(
+      var(--mobile-bottom-nav-height)
+      + var(--mobile-safe-bottom)
+      + 16px
+    );
   }
 
   .app-glass-hero {
@@ -282,18 +286,17 @@ button, a, [role="button"] {
     scroll-padding-bottom: calc(var(--mobile-page-bottom-inset) + var(--floating-chat-size));
   }
 
+  @media (max-width: 767px) {
+    body.has-floating-chat .home-page {
+      padding-inline-end: calc(var(--floating-chat-size) + 12px);
+    }
+  }
+
   .app-floating-chat {
     position: fixed;
     z-index: 68;
     inset-inline-end: 16px;
     bottom: var(--floating-chat-bottom);
-  }
-
-  @media (max-width: 767px) {
-    .app-floating-chat {
-      inset-inline-end: auto;
-      inset-inline-start: 16px;
-    }
   }
 
   @media (min-width: 768px) {

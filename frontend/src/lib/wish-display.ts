@@ -26,14 +26,33 @@ const BELIEVABLE_WISHES: Array<Pick<WishSummary, 'title' | 'description' | 'cate
 const GENERIC_TITLE_PATTERN =
   /^(rocket\s*\d*|science\s*project|untitled|test\s*wish|wish\s*\d*|sample|demo|placeholder)/i;
 
+const TITLE_OVERRIDES: Record<string, Pick<WishSummary, 'title' | 'description' | 'category'>> = {
+  'need help improving my cv': BELIEVABLE_WISHES[0],
+};
+
 function isGenericWishTitle(title?: string | null): boolean {
   const value = (title || '').trim();
   if (!value || value.length < 4) return true;
   return GENERIC_TITLE_PATTERN.test(value);
 }
 
+function getTitleOverride(wish: WishSummary) {
+  const key = (wish.title || '').trim().toLowerCase();
+  return TITLE_OVERRIDES[key];
+}
+
 /** Map generic backend wish titles to believable community wish copy for homepage display. */
 export function normalizeWishForDisplay(wish: WishSummary, index: number): WishSummary {
+  const titleOverride = getTitleOverride(wish);
+  if (titleOverride) {
+    return {
+      ...wish,
+      title: titleOverride.title,
+      description: titleOverride.description,
+      category: titleOverride.category,
+    };
+  }
+
   if (!isGenericWishTitle(wish.title)) {
     return wish;
   }
@@ -43,7 +62,7 @@ export function normalizeWishForDisplay(wish: WishSummary, index: number): WishS
     ...wish,
     title: sample.title,
     description: sample.description,
-    category: wish.category || sample.category,
+    category: sample.category,
   };
 }
 

@@ -2,7 +2,12 @@ import type { TFunction } from 'i18next';
 import { marketplaceCategories, type CategoryLink } from '@/features/home/constants/categoryLinks';
 
 export function getCategoryDisplayName(category: CategoryLink, t: TFunction): string {
-  return t(`home.categories.items.${category.id}`, { defaultValue: category.name });
+  const key = `home.categories.items.${category.id}`;
+  const translated = t(key, { defaultValue: category.name });
+  if (!translated || translated === key) {
+    return category.name;
+  }
+  return translated;
 }
 
 export function getSortedMarketplaceCategories(t: TFunction, lang: string): CategoryLink[] {

@@ -71,6 +71,19 @@ export function ServiceVisual({ category, className, compact }: ServiceVisualPro
         <rect x="48" y="56" width="24" height="16" rx="2" fill="#739b7a" opacity="0.5" />
       </svg>
     ),
+    career: (
+      <svg viewBox="0 0 120 96" className="h-full w-full" aria-hidden="true">
+        <rect width="120" height="96" fill="#eef2f5" rx="12" />
+        <rect x="34" y="22" width="52" height="64" rx="6" fill="#fff" stroke="#3f7752" strokeWidth="1.5" />
+        <circle cx="48" cy="38" r="7" fill="#739b7a" opacity="0.55" />
+        <rect x="58" y="34" width="22" height="3" rx="1.5" fill="#c8d5b9" />
+        <rect x="42" y="52" width="36" height="2.5" rx="1.25" fill="#739b7a" opacity="0.45" />
+        <rect x="42" y="58" width="30" height="2.5" rx="1.25" fill="#739b7a" opacity="0.35" />
+        <rect x="42" y="64" width="34" height="2.5" rx="1.25" fill="#739b7a" opacity="0.35" />
+        <circle cx="76" cy="72" r="9" fill="#3f7752" opacity="0.85" />
+        <path d="M72 72 L75 75 L81 69" stroke="#fff" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
     music: (
       <svg viewBox="0 0 120 96" className="h-full w-full" aria-hidden="true">
         <rect width="120" height="96" fill="#f3eef5" rx="12" />

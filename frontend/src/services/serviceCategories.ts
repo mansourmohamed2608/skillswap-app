@@ -51,6 +51,8 @@ const CATEGORY_TRANSLATION_KEYS: Record<string, string> = {
   'fitness training': 'fitnessTraining',
   'event planning': 'eventPlanning',
   'consulting': 'consulting',
+  'marketing': 'marketing',
+  'career': 'career',
   'language lessons': 'languageLessons',
   'arts and crafts': 'artsAndCrafts',
   'moving help': 'movingHelp',
