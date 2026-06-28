@@ -53,7 +53,7 @@ export function FloatingChatButton() {
   if (!user?.uid) return null;
   if (pathname?.startsWith("/chat")) return null;
 
-  const chatLabel = t("header.chat", "Chat");
+  const chatLabel = t("chat.open", "Open chat");
 
   const listHeaderAction = (
     <div className="flex items-center gap-2">
@@ -83,7 +83,7 @@ export function FloatingChatButton() {
       <Button
         type="button"
         size="icon"
-        className="app-floating-chat-btn relative size-14 rounded-full bg-[#3f7752] text-white shadow-lg hover:bg-[#3f7752]/90 focus-visible:ring-2 focus-visible:ring-[#3f7752]/40"
+        className="app-floating-chat-btn relative size-[52px] rounded-full bg-[#3f7752] text-white shadow-lg hover:bg-[#3f7752]/90 focus-visible:ring-2 focus-visible:ring-[#3f7752]/40"
         onClick={() => setOpen((value) => (isDesktop ? !value : true))}
         aria-label={chatLabel}
       >

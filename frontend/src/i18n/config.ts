@@ -735,6 +735,7 @@ const resources = {
         },
       },
       chat: {
+        open: "Open chat",
         page: {
           title: "Chat",
         },
@@ -2156,6 +2157,7 @@ const resources = {
         },
       },
       chat: {
+        open: "فتح الدردشة",
         page: {
           title: "الدردشة",
         },

@@ -16,6 +16,7 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
 import type { ServiceListing, User, WishSummary } from "@/types";
+import { normalizeWishesForDisplay } from "@/lib/wish-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
@@ -29,6 +30,7 @@ export function HomePageContent({
 }) {
   const { t } = useTranslation();
   const listingCount = featuredListingsData.length;
+  const displayWishes = normalizeWishesForDisplay(featuredWishes);
 
   return (
     <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-4 sm:space-y-12 md:pb-6">
@@ -98,9 +100,9 @@ export function HomePageContent({
             subtitle={t('home.wishes.subtitle')}
           />
 
-          {featuredWishes.length > 0 ? (
+          {displayWishes.length > 0 ? (
             <>
-              <WishesCarousel wishes={featuredWishes} />
+              <WishesCarousel wishes={displayWishes} />
               <div className="mt-4 flex justify-center">
                 <Button asChild variant="outline" className="h-11 min-w-[200px] rounded-xl border-[#3f7752] text-[#3f7752]">
                   <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
