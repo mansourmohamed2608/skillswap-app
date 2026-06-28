@@ -31,7 +31,7 @@ export function MobileBottomNav() {
       className="app-bottom-nav fixed inset-x-0 bottom-0 z-[60] md:hidden"
       aria-label={t('nav.mobile.label', 'Mobile navigation')}
     >
-      <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1">
+      <ul className="mx-auto flex max-w-lg items-stretch justify-around px-2 pt-1">
         {items.map((item) => {
           const href = resolveHref(item.href, item.guestOk);
           const active =
@@ -44,22 +44,26 @@ export function MobileBottomNav() {
               <Link
                 href={href}
                 className={cn(
-                  'flex min-h-[56px] flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors',
+                  'relative flex min-h-[52px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1.5 text-[11px] font-medium transition-colors',
                   active ? 'text-[#3f7752]' : 'text-muted-foreground'
                 )}
                 aria-current={active ? 'page' : undefined}
               >
                 {active ? (
                   <motion.span
-                    layoutId="bottom-nav-indicator"
-                    className="absolute inset-x-3 top-1 h-0.5 rounded-full bg-[#d4642f]"
-                    transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 400, damping: 30 }}
+                    layoutId="bottom-nav-pill"
+                    className="absolute inset-x-1 inset-y-0.5 rounded-2xl bg-[#3f7752]/12"
+                    transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 32 }}
                   />
                 ) : null}
-                <motion.span whileTap={reduced ? undefined : { scale: 0.9 }}>
-                  <Icon className={cn('h-5 w-5', active && 'text-[#3f7752]')} aria-hidden="true" />
+                <motion.span
+                  className="relative z-10"
+                  animate={active && !reduced ? { scale: 1.05 } : { scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
+                  <Icon className={cn('size-5', active && 'text-[#3f7752]')} aria-hidden="true" />
                 </motion.span>
-                <span>{t(item.labelKey, item.fallback)}</span>
+                <span className="relative z-10">{t(item.labelKey, item.fallback)}</span>
               </Link>
             </li>
           );

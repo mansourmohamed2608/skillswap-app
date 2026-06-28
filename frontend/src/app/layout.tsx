@@ -67,7 +67,7 @@ export default function RootLayout({
               Skip to content
             </a>
             <AppHeader />
-            <main id="main-content" className="relative flex-grow container mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-24 sm:pb-28 md:pb-8 max-w-screen-2xl">
+            <main id="main-content" className="relative flex-grow container mx-auto px-4 sm:px-6 pt-3 sm:pt-5 md:pt-8 pb-nav-mobile max-w-screen-2xl">
               {children}
             </main>
             <MobileBottomNav />

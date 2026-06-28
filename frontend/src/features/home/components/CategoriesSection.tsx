@@ -1,28 +1,38 @@
 'use client';
 
-import Link from 'next/link';
 import { useMemo } from 'react';
+import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { motion, useReducedMotion } from 'framer-motion';
-import { Briefcase, Camera, Code2, GraduationCap, Home, Languages, Palette, PenLine, Wrench } from 'lucide-react';
+import {
+  Briefcase,
+  Camera,
+  Code2,
+  GraduationCap,
+  Megaphone,
+  Music,
+  Palette,
+  PenLine,
+  Wrench,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getCategoryDisplayName, getSortedMarketplaceCategories } from '@/lib/categories';
 import { Reveal } from '@/components/motion/Reveal';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { cn } from '@/lib/utils';
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   programming: Code2,
   design: Palette,
-  'music-audio': Languages,
+  'music-audio': Music,
   education: GraduationCap,
   'fitness-wellness': Briefcase,
   'business-career': Briefcase,
   'photography-video': Camera,
-  'home-living': Home,
-  'graphic-design': Palette,
-  'web-development': Code2,
+  'home-living': Wrench,
+  marketing: Megaphone,
+  writing: PenLine,
   'home-repair': Wrench,
-  tutoring: GraduationCap,
-  gardening: Home,
 };
 
 export function CategoriesSection() {
@@ -33,22 +43,22 @@ export function CategoriesSection() {
     [t, i18n.language]
   );
 
-  const chip = (category: (typeof categories)[0], className?: string) => {
+  const chip = (category: (typeof categories)[0], extraClass?: string) => {
     const Icon = ICONS[category.id] || PenLine;
     const label = getCategoryDisplayName(category, t);
     return (
       <Link
         key={category.id}
         href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}
-        className={className}
+        className={cn('block shrink-0 snap-start scroll-ms-4 last:scroll-me-4', extraClass)}
       >
         <motion.span
-          whileHover={reduced ? undefined : { scale: 1.03 }}
-          whileTap={reduced ? undefined : { scale: 0.97 }}
-          className="inline-flex items-center gap-2 rounded-2xl border border-[#c8d5b9] bg-white/90 px-4 py-3 text-sm font-medium text-[#3f7752] shadow-sm backdrop-blur-sm"
+          whileHover={reduced ? undefined : { scale: 1.02 }}
+          whileTap={reduced ? undefined : { scale: 0.98 }}
+          className="inline-flex min-h-[44px] items-center gap-2 rounded-xl border border-[#c8d5b9] bg-white px-4 py-2.5 text-sm font-medium text-[#3f7752] shadow-sm"
         >
-          <Icon className="h-4 w-4 shrink-0 text-[#d4642f]" aria-hidden="true" />
-          {label}
+          <Icon className="size-4 shrink-0 text-[#d4642f]" aria-hidden="true" />
+          <span className="whitespace-nowrap">{label}</span>
         </motion.span>
       </Link>
     );
@@ -57,24 +67,25 @@ export function CategoriesSection() {
   return (
     <Reveal>
       <section aria-labelledby="home-categories-title">
-        <div className="mb-4 flex items-end justify-between gap-3">
-          <div>
-            <h2 id="home-categories-title" className="text-xl font-bold text-[#3f7752] sm:text-2xl">
-              {t('home.categories.title')}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">{t('home.categories.subtitle')}</p>
+        <SectionHeader
+          id="home-categories-title"
+          title={t('home.categories.title')}
+          subtitle={t('home.categories.subtitle')}
+          action={
+            <Button variant="outline" size="sm" asChild className="rounded-xl border-[#3f7752] text-[#3f7752]">
+              <Link href="/listings">{t('home.categories.viewAll')}</Link>
+            </Button>
+          }
+        />
+
+        <div className="carousel-fade-edges -mx-4 sm:-mx-0">
+          <div className="carousel-track flex snap-x snap-mandatory gap-2.5 overflow-x-auto pb-1 md:hidden">
+            {categories.map((c) => chip(c))}
           </div>
-          <Button variant="outline" size="sm" asChild className="shrink-0 rounded-xl border-[#3f7752] text-[#3f7752]">
-            <Link href="/listings">{t('home.categories.viewAll')}</Link>
-          </Button>
         </div>
 
-        <div className="flex snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {categories.map((c) => chip(c, 'shrink-0 snap-start'))}
-        </div>
-
-        <div className="hidden gap-3 md:grid md:grid-cols-3 lg:grid-cols-4">
-          {categories.slice(0, 8).map((c) => chip(c, 'block'))}
+        <div className="hidden gap-3 md:grid md:grid-cols-3 lg:grid-cols-5">
+          {categories.slice(0, 10).map((c) => chip(c, 'shrink-0 snap-none'))}
         </div>
       </section>
     </Reveal>

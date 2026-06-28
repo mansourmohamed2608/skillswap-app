@@ -33,9 +33,13 @@ function normalizeCategory(value: string) {
   return String(value || '').trim().toLowerCase();
 }
 
-export function getListingCoverImage(category?: string | null): string {
+export function getListingCoverSlug(category?: string | null): string {
   const key = normalizeCategory(category || '');
-  const slug = CATEGORY_COVER_SLUGS[key] || 'default';
+  return CATEGORY_COVER_SLUGS[key] || 'default';
+}
+
+export function getListingCoverImage(category?: string | null): string {
+  const slug = getListingCoverSlug(category);
   return `/images/category-covers/${slug}.svg`;
 }
 

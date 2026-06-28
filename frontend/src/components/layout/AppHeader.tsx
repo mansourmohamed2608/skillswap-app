@@ -124,6 +124,7 @@ export function AppHeader() {
   const router = useRouter();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [headerScrolled, setHeaderScrolled] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
   const mobileNotificationsHref = isAuthenticated ? '/profile?tab=notifications' : '/auth/signin';
   const [notifications, setNotifications] = useState([] as any[]);
@@ -183,9 +184,16 @@ export function AppHeader() {
     return () => unsub();
   }, [user?.uid]);
 
+  useEffect(() => {
+    const onScroll = () => setHeaderScrolled(window.scrollY > 6);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
-      <header className="sticky top-0 z-[70] w-full app-header-bar">
+      <header className={`sticky top-0 z-[70] w-full app-header-bar${headerScrolled ? ' is-scrolled' : ''}`}>
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           {/* Desktop Header Layout */}
           <div className="hidden h-16 items-center gap-2 md:flex">

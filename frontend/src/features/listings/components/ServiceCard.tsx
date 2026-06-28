@@ -23,6 +23,7 @@ import { deleteListing } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_LISTING_COVER, getListingCoverImage } from '@/lib/listingImages';
+import { ServiceVisual } from '@/components/listings/ServiceVisual';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,9 +39,10 @@ import {
 interface ServiceCardProps {
   listing: ServiceListing;
   user: User | null;
+  variant?: 'default' | 'compact';
 }
 
-export function ServiceCard({ listing, user }: ServiceCardProps) {
+export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardProps) {
   const { t } = useTranslation();
   const { user: authUser } = useAuth();
   const { toast } = useToast();
@@ -152,6 +154,72 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
 
   if (deleted) return null;
 
+  const isCompact = variant === 'compact';
+  const hasCustomImage = Boolean(listing.offeredService?.imageUrl);
+
+  if (isCompact) {
+    return (
+      <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-[#c8d5b9]/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+        <div className="relative h-24 overflow-hidden">
+          {hasCustomImage ? (
+            <Image
+              src={coverSrc}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 88vw, 320px"
+              onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
+            />
+          ) : (
+            <ServiceVisual category={listing.offeredService?.category} compact className="h-full" />
+          )}
+          <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-[#3f7752]">
+            {offeredCategory}
+          </span>
+        </div>
+
+        <CardContent className="flex flex-1 flex-col space-y-2 p-3.5">
+          <CardTitle className="line-clamp-2 text-sm font-semibold leading-snug text-[#2d4a38]">
+            {listing.offeredService?.title || t('listings.card.untitled')}
+          </CardTitle>
+
+          <div className="space-y-1 text-xs">
+            <p>
+              <span className="font-semibold text-[#739b7a]">{t('listings.card.offerLabel', 'I offer')}:</span>{' '}
+              <span className="text-muted-foreground">{listing.offeredService?.description || listing.offeredService?.title || '—'}</span>
+            </p>
+            <p>
+              <span className="font-semibold text-[#739b7a]">{t('listings.card.lookingForLabel', 'Looking for')}:</span>{' '}
+              <span className="text-muted-foreground">{listing.requestedService?.title || t('listings.card.openToOffers')}</span>
+            </p>
+          </div>
+
+          <div className="mt-auto flex items-center gap-2 border-t border-[#c8d5b9]/50 pt-2.5">
+            <Avatar className="size-7 shrink-0">
+              <AvatarImage src={resolvedUser?.avatarUrl} alt="" />
+              <AvatarFallback className="text-[10px]">{displayName.slice(0, 1)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-medium">{displayName}</p>
+              <p className="truncate text-[10px] text-muted-foreground">
+                {[publicListingLocation || publicOwnerLocation, postedLabel].filter(Boolean).join(' · ')}
+              </p>
+            </div>
+            <Badge variant={getStatusBadgeVariant(listing.status)} className="shrink-0 text-[10px]">
+              {getStatusText(listing.status)}
+            </Badge>
+          </div>
+        </CardContent>
+
+        <CardFooter className="p-3.5 pt-0">
+          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
+            <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
   const ownerContent = (
     <>
       <Avatar className="h-8 w-8 shrink-0">
@@ -174,15 +242,19 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
     <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-border/70 shadow-none transition-colors duration-300 hover:border-primary/40 hover:shadow-none">
       <CardHeader className="p-0">
         <div className="relative h-36 w-full overflow-hidden bg-[#f7f6df]">
-          <Image
-            src={coverSrc}
-            alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
-            fill
-            style={{ objectFit: 'cover' }}
-            sizes="(max-width: 768px) 85vw, 320px"
-            onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
-            data-ai-hint="service item"
-          />
+          {hasCustomImage ? (
+            <Image
+              src={coverSrc}
+              alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
+              fill
+              style={{ objectFit: 'cover' }}
+              sizes="(max-width: 768px) 85vw, 320px"
+              onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
+              data-ai-hint="service item"
+            />
+          ) : (
+            <ServiceVisual category={listing.offeredService?.category} className="h-full" />
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 p-4">

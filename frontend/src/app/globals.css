@@ -186,6 +186,10 @@ button, a, [role="button"] {
 }
 
 @layer components {
+  :root {
+    --bottom-nav-height: calc(60px + env(safe-area-inset-bottom, 0px));
+  }
+
   .app-glass-hero {
     background: linear-gradient(145deg, rgba(255, 253, 240, 0.95) 0%, rgba(247, 246, 223, 0.88) 45%, rgba(115, 155, 122, 0.12) 100%);
     backdrop-filter: blur(12px);
@@ -202,6 +206,55 @@ button, a, [role="button"] {
     background: rgba(255, 253, 240, 0.92);
     backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(200, 213, 185, 0.8);
+    transition: box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .app-header-bar.is-scrolled {
+    box-shadow: 0 4px 18px rgba(45, 74, 56, 0.08);
+    background: rgba(255, 253, 240, 0.98);
+  }
+
+  .carousel-track {
+    padding-inline: 1rem;
+    scroll-padding-inline: 1rem;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel-fade-edges {
+    position: relative;
+  }
+
+  .carousel-fade-edges::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: 0;
+    width: 2rem;
+    pointer-events: none;
+    background: linear-gradient(to left, hsl(var(--background)), transparent);
+  }
+
+  [dir='rtl'] .carousel-fade-edges::after {
+    background: linear-gradient(to right, hsl(var(--background)), transparent);
+  }
+
+  .skeleton-shimmer {
+    @apply animate-pulse bg-muted/80;
+  }
+
+  .pb-nav-mobile {
+    padding-bottom: var(--bottom-nav-height);
+  }
+
+  @media (min-width: 768px) {
+    .pb-nav-mobile {
+      padding-bottom: 2rem;
+    }
   }
 }
 

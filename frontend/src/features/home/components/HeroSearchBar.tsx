@@ -11,7 +11,7 @@ import { getSortedMarketplaceCategories, getCategoryDisplayName } from '@/lib/ca
 import { cn } from '@/lib/utils';
 import type { ServiceListing } from '@/types';
 
-const QUICK_SUGGESTIONS = ['Web Development', 'Photography', 'Logo Design', 'Home Repair', 'Marketing', 'Teaching'];
+const QUICK_SUGGESTION_KEYS = ['webDev', 'photography', 'logoDesign', 'homeRepair'] as const;
 
 type HeroSearchBarProps = {
   featuredListings?: Array<{ listing: ServiceListing }>;
@@ -110,35 +110,39 @@ export function HeroSearchBar({ featuredListings = [], variant = 'section' }: He
 
   return (
     <div className="relative">
-      <div className={cn('relative flex items-center rounded-2xl border bg-white/90 shadow-sm backdrop-blur-sm', isHero ? 'border-[#c8d5b9]' : 'border-border')}>
-        <Search className="pointer-events-none absolute start-4 h-5 w-5 text-muted-foreground" aria-hidden="true" />
+      <div className={cn('relative flex items-center rounded-xl border bg-white shadow-sm', isHero ? 'border-[#c8d5b9]' : 'border-border')}>
+        <Search className="pointer-events-none absolute start-3.5 size-4 text-muted-foreground" aria-hidden="true" />
         <Input
           value={query}
           onChange={(e) => { setQuery(e.target.value); setOpen(true); setActiveIndex(-1); }}
           onFocus={() => setOpen(true)}
           onBlur={() => window.setTimeout(() => setOpen(false), 180)}
           onKeyDown={onKeyDown}
-          placeholder={t('home.search.placeholder', 'Search skills, services, or listings')}
-          className="h-12 border-0 bg-transparent ps-12 pe-10 text-base shadow-none focus-visible:ring-0"
+          placeholder={t('home.search.placeholder')}
+          className="h-11 border-0 bg-transparent ps-10 pe-10 text-base shadow-none focus-visible:ring-2 focus-visible:ring-[#3f7752]/30"
           aria-label={t('home.search.placeholder')}
           role="combobox"
           aria-expanded={open}
+          aria-controls="hero-search-suggestions"
         />
         {loading ? <Loader2 className="absolute end-4 h-4 w-4 animate-spin text-muted-foreground" /> : null}
       </div>
 
       {!query && isHero ? (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {QUICK_SUGGESTIONS.slice(0, 4).map((chip) => (
-            <button
-              key={chip}
-              type="button"
-              className="rounded-full bg-[#3f7752]/10 px-3 py-1 text-xs font-medium text-[#3f7752] transition hover:bg-[#3f7752]/20"
-              onClick={() => { setQuery(chip); setOpen(true); }}
-            >
-              {chip}
-            </button>
-          ))}
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {QUICK_SUGGESTION_KEYS.map((key) => {
+            const label = t(`home.search.quick.${key}`);
+            return (
+              <button
+                key={key}
+                type="button"
+                className="rounded-full bg-[#3f7752]/8 px-2.5 py-1 text-[11px] font-medium text-[#3f7752] transition hover:bg-[#3f7752]/15"
+                onClick={() => { setQuery(label); setOpen(true); }}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       ) : null}
 
@@ -148,7 +152,8 @@ export function HeroSearchBar({ featuredListings = [], variant = 'section' }: He
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
-            className="absolute z-30 mt-2 w-full overflow-hidden rounded-2xl border border-[#c8d5b9] bg-white shadow-xl"
+            id="hero-search-suggestions"
+            className="absolute z-30 mt-2 w-full overflow-hidden rounded-xl border border-[#c8d5b9] bg-white shadow-lg"
           >
             {suggestions.length === 0 && query.length >= 2 && !loading ? (
               <p className="px-4 py-3 text-sm text-muted-foreground">{t('search.noResultsTitle')}</p>
