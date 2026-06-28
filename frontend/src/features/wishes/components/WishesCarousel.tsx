@@ -58,6 +58,8 @@ export function WishesCarousel({ wishes, contributeLabel }: WishesCarouselProps)
 
   useEffect(() => {
     if (!wishes.length || paused) return;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
     const timer = window.setInterval(() => {
       setCurrentIndex((prev) => (prev >= maxStartIndex ? 0 : prev + 1));
     }, 5000);

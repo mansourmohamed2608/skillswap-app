@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Home services category">
+  <rect width="400" height="240" fill="#f7f6df"/>
+  <rect x="24" y="24" width="352" height="192" rx="16" fill="#fffdf0" stroke="#c8d5b9" stroke-width="2"/>
+  <path d="M200 56 96 120v72h208V120Z" fill="#739b7a" opacity="0.3" stroke="#3f7752" stroke-width="2"/>
+  <rect x="176" y="144" width="48" height="48" rx="4" fill="#d4642f"/>
+  <rect x="120" y="168" width="32" height="24" rx="2" fill="#3f7752" opacity="0.5"/>
+  <rect x="248" y="168" width="32" height="24" rx="2" fill="#3f7752" opacity="0.5"/>
+</svg>

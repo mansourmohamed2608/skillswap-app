@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   MenuIcon,
   HomeIcon,
@@ -20,6 +21,7 @@ import {
   MessageCircle,
   CalendarDays,
   BellIcon,
+  Heart,
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
@@ -183,7 +185,7 @@ export function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-[70] w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-[70] w-full app-header-bar">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           {/* Desktop Header Layout */}
           <div className="hidden h-16 items-center gap-2 md:flex">
@@ -239,11 +241,30 @@ export function AppHeader() {
                     </Link>
                   </Button>
 
-                  {/* Profile */}
-                  <Button variant="ghost" size="icon" asChild aria-label={t('header.profile', 'Profile')}>
+                  {/* Profile avatar */}
+                  <Button variant="ghost" size="icon" asChild className="rounded-full" aria-label={t('header.profile', 'Profile')}>
                     <Link href="/profile" title={t('header.profile', 'Profile')}>
-                      <UserIcon className="h-4 w-4" aria-hidden="true" />
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || t('header.profile', 'Profile')} />
+                        <AvatarFallback className="text-xs">{(user?.displayName || user?.email || 'U').slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
                     </Link>
+                  </Button>
+
+                  {/* Notifications */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={t('header.notifications', 'Notifications')}
+                    className="relative"
+                    onClick={() => router.push('/profile?tab=notifications')}
+                  >
+                    <BellIcon className="h-4 w-4" aria-hidden="true" />
+                    {unreadNotifications > 0 ? (
+                      <span className="absolute -top-0.5 -end-0.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground">
+                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
+                      </span>
+                    ) : null}
                   </Button>
 
                   <DropdownMenu>
@@ -314,243 +335,89 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Mobile Header Layout - Two Row */}
+          {/* Mobile Header */}
           <div className="md:hidden">
-            {/* Top Row: Logo + Menu */}
             <div className="flex h-14 items-center justify-between gap-2">
-              <Link href="/" className="flex items-center gap-1 text-primary hover:text-primary/80 transition-colors">
+              <Link href="/" className="flex min-w-0 items-center gap-1.5 text-primary">
                 <AppLogo />
-                <span className="font-bold text-sm">{t('common.appName')}</span>
+                <span className="truncate text-sm font-bold">{t('common.appName')}</span>
               </Link>
 
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 <LanguageSwitcher compact />
-
-                {/* Categories icon (mobile) - handled by popover below */}
-
-                {/* Mobile notifications sheet */}
-                <Sheet open={notificationsOpen} onOpenChange={handleNotificationsOpenChange}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('header.notifications', 'Notifications')}
-                      className="relative"
-                      onClick={openNotifications}
-                    >
-                      <BellIcon className="h-4 w-4" aria-hidden="true" />
-                      {unreadNotifications > 0 && (
-                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center rounded-full bg-accent text-accent-foreground text-[10px] px-1 py-0.5">
+                {isAuthenticated ? (
+                  <>
+                    <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')} onClick={() => router.push('/profile?tab=notifications')}>
+                      <BellIcon className="h-4 w-4" />
+                      {unreadNotifications > 0 ? (
+                        <span className="absolute -top-0.5 -end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground">
                           {unreadNotifications > 99 ? '99+' : unreadNotifications}
                         </span>
-                      )}
+                      ) : null}
                     </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="bottom"
-                    className="md:hidden left-2 right-2 bottom-2 top-auto h-auto max-h-[calc(100dvh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] box-border rounded-t-xl p-0 overflow-hidden"
-                  >
-                    <SheetHeader className="border-b px-4 py-3 text-start">
-                      <div className="flex items-center justify-between gap-2">
-                        <SheetTitle className="text-sm font-semibold">{t('header.notifications')}</SheetTitle>
-                        <SheetDescription className="sr-only">{t('profile.notifications.emptyBody')}</SheetDescription>
-                      </div>
-                      <div className="mt-3 flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={async () => {
-                            const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-                            if (!unreadIds.length) return;
-                            setNotifications((prev) => prev.map((item) => (unreadIds.includes(item.id) ? { ...item, isRead: true } : item)));
-                            try { await markNotificationsRead(unreadIds); } catch { /* ignore */ }
-                          }}
-                          disabled={unreadNotifications === 0}
-                        >
-                          <CheckCheckIcon className="mr-1 h-3 w-3" />{t('profile.notifications.markAll', 'Mark all read')}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={async () => {
-                            const readIds = notifications.filter((n) => n.isRead).map((n) => n.id);
-                            if (!readIds.length) return;
-                            const previous = notifications;
-                            setNotifications((prev) => prev.filter((item) => !item.isRead));
-                            try { await clearReadNotifications(readIds); } catch { setNotifications(previous); }
-                          }}
-                          disabled={notifications.filter((n) => n.isRead).length === 0}
-                        >
-                          <Trash2Icon className="mr-1 h-3 w-3" />{t('profile.notifications.clearRead', 'Clear read')}
-                        </Button>
-                      </div>
-                    </SheetHeader>
-                    <div className="px-4 pb-4 pt-3">
-                      {previewNotifications.length === 0 ? (
-                        <div className="py-6 text-center text-sm text-muted-foreground">{t('profile.notifications.emptyBody')}</div>
-                      ) : (
-                        <ul className="max-h-[60vh] overflow-y-auto">
-                          {previewNotifications.map((notif: any) => (
-                            <li key={notif.id} className={`px-4 py-2 text-xs border-b last:border-b-0 ${notif.isRead ? 'bg-muted/30' : 'bg-accent/10'}`}>
-                              <p className="break-words">{notif.content}</p>
-                              <p className="text-muted-foreground text-xs mt-1">{new Date(notif.date).toLocaleString()}</p>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                {/* Categories popover (mobile) */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label={t('header.categories', 'Categories')}>
-                      <Layers3 className="h-4 w-4" aria-hidden="true" />
+                    <Button variant="ghost" size="icon" asChild className="rounded-full" aria-label={t('header.profile')}>
+                      <Link href="/profile">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={user?.photoURL || undefined} alt="" />
+                          <AvatarFallback className="text-xs">{(user?.displayName || 'U').slice(0, 1)}</AvatarFallback>
+                        </Avatar>
+                      </Link>
                     </Button>
-                  </PopoverTrigger>
-                  <PopoverContent side="bottom" align="end" className="z-[110] w-56 p-0">
-                    <div className="space-y-1 p-2">
-                      {marketplaceCategories.map((category) => (
-                        <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.name)}`} className="block px-3 py-2 text-sm rounded hover:bg-muted">
-                          {category.name}
-                        </Link>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-
-                {/* Menu Button (hamburger only) */}
+                  </>
+                ) : (
+                  <>
+                    <Button size="sm" variant="ghost" asChild className="h-9 px-2 text-xs">
+                      <Link href="/auth/signin">{t('header.signIn')}</Link>
+                    </Button>
+                    <Button size="sm" asChild className="h-9 rounded-xl px-3 text-xs">
+                      <Link href="/auth/signup">{t('header.signUp')}</Link>
+                    </Button>
+                  </>
+                )}
                 <Sheet open={mobileMenuOpen} onOpenChange={handleMobileMenuOpenChange}>
                   <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={t('header.burger', 'Menu')}
-                    >
+                    <Button variant="ghost" size="icon" aria-label={t('header.burger', 'Menu')}>
                       <MenuIcon className="h-5 w-5" />
                     </Button>
                   </SheetTrigger>
-
-                  {/* Mobile Menu Content */}
-                  <SheetContent
-                    side={i18n.dir() === 'rtl' ? 'left' : 'right'}
-                    className="z-[90] w-[82vw] max-w-[360px] p-0"
-                  >
+                  <SheetContent side={i18n.dir() === 'rtl' ? 'left' : 'right'} className="z-[90] w-[82vw] max-w-[360px] p-0">
                     <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-4">
-                    {/* Primary Nav */}
-                    {primaryNavItems.map((item) => (
-                      <Button
-                        key={item.href}
-                        variant="ghost"
-                        asChild
-                        className="justify-start text-base gap-2 h-11"
-                      >
-                        <Link
-                          href={item.href}
-                          onClick={() => setMobileMenuOpen(false)}
-                        >
-                          <item.icon className="h-5 w-5" aria-hidden="true" />
-                          {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
-                        </Link>
-                      </Button>
-                    ))}
-
-                    {/* Categories removed from sidebar per request */}
-
-                    {/* Auth or Authenticated Section */}
-                    {isAuthenticated ? (
-                      <>
-                        {/* Private Nav */}
-                        {privateNavItems.map((item) => (
-                          <Button
-                            key={item.href}
-                            variant="ghost"
-                            asChild
-                            className="justify-start text-base gap-2 h-11"
-                          >
-                            <Link
-                              href={item.href}
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              <item.icon className="h-5 w-5" aria-hidden="true" />
-                              {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
+                      {[...primaryNavItems, { href: '/wishes', label: 'wishes', icon: Heart }].map((item) => (
+                        <Button key={item.href} variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
+                          <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                            <item.icon className="h-5 w-5" />
+                            {t(`header.${item.label}`, { defaultValue: item.label })}
+                          </Link>
+                        </Button>
+                      ))}
+                      {isAuthenticated ? (
+                        <>
+                          {privateNavItems.map((item) => (
+                            <Button key={item.href} variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
+                              <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                                <item.icon className="h-5 w-5" />
+                                {t(`header.${item.label}`)}
+                              </Link>
+                            </Button>
+                          ))}
+                          <div className="my-3 h-px bg-border" />
+                          <SignOutButton isMobile onDone={() => setMobileMenuOpen(false)} />
+                        </>
+                      ) : (
+                        authNavItems.map((item) => (
+                          <Button key={item.href} variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
+                            <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
+                              <item.icon className="h-5 w-5" />
+                              {t(`header.${item.label}`)}
                             </Link>
                           </Button>
-                        ))}
-
-                        {/* Divider */}
-                        <div className="my-3 h-px bg-border" />
-
-                        {/* Secondary Items Section */}
-                        <div className="space-y-2">
-                          {/* Subscription Plans */}
-                          <Button
-                            variant="ghost"
-                            asChild
-                            className="justify-start text-base gap-2 h-11"
-                          >
-                            <Link
-                              href="/pricing"
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              <span>💎</span>
-                              {t('header.pricing', 'Subscription Plans')}
-                            </Link>
-                          </Button>
-                        </div>
-
-                        {/* Divider */}
-                        <div className="my-3 h-px bg-border" />
-
-                        {/* Language & Logout Section */}
-                        <div className="space-y-2">
-                          {/* Language Toggle */}
-                          <div className="px-2 py-2">
-                            <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">{t('common.language', 'Language')}</p>
-                            <LanguageSwitcher />
-                          </div>
-
-                          {/* Sign Out */}
-                          <SignOutButton
-                            isMobile
-                            onDone={() => setMobileMenuOpen(false)}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Auth Nav */}
-                        {authNavItems.map((item) => (
-                          <Button
-                            key={item.href}
-                            variant="ghost"
-                            asChild
-                            className="justify-start text-base gap-2 h-11"
-                          >
-                            <Link
-                              href={item.href}
-                              onClick={() => setMobileMenuOpen(false)}
-                            >
-                              <item.icon className="h-5 w-5" aria-hidden="true" />
-                              {t(`header.${item.label}`, { defaultValue: item.label.charAt(0).toUpperCase() + item.label.slice(1) })}
-                            </Link>
-                          </Button>
-                        ))}
-                      </>
-                    )}
+                        ))
+                      )}
                     </div>
                   </SheetContent>
                 </Sheet>
               </div>
             </div>
-
-            {/* Bottom Row: Full-width Search Bar */}
-            {!isSearchPage && !mobileMenuOpen && (
-              <div className="border-t border-border/40 px-4 py-2">
-                <GlobalSearchBar />
-              </div>
-            )}
           </div>
         </div>
       </header>

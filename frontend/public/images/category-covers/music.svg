@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Music category">
+  <rect width="400" height="240" fill="#f7f6df"/>
+  <rect x="24" y="24" width="352" height="192" rx="16" fill="#fffdf0" stroke="#c8d5b9" stroke-width="2"/>
+  <circle cx="140" cy="120" r="40" fill="none" stroke="#3f7752" stroke-width="4"/>
+  <circle cx="260" cy="120" r="40" fill="none" stroke="#d4642f" stroke-width="4"/>
+  <path d="M180 120h40" stroke="#739b7a" stroke-width="4"/>
+</svg>

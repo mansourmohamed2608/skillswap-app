@@ -116,6 +116,10 @@ function inferFunctionsBase() {
 }
 
 export function getFunctionsBase() {
+  if (typeof window !== 'undefined') {
+    // Browser calls go through same-origin Next.js API proxies to avoid Cloud Functions path mismatches.
+    return '';
+  }
   return inferFunctionsBase();
 }
 

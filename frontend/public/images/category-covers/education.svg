@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Education category">
+  <rect width="400" height="240" fill="#f7f6df"/>
+  <rect x="24" y="24" width="352" height="192" rx="16" fill="#fffdf0" stroke="#c8d5b9" stroke-width="2"/>
+  <path d="M200 56 88 96v56l112 40 112-40V96Z" fill="#739b7a" opacity="0.35" stroke="#3f7752" stroke-width="2"/>
+  <path d="M200 96v96" stroke="#3f7752" stroke-width="3"/>
+  <circle cx="200" cy="88" r="10" fill="#d4642f"/>
+</svg>

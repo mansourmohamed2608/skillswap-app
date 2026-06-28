@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Cairo } from 'next/font/google';
 import './globals.css';
 import { LanguageController } from '@/components/i18n/LanguageController';
 import { AppHeader } from '@/components/layout/AppHeader';
+import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import AppFooter from '@/components/layout/AppFooter';
 import FloatingChatButton from '@/components/layout/FloatingChatButton';
 import { Toaster } from "@/components/ui/toaster";
@@ -59,10 +60,17 @@ export default function RootLayout({
         <LanguageController />
         <AuthProvider>
           <KycGate>
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:shadow-md"
+            >
+              Skip to content
+            </a>
             <AppHeader />
-            <main className="relative flex-grow container mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-24 sm:pb-28 md:pb-8 max-w-screen-2xl">
+            <main id="main-content" className="relative flex-grow container mx-auto px-4 sm:px-6 pt-4 sm:pt-6 md:pt-8 pb-24 sm:pb-28 md:pb-8 max-w-screen-2xl">
               {children}
             </main>
+            <MobileBottomNav />
             <FloatingChatButton />
             <Toaster />
             <AppFooter />

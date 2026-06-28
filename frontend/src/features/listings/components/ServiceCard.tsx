@@ -22,6 +22,7 @@ import { getListingPath } from '@/lib/public-ids';
 import { deleteListing } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { DEFAULT_LISTING_COVER, getListingCoverImage } from '@/lib/listingImages';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,12 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
+  const initialCover = listing.offeredService?.imageUrl || getListingCoverImage(listing.offeredService?.category);
+  const [coverSrc, setCoverSrc] = useState(initialCover);
+
+  useEffect(() => {
+    setCoverSrc(listing.offeredService?.imageUrl || getListingCoverImage(listing.offeredService?.category));
+  }, [listing.offeredService?.imageUrl, listing.offeredService?.category]);
 
   useEffect(() => {
     // This will only run on the client, after hydration, preventing a mismatch.
@@ -166,17 +173,17 @@ export function ServiceCard({ listing, user }: ServiceCardProps) {
   return (
     <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-border/70 shadow-none transition-colors duration-300 hover:border-primary/40 hover:shadow-none">
       <CardHeader className="p-0">
-        {listing.offeredService?.imageUrl && (
-          <div className="relative h-36 w-full">
-            <Image
-              src={listing.offeredService.imageUrl}
-              alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
-              fill
-              style={{objectFit: 'cover'}}
-              data-ai-hint="service item"
-            />
-          </div>
-        )}
+        <div className="relative h-36 w-full overflow-hidden bg-[#f7f6df]">
+          <Image
+            src={coverSrc}
+            alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 85vw, 320px"
+            onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
+            data-ai-hint="service item"
+          />
+        </div>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 p-4">
         <div>

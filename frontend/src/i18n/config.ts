@@ -79,6 +79,7 @@ const resources = {
         home: "Home",
         listings: "Listings",
         matchmaking: "AI Matchmaking",
+        wishes: "Wishes",
         pricing: "Subscription Plans",
         bookings: "Bookings",
         chat: "Chat",
@@ -94,6 +95,15 @@ const resources = {
         menu: "Menu",
         subscribe: "Subscribe",
       },
+      nav: {
+        mobile: {
+          label: "Mobile navigation",
+          home: "Home",
+          profile: "Profile",
+          ai: "AI",
+          settings: "Settings",
+        },
+      },
       footer: {
         rights: "© {{year}} {{appName}}. All rights reserved.",
         terms: "Terms & Conditions",
@@ -104,15 +114,50 @@ const resources = {
         openChats: "Open Chats",
       },
       home: {
+        tagline: "Exchange Skills • Connect Communities • Grow Together",
         hero: {
           title: "Welcome to SkillSwap!",
           body: "SkillSwap is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
           ctaBrowse: "Browse Listings",
           ctaPost: "Post a Listing",
           ctaSubscribe: "Subscribe Now",
+          previewLabel: "Example exchange",
+          previewOfferLabel: "I offer",
+          previewOffer: "Logo design and branding",
+          previewNeedLabel: "I need",
+          previewNeed: "Product photography",
+          previewLocation: "Cairo, Egypt",
         },
         search: {
-          placeholder: "Search"
+          placeholder: "Search skills, services, or listings",
+          sectionLabel: "Search listings",
+          categoryLabel: "Category",
+          allCategories: "All categories",
+          viewAllResults: "View all results for \"{{query}}\"",
+        },
+        whatIs: {
+          title: "What is SkillSwap?",
+          body: "Offer what you do well. Find what you need. Build useful exchanges with your community.",
+        },
+        howItWorksV2: {
+          step1: { title: "Post a Listing", body: "Share what you offer and what you need in return." },
+          step2: { title: "Browse or Match with a Listing", body: "Explore categories or use AI Matchmaker to find exchanges." },
+          step3: { title: "Connect and Exchange", body: "Chat, agree on details, and complete your skill swap." },
+        },
+        joinCta: {
+          title: "Ready to join SkillSwap?",
+          body: "Create your account and start exchanging skills with people near you.",
+          primary: "Join Now",
+          explore: "Explore Listings",
+        },
+        tahadu: {
+          subtitle: "Generosity and helpful exchanges strengthen our community.",
+          supportTitle: "Support Someone's Goal",
+          supportBody: "Help a community member move closer to their dream.",
+          supportCta: "Support",
+          shareTitle: "Share Your Goal",
+          shareBody: "Tell the community what you're trying to achieve.",
+          shareCta: "Share Goal",
         },
         subscribe: {
           title: "Unlock more with SkillSwap",
@@ -136,6 +181,7 @@ const resources = {
         },
         featured: {
           title: "Featured Listings",
+          subtitle: "Explore services people are ready to exchange.",
           emptyTitle: "No Listings to Display",
           emptyBody: "There are no service listings available at the moment. This might be due to a connection issue.",
           viewAll: "View All Listings",
@@ -152,6 +198,8 @@ const resources = {
           requestBody: "What do you want to achieve? Share your goals with the community - whether it's something you need or something you're working toward, let's make it happen together.",
           requestCta: "Share a Goal",
           viewAll: "View All Wishes",
+          exploreMore: "Explore More Wishes",
+          exploreWishes: "Explore Wishes",
           viewDetails: "View Details",
         },
         categories: {
@@ -303,8 +351,8 @@ const resources = {
           submitting: "Submitting...",
           prompt: "Already have an account?",
           signInLink: "Sign In",
-          termsPrefix: "By signing up, you agree to our",
-          termsLink: "Terms and Conditions",
+          termsPrefix: "I agree to the",
+          termsLink: "Terms & Conditions",
           errors: {
             required: "Please fill in all required fields.",
             passwordMismatch: "Passwords do not match.",
@@ -317,6 +365,7 @@ const resources = {
             latinName: "Please enter your name using English letters only.",
             phoneInUse: "This phone number is already in use.",
             phoneInvalid: "Enter a valid phone number.",
+            termsRequired: "You must agree to the Terms & Conditions to create an account.",
           },
         },
         kycGate: {
@@ -580,11 +629,12 @@ const resources = {
         },
       },
       wishes: {
+        support: "Support",
         list: {
           empty: "No wishes yet.",
           loading: "Loading wishes...",
           raised: "{{raised}} / {{goal}} {{currency}} raised",
-          donate: "Donate",
+          donate: "Support",
         },
         request: {
           title: "Share a Goal",
@@ -1441,6 +1491,7 @@ const resources = {
         home: "الرئيسية",
         listings: "العروض",
         matchmaking: "مطابقة بالذكاء الاصطناعي",
+        wishes: "الأمنيات",
         pricing: "خطط الاشتراك",
         bookings: "الحجوزات",
         chat: "الدردشة",
@@ -1456,6 +1507,15 @@ const resources = {
         menu: "القائمة",
         subscribe: "اشترك",
       },
+      nav: {
+        mobile: {
+          label: "التنقل على الجوال",
+          home: "الرئيسية",
+          profile: "الملف الشخصي",
+          ai: "الذكاء الاصطناعي",
+          settings: "الإعدادات",
+        },
+      },
       footer: {
         rights: "© {{year}} {{appName}}. جميع الحقوق محفوظة.",
         terms: "الشروط والأحكام",
@@ -1466,12 +1526,50 @@ const resources = {
         openChats: "المحادثات المفتوحة",
       },
       home: {
+        tagline: "تبادل المهارات • تواصل مع المجتمع • نمّ معًا",
         hero: {
           title: "مرحبًا بك في سكيل سواپ!",
           body: "سكيل سواپ هو منصّتك الحيوية لمشاركة مهاراتك وخدماتك مع مجتمعك، أطلق إمكاناتك، وشارك بما تتقنه، واكتشف ما تحتاجه في المقابل. سواء كنت تتبادل خدمة بخدمة أو منتجًا بمنتج، أو تحوّل موهبتك إلى دخل، سكيل سواپ يساعدك على تحقيق أقصى استفادة مما تتقنه.",
           ctaBrowse: "تصفّح العروض",
-          ctaPost: "أنشئ عرضًا",
-          ctaSubscribe: "اشترك الآن",
+          ctaPost: "Post a Listing",
+          ctaSubscribe: "Subscribe Now",
+          previewLabel: "Example exchange",
+          previewOfferLabel: "I offer",
+          previewOffer: "Logo design and branding",
+          previewNeedLabel: "I need",
+          previewNeed: "Product photography",
+          previewLocation: "Cairo, Egypt",
+        },
+        search: {
+          placeholder: "ابحث عن مهارات أو خدمات أو عروض",
+          sectionLabel: "البحث في العروض",
+          categoryLabel: "الفئة",
+          allCategories: "كل الفئات",
+          viewAllResults: "عرض كل النتائج لـ \"{{query}}\"",
+        },
+        whatIs: {
+          title: "ما هو سكيل سواپ؟",
+          body: "قدّم ما تجيده. اعثر على ما تحتاجه. ابنِ تبادلات مفيدة مع مجتمعك.",
+        },
+        howItWorksV2: {
+          step1: { title: "أنشئ عرضًا", body: "شارك ما تقدمه وما تحتاجه بالمقابل." },
+          step2: { title: "تصفّح أو طابق عرضًا", body: "استكشف الفئات أو استخدم المطابقة بالذكاء الاصطناعي." },
+          step3: { title: "تواصل وبدّل", body: "تحدث، اتفق على التفاصيل، وأكمل تبادلك." },
+        },
+        joinCta: {
+          title: "هل أنت مستعد للانضمام؟",
+          body: "أنشئ حسابك وابدأ تبادل المهارات مع أشخاص قريبين منك.",
+          primary: "انضم الآن",
+          explore: "استكشف العروض",
+        },
+        tahadu: {
+          subtitle: "الكرم والتبادل المفيد يقوّيان مجتمعنا.",
+          supportTitle: "ادعم هدف أحد أفراد المجتمع",
+          supportBody: "ساعد أحد أفراد المجتمع على الاقتراب من حلمه.",
+          supportCta: "ادعم",
+          shareTitle: "شارك هدفك",
+          shareBody: "أخبر المجتمع بما تحاول تحقيقه.",
+          shareCta: "شارك الهدف",
         },
         howItWorks: {
           title: "كيف يعمل سكيل سواپ",
@@ -1490,6 +1588,7 @@ const resources = {
         },
         featured: {
           title: "عروض مميزة",
+          subtitle: "استكشف خدمات جاهزة للتبادل.",
           emptyTitle: "لا توجد عروض للعرض",
           emptyBody: "لا توجد عروض خدمات متاحة حاليًا. قد يكون السبب مشكلة في الاتصال.",
           viewAll: "عرض كل العروض",
@@ -1506,6 +1605,8 @@ const resources = {
           requestBody: "إذا كنت تواجه صعوبة وتحتاج شيئًا لا تستطيع تحمّل تكلفته، أخبر المجتمع. انشر أمنيتك ودعنا نساعدك.",
           requestCta: "اطلب أمنية",
           viewAll: "عرض كل الأمنيات",
+          exploreMore: "استكشف المزيد من الأمنيات",
+          exploreWishes: "استكشف الأمنيات",
           viewDetails: "عرض التفاصيل",
         },
         categories: {
@@ -1657,7 +1758,7 @@ const resources = {
           submitting: "جارٍ الإرسال...",
           prompt: "لديك حساب بالفعل؟",
           signInLink: "تسجيل الدخول",
-          termsPrefix: "بإنشاء حساب، أنت توافق على",
+          termsPrefix: "أوافق على",
           termsLink: "الشروط والأحكام",
           errors: {
             required: "يرجى تعبئة جميع الحقول المطلوبة.",
@@ -1671,6 +1772,7 @@ const resources = {
             latinName: "يرجى إدخال الاسم باستخدام الأحرف الإنجليزية فقط.",
             phoneInUse: "رقم الهاتف مستخدم بالفعل.",
             phoneInvalid: "يرجى إدخال رقم هاتف صحيح.",
+            termsRequired: "يجب الموافقة على الشروط والأحكام لإنشاء حساب.",
           },
         },
         kycGate: {
@@ -1934,11 +2036,12 @@ const resources = {
         },
       },
       wishes: {
+        support: "ادعم",
         list: {
           empty: "لا توجد أهداف بعد.",
           loading: "جارٍ تحميل الأهداف...",
           raised: "{{raised}} / {{goal}} {{currency}} تم جمعها",
-          donate: "ساهم",
+          donate: "ادعم",
         },
         request: {
           title: "شارك هدفك",

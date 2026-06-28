@@ -2,253 +2,96 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import type { TFunction } from "i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { SearchIcon } from "lucide-react";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
-// ServiceCategories removed per request
-import { SearchIcon, UsersIcon, SparklesIcon, Heart, Star } from "lucide-react";
-import { TopContributors } from "@/features/home/components/TopContributors";
-import { HomePageCTAs } from "@/features/home/components/HomePageCTAs";
-import { getListingPath } from "@/lib/public-ids";
-import { getPublicLocationLabel } from "@/lib/location";
-import { getServiceCategoryLabel } from "@/services/serviceCategories";
 import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
-import { useAuth } from "@/context/AuthContext";
-import type { ServiceListing, User, Contributor, WishSummary } from "@/types";
+import { HomeHero } from "@/features/home/components/HomeHero";
+import { CategoriesSection } from "@/features/home/components/CategoriesSection";
+import { TahaduSection } from "@/features/home/components/TahaduSection";
+import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
+import { Reveal } from "@/components/motion/Reveal";
+import type { ServiceListing, User, WishSummary } from "@/types";
 
-const HeroLogo = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="mx-auto mb-6 h-16 w-16 text-primary-foreground"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-    focusable="false"
-  >
-    <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
-    <path d="m18 2 4 4-4 4" />
-    <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2l4.4 8.2c.7 1.3 2.1 2.2 3.6 2.2H22" />
-    <path d="m18 22 4-4-4-4" />
-  </svg>
-);
-
-type FeaturedListing = {
-  listing: ServiceListing;
-  user: User | null;
-};
-
-function getListingStatusLabel(status: ServiceListing['status'], t: TFunction) {
-  switch (status) {
-    case 'open':
-      return t('listings.card.status.open', 'Open');
-    case 'pending_exchange':
-      return t('listings.card.status.pending', 'Pending');
-    case 'completed':
-      return t('listings.card.status.completed', 'Completed');
-    case 'cancelled':
-    case 'removed':
-      return t('listings.card.status.cancelled', 'Closed');
-    default:
-      return String(status || '').replace(/_/g, ' ');
-  }
-}
-
-function getRequestedLabel(listing: ServiceListing, t: TFunction) {
-  if (listing.requestedKind === 'money' && listing.requestedMoney) {
-    return `${listing.requestedMoney.amount} ${listing.requestedMoney.currency}`;
-  }
-  if (listing.requestedKind === 'product' && listing.requestedProduct?.name) {
-    return listing.requestedProduct.name;
-  }
-  return listing.requestedService?.title || listing.requestedService?.description || t('listings.card.openToOffers', 'Open to offers');
-}
+type FeaturedListing = { listing: ServiceListing; user: User | null };
 
 export function HomePageContent({
   featuredListingsData,
   featuredWishes = [],
-  topContributors = [],
 }: {
   featuredListingsData: FeaturedListing[];
   featuredWishes?: WishSummary[];
-  topContributors?: Contributor[];
+  topContributors?: unknown[];
 }) {
   const { t } = useTranslation();
-  const { user } = useAuth();
-  const isAuthenticated = !!user;
-  const contributeText = t('wishes.contribute', 'Contribute');
+  const supportLabel = t('wishes.support', 'Support');
 
   return (
-    <div className="mx-auto w-full max-w-[1200px] space-y-12 px-4 py-4 pb-24 sm:px-6 sm:py-6 sm:pb-28 md:space-y-16 md:py-8 md:pb-8">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/80 to-secondary/80 py-12 text-center shadow-xl sm:py-16 md:py-20">
-        <div className="relative z-10 mx-auto max-w-4xl px-4">
-          <HeroLogo />
-          <h1 className="mb-5 text-4xl font-bold text-primary-foreground sm:text-5xl md:text-6xl">
-            {t('home.hero.title')}
-          </h1>
-          <p className="mx-auto mb-10 max-w-2xl text-base text-primary-foreground/90 sm:text-lg md:text-xl">
-            {t('home.hero.body')}
-          </p>
-          <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
-            <Button size="lg" variant="outline" asChild className="w-full border-accent text-accent transition-transform hover:-translate-y-0.5 hover:bg-accent hover:text-accent-foreground sm:w-auto">
-              <Link href={isAuthenticated ? '/listings/new' : '/auth/signup'}>
-                {isAuthenticated ? t('home.hero.ctaPost') : t('events.registerAndPostCta', 'Register and Post a Listing')}
-              </Link>
-            </Button>
-            <Button size="lg" asChild className="w-full bg-accent text-accent-foreground transition-transform hover:-translate-y-0.5 hover:bg-accent/90 sm:w-auto">
-              <Link href="/listings">{t('home.hero.ctaBrowse')}</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+    <div className="mx-auto w-full max-w-6xl space-y-8 px-0 pb-4 sm:space-y-10 md:pb-6">
+      <HomeHero featuredListings={featuredListingsData} />
 
-      <section>
-        <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.howItWorks.title')}</h2>
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            {
-              icon: SearchIcon,
-              title: t('home.howItWorks.step1.title'),
-              body: t('home.howItWorks.step1.body'),
-            },
-            {
-              icon: SparklesIcon,
-              title: t('home.howItWorks.step2.title'),
-              body: t('home.howItWorks.step2.body'),
-            },
-            {
-              icon: UsersIcon,
-              title: t('home.howItWorks.step3.title'),
-              body: t('home.howItWorks.step3.body'),
-            },
-          ].map((step) => {
-            const Icon = step.icon;
-            return (
-              <Card key={step.title} className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-                <CardHeader className="items-center pb-4 text-center">
-                  <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
-                    <Icon className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="text-lg">{step.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="flex-1">
-                  <CardDescription className="text-center text-sm">{step.body}</CardDescription>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+      <CategoriesSection />
 
-      <section>
-        <h2 className="mb-8 text-center text-3xl font-semibold">{t('home.featured.title')}</h2>
-        {featuredListingsData.length > 0 ? (
-          <>
-            <div
-              className={`grid gap-6 ${
-                featuredListingsData.length <= 3
-                  ? 'mx-auto max-w-5xl grid-cols-1 justify-items-center sm:grid-cols-2 lg:grid-cols-3'
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
-              }`}
-            >
-              {featuredListingsData.map(({ listing, user }) => (
-                <div key={listing.id} className={featuredListingsData.length <= 3 ? 'w-full max-w-sm' : 'w-full'}>
-                  <ServiceCard listing={listing} user={user} />
-                </div>
-              ))}
+      <HowItWorksScroll />
+
+      <Reveal>
+        <section aria-labelledby="featured-listings-title">
+          <div className="mb-4 flex items-end justify-between gap-3">
+            <div>
+              <h2 id="featured-listings-title" className="text-xl font-bold text-[#3f7752] sm:text-2xl">
+                {t('home.featured.title')}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">{t('home.featured.subtitle')}</p>
             </div>
-            <div className="mt-8 flex justify-center">
-              <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
+            {featuredListingsData.length > 0 ? (
+              <Button variant="outline" size="sm" asChild className="shrink-0 rounded-xl border-[#3f7752] text-[#3f7752]">
                 <Link href="/listings">{t('home.featured.viewAll')}</Link>
               </Button>
+            ) : null}
+          </div>
+
+          {featuredListingsData.length > 0 ? (
+            <>
+              <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
+                {featuredListingsData.map(({ listing, user }) => (
+                  <ServiceCard key={listing.id} listing={listing} user={user} />
+                ))}
+              </div>
+              <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 md:hidden [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {featuredListingsData.map(({ listing, user }) => (
+                  <div key={listing.id} className="min-w-[88%] shrink-0 snap-center">
+                    <ServiceCard listing={listing} user={user} />
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-[#c8d5b9] bg-[#fffdf0] py-10 text-center">
+              <SearchIcon className="mx-auto h-9 w-9 text-muted-foreground" />
+              <p className="mt-3 font-medium">{t('home.featured.emptyTitle')}</p>
+              <Button asChild className="mt-4 rounded-2xl"><Link href="/listings/new">{t('home.hero.ctaPost')}</Link></Button>
             </div>
-          </>
-        ) : (
-          <div className="rounded-lg border border-dashed border-destructive/50 bg-card py-12 text-center">
-            <SearchIcon className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-xl font-semibold">{t('home.featured.emptyTitle')}</h3>
-            <p className="mt-2 text-muted-foreground">{t('home.featured.emptyBody')}</p>
-          </div>
-        )}
-      </section>
-
-      {featuredWishes.length > 0 && (
-        <section>
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-semibold">{t('home.wishes.featuredTitle', 'Make a Wish Come True')}</h2>
-            <p className="mt-2 text-lg text-muted-foreground">{t('home.wishes.featuredSubtitle', 'Help community members achieve their dreams')}</p>
-          </div>
-          <WishesCarousel wishes={featuredWishes} contributeLabel={contributeText} />
-          <div className="mt-8 flex justify-center">
-            <Button size="lg" asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Link href="/wishes">{t('home.wishes.viewAll', 'View All Wishes')}</Link>
-            </Button>
-          </div>
+          )}
         </section>
-      )}
+      </Reveal>
 
-      {topContributors.length > 0 && (
-        <section>
-          <div className="mb-8 text-center">
-            <h2 className="text-3xl font-semibold">{t('home.contributors.title', 'Thank You, Generous Contributors!')}</h2>
-            <p className="mt-2 text-lg text-muted-foreground">{t('home.contributors.subtitle', 'Celebrating those who make wishes come true')}</p>
-          </div>
-          <TopContributors initialContributors={topContributors} />
-        </section>
-      )}
+      <TahaduSection />
 
-      <section>
-        <div className="mb-8 text-center">
-          <div className="mb-3 flex items-center justify-center gap-4">
-            <span className="hidden h-px w-20 bg-emerald-300/80 sm:block" />
-            <h2 className="text-4xl font-extrabold tracking-tight text-emerald-700 sm:text-5xl">تَهَادَوْا تَحَابُّوا</h2>
-            <span className="hidden h-px w-20 bg-emerald-300/80 sm:block" />
-          </div>
-          <p className="text-xl font-semibold text-emerald-700/90 sm:text-2xl">Give Gifts, Spread Love</p>
-          <p className="mt-2 text-lg text-muted-foreground">{t('home.wishes.communitySubtitle')}</p>
-        </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-            <CardHeader className="items-center pb-4 text-center">
-              <div className="mb-2 inline-block rounded-full bg-accent/10 p-3">
-                <Heart className="h-8 w-8 text-accent" />
-              </div>
-              <CardTitle className="text-lg">{t('home.wishes.donateTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pb-4">
-              <CardDescription className="text-center text-sm">{t('home.wishes.donateBody')}</CardDescription>
-            </CardContent>
-            <CardFooter className="justify-center pt-0">
-              <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link href="/wishes/donate">{t('home.wishes.donateCta')}</Link>
+      {featuredWishes.length > 0 ? (
+        <Reveal>
+          <section aria-labelledby="wishes-title">
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <h2 id="wishes-title" className="text-xl font-bold text-[#3f7752] sm:text-2xl">
+                {t('home.wishes.title', 'Community Wishes')}
+              </h2>
+              <Button variant="outline" size="sm" asChild className="rounded-xl border-[#3f7752] text-[#3f7752]">
+                <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
               </Button>
-            </CardFooter>
-          </Card>
-          <Card className="flex h-full flex-col border-border/70 shadow-none transition-colors hover:border-primary/40 hover:shadow-none">
-            <CardHeader className="items-center pb-4 text-center">
-              <div className="mb-2 inline-block rounded-full bg-primary/10 p-3">
-                <Star className="h-8 w-8 text-primary" />
-              </div>
-              <CardTitle className="text-lg">{t('home.wishes.requestTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pb-4">
-              <CardDescription className="text-center text-sm">{t('home.wishes.requestBody')}</CardDescription>
-            </CardContent>
-            <CardFooter className="justify-center pt-0">
-              <Button asChild variant="outline" className="border-primary text-primary hover:bg-primary/10 hover:text-primary">
-                <Link href="/wishes/request">{t('home.wishes.requestCta')}</Link>
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      </section>
-
-      <HomePageCTAs />
+            </div>
+            <WishesCarousel wishes={featuredWishes} contributeLabel={supportLabel} />
+          </section>
+        </Reveal>
+      ) : null}
     </div>
   );
 }

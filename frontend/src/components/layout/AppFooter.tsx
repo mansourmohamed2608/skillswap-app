@@ -15,7 +15,7 @@ export function AppFooter() {
   ];
 
   return (
-    <footer className="border-t border-border/70 py-6 text-sm text-muted-foreground">
+    <footer className="hidden border-t border-border/70 py-6 text-sm text-muted-foreground md:block">
       <div className="mx-auto flex w-full flex-wrap items-center justify-center gap-x-2 gap-y-1 px-4 text-center">
         <p className="text-sm whitespace-nowrap">
           {t('footer.rights', { year, appName: t('common.appName') })}

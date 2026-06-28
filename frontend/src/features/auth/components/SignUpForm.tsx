@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircleIcon, UserPlusIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { auth, db } from '@/services/firebase';
 import { bootstrapUserAccount, getFunctionsBase, recordAnalyticsEvent } from '@/services/api';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -44,6 +45,7 @@ export function SignUpForm() {
 
   const [state, setState] = useState<LocalFormState>(initialState);
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -70,6 +72,13 @@ export function SignUpForm() {
       const city = String(form.get('city') || '');
       const password = String(form.get('password') || '');
       const confirmPassword = String(form.get('confirmPassword') || '');
+
+      if (!acceptedTerms) {
+        const msg = t('auth.signUp.errors.termsRequired', 'You must agree to the Terms & Conditions to create an account.');
+        setState({ message: msg, success: false });
+        setLoading(false);
+        return;
+      }
 
       if (!fullName || !username || !email || !phoneNumber || !country || !password || !confirmPassword) {
         setState({ message: t('auth.signUp.errors.required'), success: false });
@@ -276,9 +285,26 @@ export function SignUpForm() {
               disabled={loading}
             />
           </div>
+
+          <div className="flex items-start gap-3 rounded-lg border border-[#c8d5b9] bg-[#fbfaee] p-3">
+            <Checkbox
+              id="acceptTerms"
+              checked={acceptedTerms}
+              onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+              disabled={loading}
+              className="mt-0.5"
+              aria-required="true"
+            />
+            <Label htmlFor="acceptTerms" className="cursor-pointer text-sm font-normal leading-snug">
+              {t('auth.signUp.termsPrefix', 'I agree to the')}{' '}
+              <Link href="/legal/terms" className="font-medium text-primary underline underline-offset-2" target="_blank" rel="noopener noreferrer">
+                {t('auth.signUp.termsLink', 'Terms & Conditions')}
+              </Link>
+            </Label>
+          </div>
         </CardContent>
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="h-11 w-full" disabled={loading || !acceptedTerms}>
             {loading ? t('auth.signUp.submitting') : t('auth.signUp.submit')}
           </Button>
           <p className="text-center text-sm text-muted-foreground">

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 240" role="img" aria-label="Fitness category">
+  <rect width="400" height="240" fill="#f7f6df"/>
+  <rect x="24" y="24" width="352" height="192" rx="16" fill="#fffdf0" stroke="#c8d5b9" stroke-width="2"/>
+  <rect x="96" y="136" width="48" height="12" rx="6" fill="#3f7752"/>
+  <rect x="176" y="104" width="48" height="44" rx="6" fill="#739b7a"/>
+  <rect x="256" y="120" width="48" height="28" rx="6" fill="#d4642f"/>
+  <circle cx="120" cy="120" r="20" fill="#739b7a" opacity="0.5"/>
+  <circle cx="280" cy="120" r="20" fill="#739b7a" opacity="0.5"/>
+</svg>
