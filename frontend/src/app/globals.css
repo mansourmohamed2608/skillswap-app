@@ -398,6 +398,10 @@ button, a, [role="button"] {
     inset-inline-end: 12px;
   }
 
+  .app-floating-chat.is-docked {
+    bottom: auto !important;
+  }
+
   .app-floating-chat.is-compact .app-floating-chat-btn {
     width: var(--floating-chat-compact-size);
     height: var(--floating-chat-compact-size);

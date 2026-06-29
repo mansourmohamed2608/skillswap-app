@@ -165,7 +165,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
       t('listings.card.openToOffers');
 
     return (
-      <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-[#c8d5b9]/80 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <Card data-fab-collision className="flex h-full flex-col overflow-hidden rounded-2xl border-[#c8d5b9]/80 bg-white shadow-sm transition-shadow hover:shadow-md">
         <div className="relative h-24 overflow-hidden">
           {hasCustomImage ? (
             <Image
@@ -219,7 +219,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
         </CardContent>
 
         <CardFooter className="p-3.5 pt-0">
-          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90" data-fab-collision>
+          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
             <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
           </Button>
         </CardFooter>

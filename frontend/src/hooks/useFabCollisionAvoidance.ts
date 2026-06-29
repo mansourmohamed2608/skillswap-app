@@ -2,10 +2,14 @@
 
 import { useEffect, useState } from 'react';
 
+export const FAB_COLLISION_SELECTOR = '[data-fab-collision]';
+
 const FAB_SIZE = 48;
 const FAB_INSET_END = 16;
 const COMPACT_SIZE = 40;
-const MAX_LIFT = 200;
+const COLUMN_BUFFER = 12;
+const CLEAR_MARGIN = 14;
+const MIN_TOP = 72;
 
 function getFabBaseBottomPx(): number {
   if (typeof document === 'undefined') return 88;
@@ -18,9 +22,55 @@ function getFabBaseBottomPx(): number {
   return Number.isFinite(bottom) ? bottom : 88;
 }
 
+function getFabColumnBounds(viewportWidth: number, size: number) {
+  const fabRight = viewportWidth - FAB_INSET_END;
+  const fabLeft = fabRight - size;
+  return {
+    left: fabLeft - COLUMN_BUFFER,
+    right: fabRight + COLUMN_BUFFER,
+  };
+}
+
+function horizontalOverlap(
+  target: DOMRect,
+  column: { left: number; right: number }
+): boolean {
+  return target.right > column.left && target.left < column.right;
+}
+
+/** Lift (px added to bottom offset) so the FAB sits fully above the target. */
+function liftToClearTarget(
+  targetTop: number,
+  baseBottom: number,
+  viewportHeight: number,
+  size: number
+): number {
+  const lift = viewportHeight - baseBottom - targetTop + CLEAR_MARGIN;
+  return Math.max(0, lift);
+}
+
+function getFabScreenRect(
+  viewportHeight: number,
+  viewportWidthPx: number,
+  baseBottom: number,
+  lift: number,
+  size: number,
+  insetEnd: number
+) {
+  const bottomOffset = baseBottom + lift;
+  const top = viewportHeight - bottomOffset - size;
+  const right = viewportWidthPx - insetEnd;
+  return {
+    top,
+    bottom: viewportHeight - bottomOffset,
+    left: right - size,
+    right,
+  };
+}
+
 function rectsOverlap(
   a: { left: number; top: number; right: number; bottom: number },
-  b: { left: number; top: number; right: number; bottom: number }
+  b: DOMRect
 ) {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
@@ -29,6 +79,7 @@ export type FabCollisionState = {
   liftPx: number;
   compact: boolean;
   fabSize: number;
+  dockTop: number | null;
 };
 
 export function useFabCollisionAvoidance(enabled: boolean) {
@@ -36,6 +87,7 @@ export function useFabCollisionAvoidance(enabled: boolean) {
     liftPx: 0,
     compact: false,
     fabSize: FAB_SIZE,
+    dockTop: null,
   });
 
   useEffect(() => {
@@ -48,63 +100,77 @@ export function useFabCollisionAvoidance(enabled: boolean) {
       const mobile = window.matchMedia('(max-width: 767px)').matches;
       if (!mobile) {
         document.documentElement.style.setProperty('--floating-chat-lift', '0px');
-        setState({ liftPx: 0, compact: false, fabSize: FAB_SIZE });
+        setState({ liftPx: 0, compact: false, fabSize: FAB_SIZE, dockTop: null });
         return;
       }
 
+      const viewportHeight = window.innerHeight;
+      const viewportWidthPx = window.innerWidth;
       const baseBottom = getFabBaseBottomPx();
-      const size = FAB_SIZE;
-      const fabRight = window.innerWidth - FAB_INSET_END;
-      const fabLeft = fabRight - size;
+      const targets = document.querySelectorAll<HTMLElement>(FAB_COLLISION_SELECTOR);
 
-      let lift = 0;
-      let compact = false;
+      const resolve = (size: number, insetEnd: number) => {
+        const column = getFabColumnBounds(viewportWidthPx, size);
+        let lift = 0;
 
-      const targets = document.querySelectorAll<HTMLElement>('[data-fab-collision]');
-      targets.forEach((el) => {
-        const rect = el.getBoundingClientRect();
-        if (rect.width === 0 || rect.height === 0) return;
-
-        const fabBottom = baseBottom + lift;
-        const fabTop = window.innerHeight - fabBottom - size;
-        const fabRect = {
-          left: fabLeft - 10,
-          top: fabTop - 10,
-          right: fabRight + 10,
-          bottom: window.innerHeight - fabBottom + 10,
-        };
-
-        if (!rectsOverlap(fabRect, rect)) return;
-
-        const overlap = fabRect.bottom - rect.top + 14;
-        if (overlap > lift) {
-          lift = Math.min(MAX_LIFT, overlap);
-        }
-      });
-
-      if (lift >= 88) {
-        const fabBottom = baseBottom + lift;
-        const fabTop = window.innerHeight - fabBottom - COMPACT_SIZE;
-        const compactLeft = window.innerWidth - 12 - COMPACT_SIZE;
         targets.forEach((el) => {
           const rect = el.getBoundingClientRect();
-          const compactRect = {
-            left: compactLeft - 6,
-            top: fabTop - 6,
-            right: window.innerWidth - 12 + 6,
-            bottom: window.innerHeight - fabBottom + 6,
-          };
-          if (rectsOverlap(compactRect, rect)) {
-            compact = true;
+          if (rect.width === 0 || rect.height === 0) return;
+          if (!horizontalOverlap(rect, column)) return;
+
+          const defaultFabTop = viewportHeight - baseBottom - size;
+          if (rect.bottom <= defaultFabTop - CLEAR_MARGIN) return;
+
+          const needed = liftToClearTarget(rect.top, baseBottom, viewportHeight, size);
+          if (needed > lift) lift = needed;
+        });
+
+        const maxLift = Math.max(
+          0,
+          viewportHeight - baseBottom - size - MIN_TOP
+        );
+        lift = Math.min(lift, maxLift);
+
+        let fabRect = getFabScreenRect(viewportHeight, viewportWidthPx, baseBottom, lift, size, insetEnd);
+        let stillOverlaps = false;
+        let minOverlapTop = viewportHeight;
+
+        targets.forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          if (rect.width === 0 || rect.height === 0) return;
+          if (!horizontalOverlap(rect, column)) return;
+          if (rectsOverlap(fabRect, rect)) {
+            stillOverlaps = true;
+            minOverlapTop = Math.min(minOverlapTop, rect.top);
           }
         });
+
+        return { lift, stillOverlaps, minOverlapTop, fabRect };
+      };
+
+      let size = FAB_SIZE;
+      let insetEnd = FAB_INSET_END;
+      let { lift, stillOverlaps, minOverlapTop } = resolve(size, insetEnd);
+
+      let compact = false;
+      if (stillOverlaps) {
+        compact = true;
+        size = COMPACT_SIZE;
+        insetEnd = 12;
+        ({ lift, stillOverlaps, minOverlapTop } = resolve(size, insetEnd));
+      }
+
+      let dockTop: number | null = null;
+      if (stillOverlaps && Number.isFinite(minOverlapTop)) {
+        dockTop = Math.max(MIN_TOP, minOverlapTop - size - CLEAR_MARGIN);
       }
 
       document.documentElement.style.setProperty('--floating-chat-lift', `${lift}px`);
       setState({
         liftPx: lift,
         compact,
-        fabSize: compact ? COMPACT_SIZE : FAB_SIZE,
+        fabSize: size,
+        dockTop,
       });
     };
 

@@ -88,7 +88,7 @@ export function CategoriesSection() {
           }
         />
 
-        <div className={`category-carousel-shell md:hidden${scrolled ? ' is-scrolled' : ''}`}>
+        <div className={`category-carousel-shell md:hidden${scrolled ? ' is-scrolled' : ''}`} data-fab-collision>
           <div ref={trackRef} className="category-carousel-track">
             {categories.map((category) => chip(category))}
           </div>

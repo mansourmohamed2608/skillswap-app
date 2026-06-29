@@ -16,6 +16,7 @@ export function JoinNowBanner() {
     <Reveal>
       <section
         aria-labelledby="join-now-title"
+        data-fab-collision
         className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#3f7752] to-[#2d5a3e] px-5 py-6 text-white shadow-md sm:px-6 sm:py-7"
       >
         <motion.div
@@ -38,7 +39,6 @@ export function JoinNowBanner() {
             <Button
               asChild
               className="h-11 rounded-xl bg-[#d4642f] text-white hover:bg-[#d4642f]/90"
-              data-fab-collision
             >
               <Link href={user ? '/listings/new' : '/auth/signup'}>
                 {t('home.joinCta.primary')}
@@ -48,7 +48,6 @@ export function JoinNowBanner() {
               asChild
               variant="outline"
               className="h-11 rounded-xl border-white/40 bg-transparent text-white hover:bg-white/10 hover:text-white"
-              data-fab-collision
             >
               <Link href="/listings">{t('home.joinCta.explore')}</Link>
             </Button>

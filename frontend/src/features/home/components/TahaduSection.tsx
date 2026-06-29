@@ -45,6 +45,7 @@ export function TahaduSection() {
           {cards.map((card) => (
             <article
               key={card.title}
+              data-fab-collision
               className="flex flex-col rounded-2xl border border-[#c8d5b9]/80 bg-white/90 p-4 shadow-sm"
             >
               <div className="flex items-start gap-3">
@@ -61,7 +62,6 @@ export function TahaduSection() {
                 variant="outline"
                 size="sm"
                 className="mt-4 h-10 w-full rounded-xl border-[#3f7752] text-[#3f7752] sm:w-auto sm:self-start"
-                data-fab-collision
               >
                 <Link href={card.href}>{card.cta}</Link>
               </Button>

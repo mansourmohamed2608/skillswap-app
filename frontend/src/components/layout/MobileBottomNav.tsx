@@ -42,6 +42,7 @@ export function MobileBottomNav() {
   return (
     <nav
       className="app-bottom-nav fixed inset-x-0 bottom-0 z-[60] md:hidden"
+      data-fab-collision
       aria-label={t('nav.mobile.label', 'Mobile navigation')}
     >
       <ul className="mx-auto flex h-[var(--mobile-bottom-nav-height)] max-w-lg items-stretch justify-around px-1">

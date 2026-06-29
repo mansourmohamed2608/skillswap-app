@@ -63,7 +63,7 @@ export function HorizontalSnapCarousel({
   }, [updateActiveFromScroll, children]);
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn('space-y-3', className)} data-fab-collision>
       <div
         ref={scrollRef}
         className="carousel-track flex gap-3 overflow-x-auto pb-1"
