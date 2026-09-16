@@ -1,9 +1,10 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { getUserDocument, canCreateListing, incrementListingCount, decrementListingCount, isMembershipActive } from '../../core/membership';
+import { getUserDocument, canCreateListing, decrementListingCount, isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
 import { geocodeAddress, readGeoPoint } from '../../core/geo';
 import { createListingPublicId } from '../../core/public-ids';
+import { resolveServiceCategory } from '../../core/categories';
 
 @Injectable()
 export class ListingsService {
@@ -108,6 +109,26 @@ export class ListingsService {
     }
   }
 
+  private normalizeListingCategories(listing: any, partial = false, existing?: any) {
+    const normalizeField = (service: any, field: string, existingService?: any, required = false) => {
+      if (!service || !Object.prototype.hasOwnProperty.call(service, 'category')) {
+        if (required) throw new BadRequestException({ code: 'VALIDATION_ERROR', field, message: 'Service category is required' });
+        return;
+      }
+      const category = resolveServiceCategory(service.category);
+      if (!category) {
+        if (partial && String(service.category || '').trim() === String(existingService?.category || '').trim()) return;
+        throw new BadRequestException({ code: 'VALIDATION_ERROR', field, message: 'Unknown service category' });
+      }
+      service.category = category.label;
+      service.categoryId = category.id;
+    };
+    normalizeField(listing?.offeredService, 'offeredService.category', existing?.offeredService, !partial);
+    if (String(listing?.requestedKind || 'service').toLowerCase() === 'service') {
+      normalizeField(listing?.requestedService, 'requestedService.category', existing?.requestedService, !partial);
+    }
+  }
+
   private normalizeGeo(value: any): { lat: number; lng: number } | undefined {
     const geo = readGeoPoint(value);
     if (!geo) return undefined;
@@ -118,7 +139,18 @@ export class ListingsService {
 
   private isListingActive(status: any): boolean {
     const normalized = String(status || 'open').toLowerCase();
-    return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+    return !['closed', 'removed', 'fulfilled', 'inactive', 'archived', 'deleted'].includes(normalized);
+  }
+
+  private async getActiveListingCount(ownerId: string): Promise<number> {
+    const collection = admin.firestore().collection('listings');
+    const [primary, legacy] = await Promise.all([
+      collection.where('userId', '==', ownerId).get(),
+      collection.where('offeredByUserId', '==', ownerId).get(),
+    ]);
+    const listings = new Map<string, FirebaseFirestore.QueryDocumentSnapshot>();
+    for (const doc of [...primary.docs, ...legacy.docs]) listings.set(doc.id, doc);
+    return [...listings.values()].filter((doc) => this.isListingActive(doc.get('status'))).length;
   }
 
   private deleteField() {
@@ -127,11 +159,12 @@ export class ListingsService {
   }
 
   async createListing(userId: string, body: any) {
-    if (!userId) throw new UnauthorizedException('Unauthenticated request');
+    if (!userId) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     const { listing } = body || {};
     if (!listing || typeof listing !== 'object') {
       throw new BadRequestException('Missing listing object');
     }
+    this.normalizeListingCategories(listing, false);
     this.assertListingQuality(listing, false);
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (listing as any).title },
@@ -156,7 +189,8 @@ export class ListingsService {
       this.ensureKycVerified(ownerSnap);
     }
     const membership = ownerSnap.get('membership');
-    const check = canCreateListing(membership);
+    const activeListingCount = await this.getActiveListingCount(ownerId);
+    const check = canCreateListing(membership, activeListingCount);
     if (!check.allowed) {
       throw new ForbiddenException({ code: check.code || 'FORBIDDEN', message: check.reason || 'Listing creation is not allowed' });
     }
@@ -204,7 +238,7 @@ export class ListingsService {
       id: docRef.id,
       title: String(listingToSave?.offeredService?.title || ''),
     });
-    await docRef.set({
+    const listingRecord = {
       ...listingToSave,
       userId: ownerId,
       offeredByUserId: ownerId,
@@ -213,14 +247,34 @@ export class ListingsService {
       createdAt: createdAtVal,
       postedDate: createdAtVal,
       flagged: false,
+    };
+    const ownerRef = admin.firestore().collection('users').doc(ownerId);
+    const observedCounter = Number(membership?.listingCount ?? 0);
+    await admin.firestore().runTransaction(async (transaction) => {
+      const freshOwner = await transaction.get(ownerRef);
+      const freshMembership = freshOwner.get('membership');
+      const freshCounter = Number(freshMembership?.listingCount ?? 0);
+      // Reconcile a stale persisted counter to the active-document count on the
+      // first attempt. A changed counter means a concurrent transaction won and
+      // must be honored on Firestore's retry.
+      const effectiveCount = freshCounter === observedCounter
+        ? activeListingCount
+        : Math.max(activeListingCount, freshCounter);
+      const finalCheck = canCreateListing(freshMembership, effectiveCount);
+      if (!finalCheck.allowed) {
+        throw new ForbiddenException({
+          code: finalCheck.code || 'LISTING_LIMIT_REACHED',
+          message: finalCheck.reason || 'Listing limit reached',
+        });
+      }
+      transaction.create(docRef, listingRecord);
+      transaction.update(ownerRef, { 'membership.listingCount': effectiveCount + 1 });
     });
-
-    await incrementListingCount(ownerId);
     return { id: docRef.id, publicId };
   }
 
   async updateListing(userId: string, listingId: string, updates: any) {
-    if (!userId) throw new UnauthorizedException('Unauthenticated request');
+    if (!userId) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     if (!listingId) throw new BadRequestException('Missing listing id');
     if (!updates || typeof updates !== 'object') throw new BadRequestException('Missing listing updates');
 
@@ -245,12 +299,8 @@ export class ListingsService {
     if (ownerId !== userId) {
       this.ensureKycVerified(ownerSnap);
     }
-    const membership = ownerSnap.get('membership');
-    if (!isMembershipActive(membership)) {
-      throw new ForbiddenException({ code: 'MEMBERSHIP_REQUIRED', message: 'Active membership required' });
-    }
-
     const { status: _status, userId: _userId, offeredByUserId: _offeredByUserId, ...safeUpdates } = updates || {};
+    this.normalizeListingCategories(safeUpdates, true, data);
     this.assertListingQuality(safeUpdates, true);
     const banned = await findBannedKeywordInFields([
       { label: 'title', value: (safeUpdates as any).title },
@@ -334,7 +384,7 @@ export class ListingsService {
   }
 
   async removeListing(userId: string, listingId: string) {
-    if (!userId) throw new UnauthorizedException('Unauthenticated request');
+    if (!userId) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     if (!listingId) throw new BadRequestException('Missing listing id');
 
     const listingRef = admin.firestore().collection('listings').doc(listingId);

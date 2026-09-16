@@ -28,23 +28,23 @@ export function useMembership() {
   }, [user]);
 
   const active = !!membership?.active && membership?.endDate && new Date(membership.endDate).getTime() > Date.now();
-  const plan: string | undefined = membership?.plan;
+  const plan: string = active ? membership?.plan || 'Free' : 'Free';
   const listingCount: number = membership?.listingCount ?? 0;
   const bookingCount: number = membership?.bookingCount ?? 0;
   const messageCount: number = membership?.messageCount ?? 0;
 
-  const listingLimit = plan === 'Basic' ? 9 : plan === 'Standard' ? 12 : Number.POSITIVE_INFINITY;
+  const listingLimit = plan === 'Free' ? 1 : plan === 'Basic' ? 9 : plan === 'Standard' ? 12 : Number.POSITIVE_INFINITY;
   const bookingLimit = plan === 'Basic' ? 9 : plan === 'Standard' ? 12 : Number.POSITIVE_INFINITY;
   const messageLimit = plan === 'Basic' ? 9 : plan === 'Standard' ? 12 : Number.POSITIVE_INFINITY;
 
-  const canCreateListing = active && listingCount < listingLimit;
+  const canCreateListing = listingCount < listingLimit;
   const canCreateBooking = active && bookingCount < bookingLimit;
   const canSendMessage = active && messageCount < messageLimit;
 
   return {
     membership,
     active,
-    plan: plan ?? null,
+    plan,
     loading,
     // quotas
     listingLimit,

@@ -29,15 +29,18 @@ export function isMembershipActive(membership: any): boolean {
   return end.getTime() > Date.now();
 }
 
-export type ListingEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'LISTING_LIMIT_REACHED';
+export type ListingEligibilityCode = 'LISTING_LIMIT_REACHED';
 export type UsageEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'BOOKING_LIMIT_REACHED' | 'MESSAGE_LIMIT_REACHED';
 
-export function canCreateListing(membership: any): { allowed: boolean; code?: ListingEligibilityCode; reason?: string } {
-  if (!isMembershipActive(membership)) {
-    return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
-  }
-  const plan: SubscriptionPlan = membership.plan;
-  const currentCount: number = membership.listingCount ?? 0;
+export function canCreateListing(
+  membership: any,
+  activeListingCount?: number,
+): { allowed: boolean; code?: ListingEligibilityCode; reason?: string } {
+  const paidPlan = isMembershipActive(membership) && membership?.plan in PLAN_LISTING_LIMITS
+    ? membership.plan as SubscriptionPlan
+    : null;
+  const plan: SubscriptionPlan | 'Free' = paidPlan || 'Free';
+  const currentCount: number = activeListingCount ?? membership?.listingCount ?? 0;
   const limit = PLAN_LISTING_LIMITS[plan];
   if (limit !== Infinity && currentCount >= limit) {
     return {
@@ -80,8 +83,7 @@ export async function incrementListingCount(userId: string): Promise<void> {
   await admin.firestore().runTransaction(async (txn) => {
     const doc = await txn.get(userRef);
     const membership = doc.get('membership');
-    if (!membership) throw new Error('No membership found for user');
-    const count = membership.listingCount ?? 0;
+    const count = membership?.listingCount ?? 0;
     txn.update(userRef, { 'membership.listingCount': count + 1 });
   });
 }
@@ -91,8 +93,7 @@ export async function decrementListingCount(userId: string): Promise<void> {
   await admin.firestore().runTransaction(async (txn) => {
     const doc = await txn.get(userRef);
     const membership = doc.get('membership');
-    if (!membership) throw new Error('No membership found for user');
-    const count = membership.listingCount ?? 0;
+    const count = membership?.listingCount ?? 0;
     const next = Math.max(0, count - 1);
     txn.update(userRef, { 'membership.listingCount': next });
   });

@@ -3,7 +3,7 @@ import { doc, onSnapshot, Timestamp } from "firebase/firestore";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-export type Plan = "Basic" | "Standard" | "Pro" | "Business";
+export type Plan = "Free" | "Basic" | "Standard" | "Pro" | "Business";
 
 export function useMembership() {
   const { user } = useAuth();
@@ -33,17 +33,19 @@ export function useMembership() {
     new Date(membership.endDate).getTime() > nowRef.current,
   [membership]);
 
-  const plan: Plan | undefined = membership?.plan;
+  const paidPlan: Plan | undefined = active ? membership?.plan : undefined;
+  const plan: Plan = paidPlan || "Free";
   const listingCount: number = membership?.listingCount ?? 0;
   const bookingCount: number = membership?.bookingCount ?? 0;
   const messageCount: number = membership?.messageCount ?? 0;
 
   const planLimit =
+    plan === "Free" ? 1 :
     plan === "Basic" ? 9 :
     plan === "Standard" ? 12 :
     Number.POSITIVE_INFINITY;
 
-  const canCreateListing = active && listingCount < planLimit;
+  const canCreateListing = listingCount < planLimit;
 
   const bookingLimit =
     plan === "Basic" ? 9 :
@@ -59,6 +61,7 @@ export function useMembership() {
 
   return {
     membership,
+    plan,
     active,
     loading,
     // listings

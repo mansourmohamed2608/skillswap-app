@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Param, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import { ListingsService } from './listings.service';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
@@ -12,7 +12,7 @@ export class ListingsController {
   @Post('create')
   async create(@Body() body: CreateListingDto, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;
-    if (!uid) throw new BadRequestException('Unauthenticated request');
+    if (!uid) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     return this.listingsService.createListing(uid, body);
   }
 
@@ -20,7 +20,7 @@ export class ListingsController {
   @Post(':id/update')
   async update(@Param('id') id: string, @Body() body: Record<string, unknown>, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;
-    if (!uid) throw new BadRequestException('Unauthenticated request');
+    if (!uid) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     return this.listingsService.updateListing(uid, id, (body?.listing as any) || body);
   }
 
@@ -28,7 +28,7 @@ export class ListingsController {
   @Post(':id/delete')
   async remove(@Param('id') id: string, @Req() req: Request) {
     const uid = (req as any)?.user?.uid;
-    if (!uid) throw new BadRequestException('Unauthenticated request');
+    if (!uid) throw new UnauthorizedException({ code: 'AUTH_REQUIRED', message: 'Authentication required' });
     return this.listingsService.removeListing(uid, id);
   }
 }
