@@ -1,6 +1,6 @@
 'use server';
 
-import { serviceCategories } from '@/services/serviceCategories';
+import { fetchServiceCategories, type ServiceCategoryDefinition } from '@/services/serviceCategories';
 
 /**
  * @fileOverview Match suggestions from real listings with optional Gemini enhancement.
@@ -68,9 +68,9 @@ function uniqueTokens(tokens: string[]): string[] {
   return results;
 }
 
-function extractCategories(text: string): string[] {
+function extractCategories(text: string, serviceCategories: ServiceCategoryDefinition[]): string[] {
   const lc = String(text || '').toLowerCase();
-  return serviceCategories.filter((category) => lc.includes(category.toLowerCase()));
+  return serviceCategories.map((category) => category.label).filter((category) => lc.includes(category.toLowerCase()));
 }
 
 function extractLocationHint(text: string): string | undefined {
@@ -149,7 +149,9 @@ function scoreListing(hit: any, requestTokens: string[], offerTokens: string[], 
 async function buildListingMatches(profileText: string, requestText: string, excludeUserId?: string) {
   const offerTokens = uniqueTokens(normalizeTokens(profileText));
   const requestTokens = uniqueTokens(normalizeTokens(requestText));
-  const requestCategories = extractCategories(requestText);
+  const base = getApiBase();
+  const serviceCategories = base ? await fetchServiceCategories(`${base}/categories`).catch(() => []) : [];
+  const requestCategories = extractCategories(requestText, serviceCategories);
   const locationHint = extractLocationHint(profileText);
 
   const category = requestCategories[0];

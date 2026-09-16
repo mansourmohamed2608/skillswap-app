@@ -31,6 +31,20 @@ export class ApiError extends Error {
   }
 }
 
+export type ServiceCategoryDefinition = { id: string; label: string };
+
+export async function getServiceCategories(): Promise<ServiceCategoryDefinition[]> {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const response = await fetch(`${FUNCTIONS_BASE}/api/categories`);
+  if (!response.ok) throw await toApiError(response);
+  const payload = await response.json();
+  if (!Array.isArray(payload?.categories)) throw new Error('Invalid category response');
+  return payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
+    const category = item as ServiceCategoryDefinition;
+    return Boolean(category && typeof category.id === 'string' && typeof category.label === 'string');
+  });
+}
+
 const SAFE_MESSAGE_MAX = 140;
 
 function isSafeServerMessage(message: string) {

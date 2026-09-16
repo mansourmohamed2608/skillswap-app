@@ -1,15 +1,7 @@
   import { View, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
   import React, { useEffect, useRef, useState } from 'react';
   import { useRouter } from 'expo-router';
-  import { createListing } from '@/services/api';
-
-  const SERVICE_CATEGORIES = [
-    'Graphic Design', 'Gardening', 'Web Development', 'Home Repair',
-    'Tech Support', 'Tutoring', 'Pet Care', 'Photography', 'Videography',
-    'Repair Services', 'Cooking', 'Writing', 'Music Lessons', 'Fitness Training',
-    'Event Planning', 'Consulting', 'Language Lessons', 'Arts & Crafts',
-    'Moving Help', 'Beauty Services', 'Personal Care', 'Transportation',
-  ];
+  import { createListing, getServiceCategories, type ServiceCategoryDefinition } from '@/services/api';
   import { useAuth } from '@/context/AuthContext';
   import { useTranslation } from 'react-i18next';
   import * as ImagePicker from 'expo-image-picker';
@@ -42,7 +34,16 @@
     const [locating, setLocating] = useState(false);
     const [image, setImage] = useState<string | null>(null);
     const [imageMimeType, setImageMimeType] = useState('image/jpeg');
+    const [serviceCategories, setServiceCategories] = useState<ServiceCategoryDefinition[]>([]);
     const autoLocationRequestedRef = useRef(false);
+
+    useEffect(() => {
+      let active = true;
+      getServiceCategories()
+        .then((categories) => { if (active) setServiceCategories(categories); })
+        .catch(() => { if (active) setServiceCategories([]); });
+      return () => { active = false; };
+    }, []);
 
     async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
       try {
@@ -80,6 +81,7 @@
           return;
         }
         if (!title.trim()) return Alert.alert(t('common.error') || 'Error', t('listings.validation.offerTitleRequired'));
+        if (!offeredCategory) return Alert.alert(t('common.error') || 'Error', t('listings.form.categoryPlaceholder'));
         if (!location.trim() && !geo) {
           return Alert.alert(t('common.error') || 'Error', t('listings.form.locationRequired'));
         }
@@ -138,7 +140,7 @@
           };
         }
         const res = await createListing({
-          offeredService: { title, category: offeredCategory.trim() || 'General', description, imageUrl },
+          offeredService: { title, category: offeredCategory, description, imageUrl },
           requestedService: requestedServicePayload,
           requestedKind,
           requestedProduct: requestedProductPayload,
@@ -231,9 +233,9 @@
         <Input className="mb-3" value={title} onChangeText={setTitle} />
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.offer_category') || 'Offer category'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-          {SERVICE_CATEGORIES.map((cat) => (
+          {serviceCategories.map(({ id, label: cat }) => (
             <TouchableOpacity
-              key={cat}
+              key={id}
               onPress={() => setOfferedCategory(cat)}
               style={cn(`rounded-full border px-3 py-1 ${offeredCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
             >
@@ -261,9 +263,9 @@
             <Input className="mb-3" value={requestedTitle} onChangeText={setRequestedTitle} />
             <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-              {SERVICE_CATEGORIES.map((cat) => (
+              {serviceCategories.map(({ id, label: cat }) => (
                 <TouchableOpacity
-                  key={cat}
+                  key={id}
                   onPress={() => setRequestedCategory(cat)}
                   style={cn(`rounded-full border px-3 py-1 ${requestedCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
                 >
