@@ -127,7 +127,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 `Client login → Firebase Auth (token) → Bearer header → FirebaseAuthGuard.verifyIdToken() → Firestore users/{uid}.accountStatus check → req.user set`
 
 **KYC:**  
-`POST /didit/session → Firestore kycReferences/{uid} → Didit v2 /sessions → callback to APP_URL/kyc/done → POST /kyc/webhook (HMAC) → Firestore users/{uid}.kycStatus`
+`POST /didit/session → Firestore kycReferences/{sessionId} → Didit v3 /session → browser return to APP_URL/kyc/done (untrusted) + separate POST /kyc/webhook (raw-body HMAC, timestamp, session correlation, idempotency) → Firestore users/{uid}.kyc.status`
 
 **Payments:**  
 `POST /payments/subscription → Geidea checkout URL → POST /payments/webhook (HMAC-SHA256) → Firestore membership + PostgreSQL payment_transactions`
@@ -151,7 +151,7 @@ After a systematic audit across all three surfaces, **19 bugs were found and fix
 
 ### Atomic Write Patterns
 
-- **Listing creation** — `membership.canCreateListing()` check → `createListing()` + `incrementListingCount()` in a Firestore batch
+- **Listing creation** — active listing query → `membership.canCreateListing()` (Free limit 1; paid plan limits) → create + counter update
 - **Booking completion** — `requests/{id}.status = 'completed'` + review unlock in transaction
 - **Payment webhook** — idempotency key on `payments/{id}` prevents double-processing
 

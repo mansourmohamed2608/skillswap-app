@@ -9,7 +9,7 @@ The repository contains three application boundaries: a Next.js responsive/deskt
 
 Confirmed high-impact defects were found in notification rendering/routing, KYC state replacement and transport, application error interpretation, native Firebase configuration, exchange-request authorization, media Storage rules, and deployment-rule drift. Code repairs and regression coverage have been added. Final command verification is recorded below; an item is not marked `PASS` merely because its code was inspected.
 
-One product contradiction remains deliberately unresolved: historical/current documentation says a Free user receives one listing, while the authoritative backend and current pricing configuration require an active paid membership. This is **PRODUCT DECISION REQUIRED**. The audit did not weaken or change that business rule.
+The final product decisions are implemented: a Free user may publish one active listing, the backend exposes the canonical 22-category taxonomy, and business profiles require business-domain owner/team emails. The Didit browser callback and signed server webhook are now separate trust boundaries. Provider delivery, deployed secrets/rules, authenticated browser viewports, and physical-device behavior remain **LIVE VERIFICATION REQUIRED**.
 
 ## 2. Repository architecture summary
 
@@ -17,7 +17,7 @@ One product contradiction remains deliberately unresolved: historical/current do
 - `backend/`: TypeScript Firebase Functions API using Nest modules, Firebase Admin, Firestore and Realtime Database. It is authoritative for KYC, membership quotas, listings, requests, chat sends, matchmaking, reviews, payments, profile mutation, moderation, and notifications.
 - `mobile/`: Expo 54 / React Native app using Expo Router and Firebase client SDKs. It calls the same backend application APIs and also reads Firebase client data.
 - `backend/firestore.rules`, `backend/firestore.indexes.json`, `backend/storage.rules`, and `backend/database.rules.json` are now the canonical deploy definitions. `frontend/firebase.json` points to those files; stale frontend rule copies were removed.
-- There is no shared workspace package. User, listing, category, KYC, membership, request, and notification contracts are duplicated across packages; this audit made incremental contract improvements without a monorepo rewrite.
+- There is no shared workspace package. Category IDs are therefore owned by the backend and consumed through `GET /api/categories`; other cross-package contracts still have duplication that should be reduced incrementally.
 
 ## 3. Baseline failures
 
@@ -40,10 +40,10 @@ One product contradiction remains deliberately unresolved: historical/current do
 
 Issue: Free-tier listing entitlement conflicts with paid-membership enforcement.
 Severity: P1
-Status: **PRODUCT DECISION REQUIRED**
+Status: FIXED IN CODE
 Feature: Membership / listing creation
-Observed behavior: Documentation says `Free -> 1 listing`; current backend rejects listing creation without an active membership. Web also preflights inactive membership to pricing.
-Expected behavior: One authoritative, documented entitlement matrix shared by backend, desktop web, responsive web, and native mobile.
+Observed behavior: The previous backend rejected listing creation without an active membership and web preflighted inactive users to pricing.
+Expected behavior: Free users may publish one active listing; paid plans retain their configured limits.
 Reproduction: Compare `FINAL_COMPLETION_SUMMARY.md`, `INTEGRATION_AND_TESTING.md`, `backend/src/core/membership.ts`, current plan constants/pricing, web `NewListingForm`, and mobile membership hooks.
 Root cause: Product rules drifted across documentation and implementation.
 Backend affected: YES
@@ -51,9 +51,9 @@ Desktop Web affected: YES
 Responsive Web affected: YES
 Native Mobile affected: YES
 API/contract involved: listing-create authorization.
-Proposed fix: Product owner must choose either one free listing or paid-only creation; then update backend first and align both clients, plan copy, tests, and migration/counter behavior.
-Regression test: Backend eligibility matrix plus web/mobile error-code interpretation.
-Notes: Stable `MEMBERSHIP_REQUIRED` and `LISTING_LIMIT_REACHED` codes were added without choosing the entitlement rule.
+Fix: Backend eligibility falls back to the Free plan when paid membership is absent/expired, counts actual owned active listings, and returns `LISTING_LIMIT_REACHED` at the limit. Web/mobile hooks expose Free/1, web no longer redirects an unsubscribed first-time publisher to pricing, and listing edits do not require a paid subscription.
+Counting rule: status missing, `open`, `active`, `published`, and every status not explicitly terminal count as active. `closed`, `removed`, `fulfilled`, `inactive`, `archived`, and `deleted` do not count. Both `userId` and legacy `offeredByUserId` ownership fields are queried and document IDs are deduplicated.
+Regression test: Free zero/one listing, paid under/at limit, expired-membership fallback, active-count override, unauthenticated code, and KYC precedence paths.
 
 ### AUD-002 — notification profile route could fail or navigate away
 
@@ -130,11 +130,11 @@ Regression test: category browse destination/translation key.
 
 Issue: Backend, homepage, listing form, native form, translations, and historical branch contain different category sets.
 Severity: P2
-Status: PARTIAL / PRODUCT SCOPE UNCLEAR
-Observed behavior: homepage category links (14), web service categories (22), and the native hard-coded list can drift; the backend has no current canonical category API/module.
-Historical relevance: `51c687b`, `9b7bd4c`, and `b43ad44` attempted expansion/centralization, but the “centralized” implementation still copied the list into frontend output and never established native runtime sharing.
-Recommendation: define stable category IDs and a versioned read contract before migrating existing persisted strings. Do not silently port the historical labels because that changes product taxonomy and stored-data behavior.
-Remaining decision: confirm the intended current taxonomy and whether categories are deploy-time constants or backend-managed data.
+Status: FIXED IN CODE
+Evidence/decision: The same 22 labels were present in both current web and native creation clients and form the common base of the historical expanded list; they are the canonical current taxonomy. Homepage groups remain presentation aliases, not an accepted-category source.
+Fix: `backend/src/core/categories.ts` owns unique stable IDs and labels; public `GET /api/categories` supplies web, responsive web, native creation, browse/search, and matchmaking extraction. Backend normalizes accepted ID/legacy-label input and persists both compatible label plus stable `categoryId`. New unknown values return `VALIDATION_ERROR`; an unchanged unknown legacy value may be preserved during edit and remains displayable as raw text.
+Persisted-data impact: existing label strings are not bulk rewritten. Recognized labels normalize on future writes; unknown historical labels are never silently remapped.
+Remaining decision: none for the current list. Future additions/removals require an explicit taxonomy/version migration.
 
 ### AUD-009 — listing image validation/storage configuration gaps
 
@@ -170,6 +170,8 @@ Status: REMOVED FROM TRACKING; ROTATION REQUIRED
 Fix: the file is ignored and removed from Git tracking while the local ignored copy is preserved. No value was printed.
 Remaining external dependency: rotate every credential that ever appeared in the file/history, then purge historical exposure only through an explicitly coordinated history-rewrite process. This audit did not rewrite shared history.
 
+Previously tracked credentials must be considered compromised until rotated. Removal from current Git tracking does not invalidate secrets already present in repository history.
+
 ### AUD-013 — native Realtime Database used an implicit/wrong database endpoint
 
 Issue: Mobile Firebase configuration omitted `databaseURL` even though chat/presence use Realtime Database in `europe-west1`.
@@ -191,10 +193,20 @@ Regression test: SDK/context timing matrix.
 
 Issue: backend authorization resolves a business team member by email, while native copy asked for names and backend accepted arbitrary strings.
 Severity: P1
-Status: PARTIAL FIX
-Fix: backend now requires normalized valid email addresses; web/native copy consistently requests email addresses.
-Historical relevance: `d9afc21` also blocked common personal-email domains. Whether domain-based “business email only” is still a product requirement is **UNCLEAR**, so that policy was not restored.
-Regression test: arbitrary non-email team member is rejected server-side.
+Status: FIXED IN CODE
+Fix: backend business-profile mutation requires the account owner and every supplied team member to have a normalized, syntactically valid non-consumer domain email. The built-in provider deny-list is case-insensitive and may be extended with `CONSUMER_EMAIL_DOMAINS`. Rejection uses stable `BUSINESS_EMAIL_REQUIRED`; normal personal-profile mutation is unaffected. Web/native parsers present the same code. Storage authorization remains UID/path based, not a client-supplied business flag.
+Historical relevance: the useful policy from `d9afc21` was reimplemented against the current service rather than cherry-picked.
+Regression test: valid mixed-case business email, malformed email, common consumer providers, configured provider, and stable service error code.
+
+### AUD-019 — Didit webhook secret was documented but unused
+
+Issue: tracked docs/config named `DIDIT_WEBHOOK_SECRET`, but current runtime had no webhook route or signature verification.
+Severity: P0 SECURITY
+Status: FIXED IN CODE; LIVE PROVIDER DELIVERY REQUIRED
+Root cause: a previous direct-upload refactor removed webhook runtime while the hosted-session controller and webhook documentation remained.
+Fix: public `POST /api/kyc/webhook` captures exact raw bytes, requires Didit's `X-Signature` HMAC-SHA256 and a fresh `X-Timestamp` (five-minute window), validates payload/status, correlates only through `kycReferences/{sessionId}`, checks `vendor_data` when supplied, and transactionally deduplicates `event_id` (raw-body hash fallback) before user/subdocument status writes. Invalid/missing signatures, stale timestamps, missing secrets, unknown sessions, mismatches, invalid payloads, and duplicates cannot produce repeated or unrelated-user mutations. Logs include no payload, secret, API key, or identity data.
+Callback result: `DIDIT_CALLBACK_URL` is the untrusted browser return (`/kyc/done`). The webhook destination is separately configured in Didit as `/api/kyc/webhook`. Query parameters never establish KYC state.
+Legacy result: `WEBHOOK_SECRET_KEY` has no current runtime owner and was not reintroduced. Treat any formerly committed value as exposed; remove it locally only after rotation/revocation.
 
 ### AUD-016 — broken request-completion notification destination
 
@@ -226,7 +238,10 @@ Regression check: native TypeScript, Expo dependency compatibility, Expo public-
 - Added stable listing, booking, messaging, membership, quota, and KYC error codes on critical paths.
 - Enforced exchange self-request and active-duplicate prevention.
 - Added canonical public booking links for lifecycle notifications.
-- Validated business team-member emails server-side.
+- Enforced the one-active-listing Free plan and terminal-status counting rule.
+- Added the canonical category-ID API and authoritative write validation.
+- Enforced business-domain owner/team emails server-side.
+- Added signed, timestamped, correlated, idempotent Didit webhook handling.
 - Hardened and centralized Firebase deployment rules.
 
 ## 6. Desktop Web fixes
@@ -238,6 +253,7 @@ Regression check: native TypeScript, Expo dependency compatibility, Expo public-
 - Authenticated homepage CTA and truthful category CTA.
 - Listing image file validation.
 - Protected-route auth synchronization handling.
+- Runtime category consumption and Free first-listing behavior.
 
 ## 7. Responsive Web fixes
 
@@ -253,6 +269,8 @@ The same web components serve responsive viewports. Changes preserve the existin
 - Storage bucket and regional Realtime Database URL are present in EAS profiles.
 - Environment sync propagates database URL and explicit emulator state.
 - Chat/listing flows route current KYC failures to verification.
+- Listing creation consumes the backend category contract and exposes the Free quota.
+- Business email and listing-limit application codes use the same client error mapping as web.
 - Expo packages now match the installed SDK 54 compatibility matrix, including required config plugins.
 
 ## 9. Historical branch findings
@@ -263,12 +281,12 @@ No backup commit was merged, rebased, or cherry-picked.
 |---|---|---|---|---|---|
 | `880e8ec` | Wait for Firebase auth before profile redirect | NO (reverted) | YES, differently | HIGH; waits on SDK state, not React context | Protect destinations using SDK + context state. Implemented. |
 | `27da1b9` | Revert auth wait | YES | NO as a standalone feature | HIGH if earlier commit restored | Keep revert; use destination synchronization. Implemented. |
-| `d9afc21` | Domain business emails + logo rules | PARTIAL | Logo/valid email YES; domain ban UNCLEAR | MEDIUM; domain ban can lock out users | Restore syntax enforcement and secure logo access only. Implemented. |
+| `d9afc21` | Domain business emails + logo rules | PARTIAL | YES | MEDIUM; old service shape differed | Reimplement owner/team domain policy and secure logo access. Implemented. |
 | `6fe862a` | Backend business-logo rule | NO | YES | LOW | Port with type/size validation. Implemented. |
 | `1deb5ac` | `.appspot.com` bucket + explicit emulators | PARTIAL | Explicit flag YES; old hostname UNCLEAR | HIGH; wrong bucket risk | Keep current configured bucket; explicit emulator opt-in. Implemented except live validation. |
 | `f56ecce` | Mobile EAS Storage bucket | NO | YES | MEDIUM; historical hostname differs | Add current project bucket to every EAS profile. Implemented. |
-| `51c687b` | Expanded marketplace categories | PARTIAL | UNCLEAR | MEDIUM/HIGH; persisted taxonomy | Confirm taxonomy before porting. |
-| `9b7bd4c` | Backend category constant exposed to web build | NO | Contract YES; exact coupling UNCLEAR | HIGH; no native sharing and build-path coupling | Prefer versioned API/IDs or deliberate shared package. |
+| `51c687b` | Expanded marketplace categories | PARTIAL | NO for unconfirmed additions | MEDIUM/HIGH; persisted taxonomy | Retain the evidenced current 22-category common set. |
+| `9b7bd4c` | Backend category constant exposed to web build | NO | Contract YES | HIGH; old build coupling omitted native | Implement runtime backend API with stable IDs. Implemented. |
 | `b43ad44` | Portfolio/business profile + category corrections | PARTIAL/mostly replaced | Business profile YES | MEDIUM | Preserve current profile, repair logo/email, document presentation gap. Implemented. |
 
 ## 10. Cross-platform parity gaps resolved
@@ -278,11 +296,12 @@ No backup commit was merged, rebased, or cherry-picked.
 - Exchange requests and chat sends use the same critical KYC error semantics.
 - Listing image limits and allowed media types are aligned between web, native, and Storage rules.
 - Business team-member input is described as emails on both clients and enforced by backend.
+- Web/native category selectors consume the backend category API rather than local accepted arrays.
+- Web/native expose one Free listing and retain stable listing/business error codes.
 - Native Storage and Realtime Database settings align with current web production configuration.
 
 ## 11. Remaining parity gaps
 
-- Category definitions remain duplicated and require a taxonomy decision.
 - Business profile display is richer on web than native (logo/description/custom categories presentation).
 - Some non-critical API endpoints still use message-only forbidden errors.
 - Responsive/browser and physical native-device flows require runtime verification with configured services.
@@ -294,6 +313,8 @@ No backup commit was merged, rebased, or cherry-picked.
 - P0: divergent deploy rules could expose `kyc_temp` and removed/flagged content; canonical backend rules now prevent frontend drift.
 - P1: arbitrary public uploads on listing/business paths are now constrained to owner, MIME type, and size.
 - P1: self and duplicate exchange requests are rejected by backend.
+- P0: unsigned Didit status mutation gap is closed with raw-body HMAC, freshness, correlation, and transactional idempotency.
+- P1: business profile mutation rejects consumer-domain owner/team addresses on the backend.
 - Non-breaking audit updates removed all reported critical production advisories from Backend and Frontend. Remaining production audit counts are Backend 16 (3 high, 12 moderate, 1 low), Frontend 54 (7 high, 47 moderate), and Native 31 (3 critical, 11 high, 15 moderate, 2 low). Remaining Backend findings require breaking Nest/Nodemailer/Firebase Admin upgrades; Frontend findings are concentrated in Genkit/OpenTelemetry tooling; Native critical findings are transitive through Expo/Metro tooling and require a separately tested SDK/toolchain upgrade. No `--force` update was applied.
 - Existing positive controls found: server-only listing writes, participant-only request reads, server-only KYC status writes, chat participant checks, block checks, self-message prevention, review ownership/duplicate checks, and admin-only moderation data.
 - Do not treat Firebase web API keys as server secrets; actual provider/payment/webhook credentials must remain in Secret Manager/runtime env.
@@ -304,6 +325,8 @@ No backup commit was merged, rebased, or cherry-picked.
 - Mobile previously lacked `EXPO_PUBLIC_FIREBASE_DATABASE_URL` and EAS Storage bucket values; repaired.
 - Native dependencies were aligned to the Expo SDK 54 compatibility matrix; `expo-build-properties` and the localization config plugin are now declared.
 - Frontend KYC now has a same-origin API route; explicit `NEXT_PUBLIC_API_BASE` remains supported.
+- `DIDIT_CALLBACK_URL` is documented as browser return only; `/api/kyc/webhook` is configured separately in Didit and uses the injected `DIDIT_WEBHOOK_SECRET`.
+- `WEBHOOK_SECRET_KEY` is confirmed unused legacy configuration and was not restored.
 - Emulator connections now require explicit `true` or `1`; production profiles set false.
 - `.env.example` files now document frontend/native public configuration without real credentials.
 - CI still names its Firebase service-account secret `FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF` even though deployment targets `skillswap-69yxi`. Renaming requires coordinated GitHub secret setup; it was not changed blindly.
@@ -328,23 +351,28 @@ No backup commit was merged, rebased, or cherry-picked.
 - Backend: membership/listing/booking/message error codes.
 - Backend: self-request ownership guard.
 - Backend: business team member must be an email.
+- Backend: Free/paid listing eligibility and actual active-count override.
+- Backend: canonical category uniqueness/resolution and unknown legacy behavior.
+- Backend: business-domain normalization/provider rejection.
+- Backend: Didit signature, timestamp, payload, session correlation, unrelated-user safety, and duplicate-delivery behavior.
+- Frontend: backend category response consumption.
 
 ## 16. Tests executed
 
 | Package | Command | Result |
 |---|---|---|
-| Frontend | `npm run lint` | PASS — 0 errors; 199 warnings |
+| Frontend | `npm run lint` | PASS — 0 errors; 198 warnings |
 | Frontend | `npm run typecheck` | PASS |
-| Frontend | `npm test` | PASS — 15 files, 159 tests |
-| Frontend | `npm run build` | PASS — Next.js 16.3.5, 34 routes |
-| Backend | `npm run lint` | PASS — 0 errors; 604 warnings |
+| Frontend | `npm test` | PASS — 16 files, 161 tests |
+| Frontend | `npm run build` | PASS — Next.js 16.3.5, including `/api/categories` |
+| Backend | `npm run lint` | PASS — 0 errors; existing warnings remain |
 | Backend | `npm run typecheck` | PASS |
-| Backend | `npm test -- --runInBand` | PASS — 8 suites, 141 tests |
+| Backend | `npm test -- --runInBand` | PASS — 12 suites, 166 tests |
 | Backend | `npm run build` | PASS |
 | Mobile | `npm test` (`npm run typecheck`) | PASS |
 | Mobile | `npx expo install --check` | PASS — dependencies up to date for SDK 54 |
 | Mobile | `npx expo config --type public --json` | PASS |
-| Mobile | `npx expo-doctor` | PASS — 18/18 checks |
+| Mobile | `npx --yes expo-doctor@1.20.4` | PASS — 18/18 checks |
 | Git | `git diff --check` | PASS — line-ending notices only |
 
 ## 17. Build results
@@ -360,14 +388,14 @@ No backup commit was merged, rebased, or cherry-picked.
 - Deploy and validate canonical Firebase rules/indexes.
 - Verify authenticated Firebase Storage uploads for listings, business logos, KYC, wishes, and events.
 - Exercise Didit success/failure/cancel/webhook flows with provider credentials.
+- Configure and test the deployed Didit webhook destination and Secret Manager injection.
+- Confirm the GitHub-hosted pull-request workflow reports all three jobs on the existing PR.
 - Exercise production Realtime Database chat/presence on a native device/EAS build.
 - Run responsive/desktop authenticated browser smoke tests against a configured environment.
 
 ## 19. Remaining product-owner decisions
 
-1. **Free listing contract:** one listing without paid membership, or paid-membership-only listing creation?
-2. **Category taxonomy/source:** which stable IDs and labels are authoritative, and should the source be an API or shared package?
-3. **Business email domains:** accept any valid email, or reject personal email providers as the historical branch did?
+No product decision remains for the three final-pass items. Future category-list changes require an explicit version/migration decision; they must not be inferred from the historical expanded list.
 
 ## 20. Known limitations
 
@@ -384,14 +412,16 @@ No backup commit was merged, rebased, or cherry-picked.
 | Auth | FIXED | FIXED | FIXED | PARTIAL | static checks pass; configured runtime pending |
 | Profile | PARTIAL | PARTIAL | PARTIAL | PARTIAL | runtime not verified |
 | Portfolio/business profile | FIXED | PARTIAL | PARTIAL | PARTIAL | presentation parity gap documented |
-| Membership | PARTIAL | PARTIAL | PARTIAL | PARTIAL | PRODUCT DECISION REQUIRED |
+| Membership | FIXED | FIXED | FIXED | FIXED | static checks pass; authenticated runtime pending |
 | Listings | FIXED | FIXED | FIXED | FIXED | static checks pass; live Storage runtime pending |
 | Listing Images | FIXED | FIXED | FIXED | FIXED | live Storage NOT VERIFIED |
-| Categories | NOT APPLICABLE | PARTIAL | PARTIAL | PARTIAL | taxonomy decision required |
-| KYC | FIXED | FIXED | FIXED | FIXED | provider flow NOT VERIFIED |
+| Categories | FIXED | FIXED | FIXED | FIXED | canonical API/static checks pass; live runtime pending |
+| KYC | FIXED | FIXED | FIXED | FIXED | signed webhook/provider flow LIVE VERIFICATION REQUIRED |
 | Connect/Requests | FIXED | FIXED | FIXED | FIXED | static checks pass; authenticated runtime pending |
 | Matchmaking | PARTIAL | PARTIAL | PARTIAL | PARTIAL | inspected; runtime not verified |
 | Chat | FIXED | PARTIAL | PARTIAL | FIXED | RTDB/device NOT VERIFIED |
 | Notifications | FIXED | FIXED | FIXED | FIXED | authenticated runtime pending |
 | Settings | NOT APPLICABLE | PARTIAL | PARTIAL | PARTIAL | runtime not verified |
 | Reviews | FIXED | PARTIAL | PARTIAL | PARTIAL | inspected; runtime not verified |
+| Business Accounts | FIXED | FIXED | FIXED | FIXED | domain policy static checks pass; live profile/storage pending |
+| CI | FIXED | NOT APPLICABLE | NOT APPLICABLE | FIXED | PR triggers/config validated locally; GitHub run LIVE VERIFICATION REQUIRED |

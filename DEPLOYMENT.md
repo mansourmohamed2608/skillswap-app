@@ -55,9 +55,12 @@ GEIDEA_WEBHOOK_SECRET=your-webhook-secret
 # KYC (Didit)
 DIDIT_API_KEY=your-didit-api-key
 DIDIT_WORKFLOW_ID=your-workflow-id
-DIDIT_CALLBACK_URL=https://your-app.example/kyc/webhook
+# Browser return after hosted verification (never use the webhook endpoint here)
+DIDIT_CALLBACK_URL=https://your-app.example/kyc/done
 DIDIT_BASE_URL=https://verification.didit.me
 DIDIT_WEBHOOK_SECRET=your-didit-webhook-secret
+# Optional additions to the built-in consumer/free email provider deny-list
+CONSUMER_EMAIL_DOMAINS=example-free-mail.test
 
 # Search (Algolia)
 ALGOLIA_APP_ID=your-algolia-app-id
@@ -139,6 +142,11 @@ firebase functions:secrets:set ALGOLIA_API_KEY
 # ALGOLIA_APP_ID, ALGOLIA_INDEX
 # USE_MOCK_PAYMENTS=0  <-- MUST be 0 in production
 ```
+
+Configure the Didit webhook destination separately in the Didit console as
+`https://<functions-host>/api/kyc/webhook`. The endpoint verifies `X-Signature`
+over the exact raw body and requires an `X-Timestamp` within five minutes.
+`DIDIT_CALLBACK_URL` is only the user/browser return URL.
 
 ### Step 4: Build and Deploy
 ```bash

@@ -75,13 +75,18 @@ DIDIT_WORKFLOW_ID=your-workflow-id
 - Submits using `FormData` with `fetch`
 - Shows result inline
 
-## Removed Flows (as of commit `c4b98f2`)
+## Hosted session and webhook flow
 
-The following were intentionally removed:
-- `POST /api/didit/session` — Didit hosted-redirect session creation
-- `POST /api/kyc/webhook` — Didit webhook callback handler  
-- `POST /api/kyc/submit-public` — Pre-signup base64 KYC submission
-- `POST /api/kyc/finalize` — Binding a temp KYC record to a new user
-- `GET /api/kyc/sync` — Manual Didit result sync
+- `POST /api/didit/session` creates a hosted v3 session and stores
+  `kycReferences/{sessionId}` for server-side ownership correlation.
+- `DIDIT_CALLBACK_URL` (or `APP_URL + /kyc/done`) is the untrusted browser return
+  destination. Query parameters on that page never establish verification.
+- `POST /api/kyc/webhook` is the separate server-to-server status endpoint.
+  It requires Didit's raw-body `X-Signature` HMAC, a fresh `X-Timestamp`, a
+  known stored session, matching `vendor_data` when supplied, and an unused
+  event ID. Invalid or duplicate deliveries cannot repeat a KYC state write.
+- Direct authenticated document upload remains available at
+  `POST /api/kyc/id/verify`.
 
-Do not re-add these endpoints. The current direct-upload flow is simpler and doesn't require webhook infrastructure.
+The webhook destination itself is configured in the Didit console; it is not
+sent as the hosted-session `callback` field.
