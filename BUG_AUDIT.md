@@ -374,6 +374,7 @@ No backup commit was merged, rebased, or cherry-picked.
 | Mobile | `npx expo config --type public --json` | PASS |
 | Mobile | `npx --yes expo-doctor@1.20.4` | PASS — 18/18 checks |
 | Git | `git diff --check` | PASS — line-ending notices only |
+| GitHub Actions | PR run `35116403594` | PASS — Backend, Frontend, and Mobile jobs; deploy skipped on PR |
 
 ## 17. Build results
 
@@ -389,7 +390,6 @@ No backup commit was merged, rebased, or cherry-picked.
 - Verify authenticated Firebase Storage uploads for listings, business logos, KYC, wishes, and events.
 - Exercise Didit success/failure/cancel/webhook flows with provider credentials.
 - Configure and test the deployed Didit webhook destination and Secret Manager injection.
-- Confirm the GitHub-hosted pull-request workflow reports all three jobs on the existing PR.
 - Exercise production Realtime Database chat/presence on a native device/EAS build.
 - Run responsive/desktop authenticated browser smoke tests against a configured environment.
 
@@ -424,4 +424,4 @@ No product decision remains for the three final-pass items. Future category-list
 | Settings | NOT APPLICABLE | PARTIAL | PARTIAL | PARTIAL | runtime not verified |
 | Reviews | FIXED | PARTIAL | PARTIAL | PARTIAL | inspected; runtime not verified |
 | Business Accounts | FIXED | FIXED | FIXED | FIXED | domain policy static checks pass; live profile/storage pending |
-| CI | FIXED | NOT APPLICABLE | NOT APPLICABLE | FIXED | PR triggers/config validated locally; GitHub run LIVE VERIFICATION REQUIRED |
+| CI | PASS | NOT APPLICABLE | NOT APPLICABLE | PASS | PR run `35116403594` passed all three validation jobs; deploy correctly skipped |
