@@ -24,7 +24,7 @@ jest.mock('firebase-admin', () => ({
 jest.mock('axios');
 
 import * as admin from 'firebase-admin';
-import { getKycStatus, clean } from '../core/kyc';
+import { getKycStatus, clean, normalizeKycStatus, toPublicKycResult } from '../core/kyc';
 
 
 describe('KYC Service', () => {
@@ -119,6 +119,34 @@ describe('KYC Service', () => {
       const result = await getKycStatus('user-123');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('public KYC state', () => {
+    it('normalizes provider status variants', () => {
+      expect(normalizeKycStatus('Approved')).toBe('VERIFIED');
+      expect(normalizeKycStatus('In Review')).toBe('IN_REVIEW');
+      expect(normalizeKycStatus('IN_REVIEW')).toBe('IN_REVIEW');
+      expect(normalizeKycStatus('rejected')).toBe('FAILED');
+    });
+
+    it('does not expose stale identity fields for a failed attempt', () => {
+      const result = toPublicKycResult({
+        status: 'FAILED',
+        provider: 'didit',
+        reason: 'Document unreadable',
+        verifiedName: 'Historical Name',
+        documentNumber: '12345678901234',
+        birthDate: '1990-01-01',
+      });
+
+      expect(result).toEqual({
+        status: 'FAILED',
+        provider: 'didit',
+        reason: 'Document unreadable',
+      });
+      expect(result).not.toHaveProperty('documentNumber');
+      expect(result).not.toHaveProperty('verifiedName');
     });
   });
 

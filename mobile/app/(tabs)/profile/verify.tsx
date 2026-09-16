@@ -22,6 +22,8 @@ export default function VerifyProfileScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusReloadKey, setStatusReloadKey] = useState(0);
   const [status, setStatus] = useState<any>(null);
   const [fullName, setFullName] = useState<string>('');
   const [nationalId, setNationalId] = useState<string>('');
@@ -40,16 +42,18 @@ export default function VerifyProfileScreen() {
     // Prefill name from auth displayName if available
     if (u.displayName && !fullName) setFullName(u.displayName);
     (async () => {
+      setLoading(true);
+      setStatusError(null);
       try {
         const s = await getKycStatusMobile();
         setStatus(s.result || null);
-      } catch {
-        // ignore
+      } catch (error) {
+        setStatusError(getErrorMessage(error, t('errors.generic')));
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [statusReloadKey]);
 
   async function pickImage(which: 'front' | 'back') {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -155,6 +159,15 @@ export default function VerifyProfileScreen() {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={cn('flex-1 bg-background')}>
       <ScrollView contentContainerStyle={cn('p-4 gap-4')}>
         {header}
+
+        {statusError ? (
+          <View style={cn('rounded-md border border-destructive p-3 bg-card gap-2')}>
+            <Text style={cn('text-sm text-destructive')}>{statusError}</Text>
+            <Button variant="outline" onPress={() => setStatusReloadKey((value) => value + 1)}>
+              <Text>{t('common.retry') || 'Retry'}</Text>
+            </Button>
+          </View>
+        ) : null}
 
         {status ? (
           <View style={cn('rounded-md border border-border p-3 bg-card')}>

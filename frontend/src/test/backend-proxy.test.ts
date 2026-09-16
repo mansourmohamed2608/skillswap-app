@@ -7,7 +7,10 @@ describe('backend-proxy', () => {
 
   beforeEach(() => {
     process.env = { ...env };
-    process.env.NODE_ENV = 'production';
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      configurable: true,
+      value: 'production',
+    });
     process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID = 'skillswap-69yxi';
     process.env.NEXT_PUBLIC_FUNCTIONS_REGION = 'europe-west3';
     delete process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -41,7 +44,10 @@ describe('backend-proxy', () => {
   });
 
   it('uses emulator base in development', () => {
-    process.env.NODE_ENV = 'development';
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      configurable: true,
+      value: 'development',
+    });
     expect(resolveBackendFunctionBase()).toBe(
       'http://127.0.0.1:5001/skillswap-69yxi/europe-west3/api'
     );

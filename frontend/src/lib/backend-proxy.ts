@@ -53,7 +53,9 @@ export async function proxyToBackend(request: NextRequest, apiPath: string) {
   };
 
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    init.body = await request.text();
+    // Preserve multipart uploads (KYC images) as bytes; this also safely
+    // forwards JSON and form-encoded request bodies without re-serializing.
+    init.body = await request.arrayBuffer();
   }
 
   const response = await fetch(target.toString(), init);
