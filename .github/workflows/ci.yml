@@ -167,6 +167,9 @@ jobs:
     needs: [backend, frontend]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    env:
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF }}
+      FIREBASE_TOKEN_VALUE: ${{ secrets.FIREBASE_TOKEN }}
 
     steps:
       - name: Checkout
@@ -190,14 +193,12 @@ jobs:
         run: npm run build
 
       - name: Write Firebase service account key
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF != '' }}
-        run: |
-          cat > "$RUNNER_TEMP/firebase-sa.json" <<'JSON'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF }}
-          JSON
+        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
+        shell: bash
+        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-sa.json"
 
       - name: Deploy Functions (service account)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF != '' }}
+        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
         working-directory: backend
         env:
           FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
@@ -205,14 +206,14 @@ jobs:
         run: firebase deploy --only functions --project skillswap-69yxi
 
       - name: Deploy Functions (token fallback)
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF == '' && secrets.FIREBASE_TOKEN != '' }}
+        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON == '' && env.FIREBASE_TOKEN_VALUE != '' }}
         working-directory: backend
         env:
           FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
-        run: firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}"
+        run: firebase deploy --only functions --token "$FIREBASE_TOKEN_VALUE"
 
       - name: Fail when deploy credentials are missing
-        if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF == '' && secrets.FIREBASE_TOKEN == '' }}
+        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON == '' && env.FIREBASE_TOKEN_VALUE == '' }}
         run: |
           echo "Missing Firebase deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF (preferred) or FIREBASE_TOKEN." >&2
           exit 1
