@@ -53,6 +53,7 @@ function main() {
     'FIREBASE_STORAGE_BUCKET',
     'FIREBASE_MESSAGING_SENDER_ID',
     'FIREBASE_APP_ID',
+    'FIREBASE_DATABASE_URL',
   ];
 
   const out = {};
@@ -62,8 +63,9 @@ function main() {
     if (srcVars[webKey]) out[mobileKey] = srcVars[webKey];
   }
 
-  // Emulators: default to true if not set
-  if (!out['EXPO_PUBLIC_USE_EMULATORS']) out['EXPO_PUBLIC_USE_EMULATORS'] = 'true';
+  // Preserve the web emulator choice; default to false so local startup never
+  // silently switches an otherwise production-configured client to emulators.
+  out['EXPO_PUBLIC_USE_EMULATORS'] = srcVars['NEXT_PUBLIC_USE_EMULATORS'] || 'false';
   // Sensible host default for Android Emulator (change to 127.0.0.1 for iOS)
   if (!out['EXPO_PUBLIC_EMULATOR_HOST']) out['EXPO_PUBLIC_EMULATOR_HOST'] = '10.0.2.2';
 

@@ -20,6 +20,7 @@ const firebaseConfig: FirebaseOptions = {
   storageBucket: getEnv('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET'),
   messagingSenderId: getEnv('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID'),
   appId: getEnv('EXPO_PUBLIC_FIREBASE_APP_ID'),
+  databaseURL: getEnv('EXPO_PUBLIC_FIREBASE_DATABASE_URL'),
 };
 
 export function isFirebaseConfigured() {
@@ -38,7 +39,7 @@ export const storage: FirebaseStorage | null = app ? getStorage(app) : null;
 export const rtdb: Database | null = app ? getDatabase(app) : null;
 
 // Optional: connect to emulators for local dev
-if (app && auth && db && storage && (getEnv('EXPO_PUBLIC_USE_EMULATORS') === 'true')) {
+if (app && auth && db && storage && ['true', '1'].includes(String(getEnv('EXPO_PUBLIC_USE_EMULATORS') || '').toLowerCase())) {
   const rawHost = getEnv('EXPO_PUBLIC_EMULATOR_HOST') as string | undefined;
   // Default: Android emulator uses 10.0.2.2, others use 127.0.0.1
   let host = rawHost || (Platform.OS === 'android' ? '10.0.2.2' : '127.0.0.1');

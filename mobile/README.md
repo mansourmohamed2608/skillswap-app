@@ -20,6 +20,7 @@ EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
 EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
 EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
 EXPO_PUBLIC_FIREBASE_APP_ID=...
+EXPO_PUBLIC_FIREBASE_DATABASE_URL=...
 # Optional: if running functions emulator locally
 EXPO_PUBLIC_FUNCTIONS_BASE=http://127.0.0.1:5001/<PROJECT_ID>/us-central1
 EXPO_PUBLIC_USE_EMULATORS=false
@@ -54,7 +55,7 @@ EXPO_PUBLIC_EMULATOR_HOST=10.0.2.2
 
 Notes:
 - For physical devices, the default Firebase emulators bind to localhost and won’t be reachable. Either use Android Emulator/iOS Simulator, or run emulators with host 0.0.0.0 and use your machine’s LAN IP in `EXPO_PUBLIC_EMULATOR_HOST`.
-- The app auto-connects to Auth and Firestore emulators when `EXPO_PUBLIC_USE_EMULATORS=true`.
+- The app auto-connects to Auth, Firestore, Storage, and Realtime Database emulators when `EXPO_PUBLIC_USE_EMULATORS=true`.
 
 ## Troubleshooting
 

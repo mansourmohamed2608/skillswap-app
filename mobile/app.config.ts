@@ -24,6 +24,7 @@ export default {
         },
       ],
       'expo-router',
+      'expo-localization',
     ],
     web: { bundler: 'metro', output: 'static' },
     extra: {
@@ -33,6 +34,7 @@ export default {
       EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
       EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      EXPO_PUBLIC_FIREBASE_DATABASE_URL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
       EXPO_PUBLIC_FUNCTIONS_BASE: process.env.EXPO_PUBLIC_FUNCTIONS_BASE,
       EXPO_PUBLIC_USE_EMULATORS: process.env.EXPO_PUBLIC_USE_EMULATORS || 'false',
       EXPO_PUBLIC_EMULATOR_HOST: process.env.EXPO_PUBLIC_EMULATOR_HOST,
