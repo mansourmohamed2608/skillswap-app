@@ -1,6 +1,7 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, Logger, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-import { canCreateBooking, getUserDocument, incrementBookingCount, decrementListingCount } from '../../core/membership';
+import { createHash } from 'crypto';
+import { canCreateBooking, getUserDocument, decrementListingCount } from '../../core/membership';
 import { sendInAppNotification, sendPushNotification, sendEmailNotification } from '../../core/notifications';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
 import { createRequestPublicId } from '../../core/public-ids';
@@ -25,18 +26,37 @@ export class RequestsService {
     const listingData = listingSnap.data() || {};
     const ownerId: string = (listingData as any).userId || (listingData as any).offeredByUserId;
     if (!ownerId) throw new ForbiddenException('Listing missing ownerId');
+    if (ownerId === userId) {
+      throw new BadRequestException({ code: 'SELF_REQUEST_NOT_ALLOWED', message: 'You cannot request your own listing' });
+    }
 
     const userSnap = await getUserDocument(userId);
     this.ensureKycVerified(userSnap);
     const membership = userSnap.get('membership');
     const check = canCreateBooking(membership);
-    if (!check.allowed) throw new ForbiddenException(check.reason);
+    if (!check.allowed) {
+      throw new ForbiddenException({ code: check.code || 'FORBIDDEN', message: check.reason || 'Request creation is not allowed' });
+    }
 
     const createdAtVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
         ? (admin.firestore.FieldValue as any).serverTimestamp()
         : new Date();
-    const docRef = admin.firestore().collection('requests').doc();
+    const db = admin.firestore();
+    const requestsRef = db.collection('requests');
+    const legacyRequests = await requestsRef.where('listingId', '==', listingId).limit(100).get();
+    const hasActiveRequest = legacyRequests.docs.some((doc) => {
+      const data = doc.data() || {};
+      const status = String((data as any).status || 'pending').toLowerCase();
+      return (data as any).requesterId === userId && ['pending', 'accepted'].includes(status);
+    });
+    if (hasActiveRequest) {
+      throw new ConflictException({ code: 'DUPLICATE_REQUEST', message: 'You already have an active request for this listing' });
+    }
+
+    const docRef = requestsRef.doc();
+    const guardRef = db.collection('activeRequestGuards').doc(this.activeRequestGuardId(listingId, userId));
+    const requesterRef = db.collection('users').doc(userId);
     const publicId = createRequestPublicId({
       id: docRef.id,
       listingId,
@@ -48,13 +68,30 @@ export class RequestsService {
       ownerId,
       requesterId: userId,
       publicId,
-      proposedTime: proposedTime ? new Date(proposedTime) : null,
+      proposedTime: proposedTime ? this.parseProposedTime(proposedTime) : null,
       message: message || '',
       status: 'pending',
       createdAt: createdAtVal,
     };
-    await docRef.set(requestDoc);
-    await incrementBookingCount(userId);
+    await db.runTransaction(async (tx) => {
+      const guardSnap = await tx.get(guardRef);
+      if (guardSnap.exists && (guardSnap.data() as any)?.active) {
+        const guardedRequestId = String((guardSnap.data() as any)?.requestId || '');
+        const guardedRequestSnap = guardedRequestId
+          ? await tx.get(requestsRef.doc(guardedRequestId))
+          : null;
+        const guardedStatus = String(guardedRequestSnap?.data()?.status || '').toLowerCase();
+        if (guardedRequestSnap?.exists && ['pending', 'accepted'].includes(guardedStatus)) {
+          throw new ConflictException({ code: 'DUPLICATE_REQUEST', message: 'You already have an active request for this listing' });
+        }
+      }
+      tx.set(docRef, requestDoc);
+      tx.set(guardRef, { active: true, requestId: docRef.id, listingId, requesterId: userId, updatedAt: createdAtVal });
+      const nextBookingCount = typeof (admin.firestore.FieldValue as any)?.increment === 'function'
+        ? (admin.firestore.FieldValue as any).increment(1)
+        : Number(membership?.bookingCount || 0) + 1;
+      tx.update(requesterRef, { 'membership.bookingCount': nextBookingCount });
+    });
 
     try {
       const cleanLink = `/bookings/${publicId}`;
@@ -96,7 +133,12 @@ export class RequestsService {
       throw new ForbiddenException('Not authorized to modify this request');
     }
 
-    await reqRef.update({ proposedTime: new Date(proposedTime) });
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (!['pending', 'accepted'].includes(status)) {
+      throw new BadRequestException(`Request cannot be rescheduled while ${status}`);
+    }
+
+    await reqRef.update({ proposedTime: this.parseProposedTime(proposedTime) });
     return { success: true };
   }
 
@@ -150,6 +192,7 @@ export class RequestsService {
     // Firestore transactions only support document reads, not collection queries,
     // so we track the accepted requestId in a dedicated document.
     const sentinelRef = admin.firestore().collection('listingBookings').doc(listingId);
+    const ownerRef = admin.firestore().collection('users').doc(ownerId);
     const nowVal = new Date();
     await admin.firestore().runTransaction(async (tx) => {
       const sentinelSnap = await tx.get(sentinelRef);
@@ -166,8 +209,11 @@ export class RequestsService {
         acceptedBy: userId,
         updatedAt: nowVal,
       });
+      const nextOwnerBookingCount = typeof (admin.firestore.FieldValue as any)?.increment === 'function'
+        ? (admin.firestore.FieldValue as any).increment(1)
+        : Number(membership?.bookingCount || 0) + 1;
+      tx.update(ownerRef, { 'membership.bookingCount': nextOwnerBookingCount });
     });
-    await incrementBookingCount(ownerId);
 
     try {
       const cleanLink = `/bookings/${publicId}`;
@@ -224,6 +270,7 @@ export class RequestsService {
       declinedBy: userId,
       updatedAt: nowVal,
     });
+    await this.releaseActiveRequestGuard(listingId, requesterId, requestId, 'declined', nowVal);
 
     try {
       const cleanLink = `/bookings/${publicId}`;
@@ -284,6 +331,7 @@ export class RequestsService {
       cancelledBy: userId,
       updatedAt: nowVal,
     });
+    await this.releaseActiveRequestGuard(listingId, requesterId, requestId, 'cancelled', nowVal);
 
     const otherId = ownerId === userId ? requesterId : ownerId;
     try {
@@ -326,6 +374,12 @@ export class RequestsService {
 
     const status = String((data as any).status || 'pending').toLowerCase();
     if (status !== 'accepted') throw new BadRequestException(`Request must be accepted before completion (current: ${status})`);
+    const publicId = String((data as any).publicId || createRequestPublicId({
+      id: requestId,
+      listingId,
+      ownerId,
+      requesterId,
+    }));
 
     const nowVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
@@ -337,6 +391,7 @@ export class RequestsService {
       completedBy: userId,
       updatedAt: nowVal,
     });
+    await this.releaseActiveRequestGuard(listingId, requesterId, requestId, 'completed', nowVal);
 
     const listingRef = admin.firestore().collection('listings').doc(listingId);
     const listingSnap = await listingRef.get();
@@ -353,15 +408,16 @@ export class RequestsService {
 
     const otherId = ownerId === userId ? requesterId : ownerId;
     try {
+      const cleanLink = `/bookings/${publicId}`;
       await sendInAppNotification({
         userId: otherId,
         type: 'request',
         content: `An exchange request was marked completed`,
-        link: `/requests/${requestId}`,
+        link: cleanLink,
         listingId,
         requesterId,
       });
-      await sendPushNotification(otherId, 'Request completed', 'An exchange request was completed.', `/requests/${requestId}`);
+      await sendPushNotification(otherId, 'Request completed', 'An exchange request was completed.', cleanLink);
       await sendEmailNotification(otherId, 'Request completed', 'An exchange request was completed.');
     } catch (e) {
       this.logger.warn('Failed to send completion notifications', e);
@@ -375,10 +431,43 @@ export class RequestsService {
     return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
   }
 
+  private activeRequestGuardId(listingId: string, requesterId: string): string {
+    return createHash('sha256').update(`${listingId}:${requesterId}`).digest('hex');
+  }
+
+  private parseProposedTime(value: string): Date {
+    const parsed = new Date(value);
+    if (!Number.isFinite(parsed.getTime())) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'proposedTime must be a valid date' });
+    }
+    return parsed;
+  }
+
+  private async releaseActiveRequestGuard(
+    listingId: string,
+    requesterId: string,
+    requestId: string,
+    status: string,
+    updatedAt: unknown,
+  ): Promise<void> {
+    try {
+      await admin.firestore().collection('activeRequestGuards')
+        .doc(this.activeRequestGuardId(listingId, requesterId))
+        .set({ active: false, requestId, listingId, requesterId, status, updatedAt }, { merge: true });
+    } catch (error) {
+      this.logger.warn('Failed to release active request guard', error);
+    }
+  }
+
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {
     const status = String(userSnap.get('kyc.status') || userSnap.get('kyc')?.status || '').toUpperCase();
-    if (status !== 'VERIFIED') {
-      throw new ForbiddenException('KYC verification required');
+    if (status === 'VERIFIED') return;
+    if (status === 'PENDING' || status === 'IN_REVIEW') {
+      throw new ForbiddenException({ code: 'KYC_PENDING', message: 'Identity verification is still under review' });
     }
+    if (status === 'FAILED' || status === 'DECLINED' || status === 'REJECTED' || status === 'CANCELLED') {
+      throw new ForbiddenException({ code: 'KYC_FAILED', message: 'Identity verification was unsuccessful; please resubmit' });
+    }
+    throw new ForbiddenException({ code: 'KYC_REQUIRED', message: 'Identity verification is required before requesting an exchange' });
   }
 }

@@ -29,41 +29,48 @@ export function isMembershipActive(membership: any): boolean {
   return end.getTime() > Date.now();
 }
 
-export function canCreateListing(membership: any): { allowed: boolean; reason?: string } {
+export type ListingEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'LISTING_LIMIT_REACHED';
+export type UsageEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'BOOKING_LIMIT_REACHED' | 'MESSAGE_LIMIT_REACHED';
+
+export function canCreateListing(membership: any): { allowed: boolean; code?: ListingEligibilityCode; reason?: string } {
   if (!isMembershipActive(membership)) {
-    return { allowed: false, reason: 'Membership is inactive or expired.' };
+    return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
   }
   const plan: SubscriptionPlan = membership.plan;
   const currentCount: number = membership.listingCount ?? 0;
   const limit = PLAN_LISTING_LIMITS[plan];
   if (limit !== Infinity && currentCount >= limit) {
-    return { allowed: false, reason: `You have reached the maximum number of active listings (${limit}) for your ${plan} plan.` };
+    return {
+      allowed: false,
+      code: 'LISTING_LIMIT_REACHED',
+      reason: `You have reached the maximum number of active listings (${limit}) for your ${plan} plan.`,
+    };
   }
   return { allowed: true };
 }
 
-export function canCreateBooking(membership: any): { allowed: boolean; reason?: string } {
+export function canCreateBooking(membership: any): { allowed: boolean; code?: UsageEligibilityCode; reason?: string } {
   if (!isMembershipActive(membership)) {
-    return { allowed: false, reason: 'Membership is inactive or expired.' };
+    return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
   }
   const plan: SubscriptionPlan = membership.plan;
   const current: number = membership.bookingCount ?? 0;
   const limit = PLAN_BOOKING_LIMITS[plan];
   if (limit !== Infinity && current >= limit) {
-    return { allowed: false, reason: `You have reached the maximum number of bookings (${limit}) for your ${plan} plan.` };
+    return { allowed: false, code: 'BOOKING_LIMIT_REACHED', reason: `You have reached the maximum number of bookings (${limit}) for your ${plan} plan.` };
   }
   return { allowed: true };
 }
 
-export function canSendMessage(membership: any): { allowed: boolean; reason?: string } {
+export function canSendMessage(membership: any): { allowed: boolean; code?: UsageEligibilityCode; reason?: string } {
   if (!isMembershipActive(membership)) {
-    return { allowed: false, reason: 'Membership is inactive or expired.' };
+    return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
   }
   const plan: SubscriptionPlan = membership.plan;
   const current: number = membership.messageCount ?? 0;
   const limit = PLAN_MESSAGE_LIMITS[plan];
   if (limit !== Infinity && current >= limit) {
-    return { allowed: false, reason: `You have reached the maximum number of messages (${limit}) for your ${plan} plan.` };
+    return { allowed: false, code: 'MESSAGE_LIMIT_REACHED', reason: `You have reached the maximum number of messages (${limit}) for your ${plan} plan.` };
   }
   return { allowed: true };
 }

@@ -25,6 +25,17 @@ export class UsersService {
     return normalized;
   }
 
+  private normalizeTeamMemberEmail(value: string): string {
+    const email = String(value || '').trim().toLowerCase();
+    if (email.length > 100) {
+      throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new StatusError(400, 'Each teamMembers entry must be a valid email address');
+    }
+    return email;
+  }
+
   private validateUsernameOrThrow(value: string): string {
     const username = String(value || '').trim();
     // 3-32 chars, letters/numbers plus . _ -
@@ -198,10 +209,7 @@ export class UsersService {
         ? bp.teamMembers
             .map((item: any) => String(item || '').trim())
             .filter(Boolean)
-            .map((item: string) => {
-              if (item.length > 100) throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
-              return item;
-            })
+            .map((item: string) => this.normalizeTeamMemberEmail(item))
             .slice(0, 5)
         : [];
       if (teamMembers.length) cleaned.teamMembers = teamMembers;

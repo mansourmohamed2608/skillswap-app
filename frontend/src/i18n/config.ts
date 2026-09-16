@@ -156,6 +156,7 @@ const resources = {
           title: "Ready to start exchanging skills?",
           body: "Join a community where skills, time, and opportunities are shared through meaningful exchanges.",
           primary: "Join Now",
+          authenticatedPrimary: "Post a Listing",
           explore: "Explore Listings",
         },
         tahadu: {
@@ -207,7 +208,7 @@ const resources = {
         categories: {
           title: "Explore Service Categories",
           subtitle: "Discover skills you can offer, request, and exchange.",
-          viewAll: "View All Categories",
+          viewAll: "Browse All Listings",
           browse: "Browse",
           items: {
             development: "Development",
@@ -462,6 +463,8 @@ const resources = {
           imageAlt: "Service preview",
           imageNoFile: "No file selected",
           imageFormatsHint: "JPG, PNG, or WEBP. Max 5MB.",
+          imageTooLarge: "Choose an image no larger than 5MB.",
+          imageInvalidType: "Choose a JPG, PNG, or WEBP image.",
           imageChoose: "Choose image",
           imageChange: "Change image",
           imageClear: "Clear",
@@ -1600,6 +1603,7 @@ const resources = {
           title: "هل أنت مستعد لبدء تبادل المهارات؟",
           body: "انضم إلى مجتمع يتشارك فيه الناس المهارات والوقت والفرص من خلال تبادلات ذات معنى.",
           primary: "انضم الآن",
+          authenticatedPrimary: "أضف عرضًا",
           explore: "استكشف العروض",
         },
         tahadu: {
@@ -1646,7 +1650,7 @@ const resources = {
         categories: {
           title: "استكشف فئات الخدمات",
           subtitle: "اكتشف المهارات التي يمكنك عرضها وطلبها وتبادلها.",
-          viewAll: "عرض كل الفئات",
+          viewAll: "تصفّح كل العروض",
           browse: "تصفّح",
           items: {
             development: "التطوير",
@@ -1901,6 +1905,8 @@ const resources = {
           imageAlt: "معاينة الخدمة",
           imageNoFile: "لم يتم اختيار ملف",
           imageFormatsHint: "JPG أو PNG أو WEBP بحد أقصى 5MB.",
+          imageTooLarge: "اختر صورة لا يزيد حجمها عن 5 ميجابايت.",
+          imageInvalidType: "اختر صورة بصيغة JPG أو PNG أو WEBP.",
           imageChoose: "اختر صورة",
           imageChange: "تغيير الصورة",
           imageClear: "مسح",

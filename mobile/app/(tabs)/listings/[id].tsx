@@ -104,6 +104,10 @@ export default function ListingDetailsScreen() {
       setRequestMessage('');
       setRequestOpen(false);
     } catch (e: any) {
+      if (e?.code === 'KYC_REQUIRED' || e?.code === 'KYC_FAILED') {
+        router.push('/profile/verify');
+        return;
+      }
       Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('requests.failed') || 'Failed to send request.'));
     } finally {
       setRequestBusy(false);

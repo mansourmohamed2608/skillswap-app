@@ -13,6 +13,7 @@ import { storage } from '@/services/firebase';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields } from '@/lib/moderation';
+import { listingImageExtension, validateListingImage } from '@/lib/listing-image';
 import * as Location from 'expo-location';
 
 export default function EditListingScreen() {
@@ -38,6 +39,7 @@ export default function EditListingScreen() {
   const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
   const [locating, setLocating] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageMimeType, setImageMimeType] = useState('image/jpeg');
   const [pickedImage, setPickedImage] = useState(false);
   const autoLocationRequestedRef = useRef(false);
 
@@ -101,7 +103,19 @@ export default function EditListingScreen() {
     if (!perm.granted) return;
     const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
     if (!res.canceled) {
-      setImageUri(res.assets[0].uri);
+      const asset = res.assets[0];
+      const validation = validateListingImage(asset);
+      if (validation !== 'VALID') {
+        Alert.alert(
+          t('common.error') || 'Error',
+          validation === 'FILE_TOO_LARGE'
+            ? t('listings.image_too_large')
+            : t('listings.image_invalid_type'),
+        );
+        return;
+      }
+      setImageMimeType(asset.mimeType || 'image/jpeg');
+      setImageUri(asset.uri);
       setPickedImage(true);
     }
   }
@@ -153,9 +167,9 @@ export default function EditListingScreen() {
       if (pickedImage && imageUri && storage) {
         const resp = await fetch(imageUri);
         const buf = await resp.arrayBuffer();
-        const key = `listing-images/${user.uid}/${Date.now()}.jpg`;
+        const key = `listing-images/${user.uid}/${Date.now()}.${listingImageExtension(imageMimeType)}`;
         const r = ref(storage, key);
-        await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
+        await uploadBytes(r, new Uint8Array(buf), { contentType: imageMimeType });
         imageUrl = await getDownloadURL(r);
       }
       let requestedServicePayload: { title: string; category: string; description: string };

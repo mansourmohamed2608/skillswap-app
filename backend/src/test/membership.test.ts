@@ -102,6 +102,7 @@ describe('Membership Service', () => {
         };
         const result = canCreateListing(membership);
         expect(result.allowed).toBe(false);
+        expect(result.code).toBe('LISTING_LIMIT_REACHED');
         expect(result.reason).toContain('9');
         expect(result.reason).toContain('Basic');
       });
@@ -183,6 +184,7 @@ describe('Membership Service', () => {
         };
         const result = canCreateListing(membership);
         expect(result.allowed).toBe(false);
+        expect(result.code).toBe('MEMBERSHIP_REQUIRED');
         expect(result.reason).toContain('inactive');
       });
     });
@@ -208,6 +210,7 @@ describe('Membership Service', () => {
       };
       const result = canCreateBooking(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('BOOKING_LIMIT_REACHED');
       expect(result.reason).toContain('9');
     });
 
@@ -229,6 +232,7 @@ describe('Membership Service', () => {
       };
       const result = canCreateBooking(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('MEMBERSHIP_REQUIRED');
     });
   });
 
@@ -241,6 +245,7 @@ describe('Membership Service', () => {
       };
       const result = canSendMessage(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('MESSAGE_LIMIT_REACHED');
       expect(result.reason).toContain('9');
     });
 

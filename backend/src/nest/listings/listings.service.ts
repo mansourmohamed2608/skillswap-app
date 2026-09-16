@@ -158,7 +158,7 @@ export class ListingsService {
     const membership = ownerSnap.get('membership');
     const check = canCreateListing(membership);
     if (!check.allowed) {
-      throw new ForbiddenException(check.reason);
+      throw new ForbiddenException({ code: check.code || 'FORBIDDEN', message: check.reason || 'Listing creation is not allowed' });
     }
 
     const createdAtVal =
@@ -247,7 +247,7 @@ export class ListingsService {
     }
     const membership = ownerSnap.get('membership');
     if (!isMembershipActive(membership)) {
-      throw new ForbiddenException('Active membership required');
+      throw new ForbiddenException({ code: 'MEMBERSHIP_REQUIRED', message: 'Active membership required' });
     }
 
     const { status: _status, userId: _userId, offeredByUserId: _offeredByUserId, ...safeUpdates } = updates || {};
@@ -377,10 +377,14 @@ export class ListingsService {
 
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {
     const status = String(userSnap.get('kyc.status') || userSnap.get('kyc')?.status || '').toUpperCase();
-    if (status !== 'VERIFIED') {
-      // Throw a ForbiddenException with a stable machine-readable code while preserving 403 status
-      throw new ForbiddenException({ code: 'KYC_REQUIRED', message: 'KYC verification required' });
+    if (status === 'VERIFIED') return;
+    if (status === 'PENDING' || status === 'IN_REVIEW') {
+      throw new ForbiddenException({ code: 'KYC_PENDING', message: 'Identity verification is still under review' });
     }
+    if (status === 'FAILED' || status === 'DECLINED' || status === 'REJECTED' || status === 'CANCELLED') {
+      throw new ForbiddenException({ code: 'KYC_FAILED', message: 'Identity verification was unsuccessful; please resubmit' });
+    }
+    throw new ForbiddenException({ code: 'KYC_REQUIRED', message: 'Identity verification is required before publishing' });
   }
 
   private async resolveBusinessOwner(actorSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {

@@ -21,6 +21,7 @@
   import { cn } from '@/lib/cn';
   import { getErrorMessage } from '@/lib/errors';
   import { findBannedKeywordInFields } from '@/lib/moderation';
+  import { listingImageExtension, validateListingImage } from '@/lib/listing-image';
 
   export default function NewListingScreen() {
     const { user } = useAuth();
@@ -40,6 +41,7 @@
     const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
     const [locating, setLocating] = useState(false);
     const [image, setImage] = useState<string | null>(null);
+    const [imageMimeType, setImageMimeType] = useState('image/jpeg');
     const autoLocationRequestedRef = useRef(false);
 
     async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
@@ -100,9 +102,9 @@
         if (image && storage) {
           const resp = await fetch(image);
           const buf = await resp.arrayBuffer();
-          const key = `listing-images/${user.uid}/${Date.now()}.jpg`;
+          const key = `listing-images/${user.uid}/${Date.now()}.${listingImageExtension(imageMimeType)}`;
           const r = ref(storage, key);
-          await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
+          await uploadBytes(r, new Uint8Array(buf), { contentType: imageMimeType });
           imageUrl = await getDownloadURL(r);
         }
         let requestedServicePayload: { title: string; category: string; description: string };
@@ -149,6 +151,14 @@
           { text: t('common.ok') || 'OK', onPress: () => router.push('/listings') },
         ]);
       } catch (e: any) {
+        if (e?.code === 'KYC_REQUIRED') {
+          router.push('/profile/verify');
+          return;
+        }
+        if (e?.code === 'KYC_FAILED') {
+          router.push('/profile/verify');
+          return;
+        }
         Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('errors.generic')));
       }
     }
@@ -156,7 +166,21 @@
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) return;
       const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-      if (!res.canceled) setImage(res.assets[0].uri);
+      if (!res.canceled) {
+        const asset = res.assets[0];
+        const validation = validateListingImage(asset);
+        if (validation !== 'VALID') {
+          Alert.alert(
+            t('common.error') || 'Error',
+            validation === 'FILE_TOO_LARGE'
+              ? t('listings.image_too_large')
+              : t('listings.image_invalid_type'),
+          );
+          return;
+        }
+        setImageMimeType(asset.mimeType || 'image/jpeg');
+        setImage(asset.uri);
+      }
     }
 
     async function useCurrentLocation(options?: { auto?: boolean }) {
