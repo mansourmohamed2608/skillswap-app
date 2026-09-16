@@ -76,16 +76,18 @@ export default function ProfileScreen() {
         } catch { dateIso = new Date().toISOString(); }
         return {
           id: d.id,
-          type: data.type || 'system',
-          content: data.content || '',
+          type: ['review', 'message', 'request', 'system'].includes(data.type) ? data.type : 'system',
+          content: typeof data.content === 'string' ? data.content : '',
           date: dateIso,
           isRead: !!data.isRead,
-          userId: data.userId,
-          link: data.link,
+          userId: typeof data.userId === 'string' ? data.userId : undefined,
+          link: typeof data.link === 'string' && data.link.startsWith('/') && !data.link.startsWith('//')
+            ? data.link
+            : undefined,
         } as Notification;
       });
       setNotifications(items);
-    });
+    }, () => setNotifications([]));
     return () => unsub();
   }, [user?.uid]);
 

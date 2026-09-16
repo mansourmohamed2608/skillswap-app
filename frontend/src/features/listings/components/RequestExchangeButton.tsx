@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { createServiceRequest, recordAnalyticsEvent } from "@/services/api";
+import { ApiError, createServiceRequest, recordAnalyticsEvent } from "@/services/api";
 import { useTranslation } from "react-i18next";
 import { getErrorMessage } from "@/lib/errors";
 import { Input } from "@/components/ui/input";
@@ -41,7 +41,11 @@ export function RequestExchangeButton({ listingId }: { listingId: string }) {
       setOpen(false);
       toast({ title: t('request.requestSent'), description: t('listings.request.toastSent') });
     } catch (e: any) {
-      if (e?.status === 403) {
+      if (e instanceof ApiError && (e.code === 'KYC_REQUIRED' || e.code === 'KYC_FAILED')) {
+        router.push('/profile/verify');
+      } else if (e instanceof ApiError && e.code === 'KYC_PENDING') {
+        toast({ title: t('listings.request.toastFailed'), description: e.message, variant: 'destructive' });
+      } else if (e instanceof ApiError && e.code === 'MEMBERSHIP_REQUIRED') {
         router.push("/pricing?alert=sub-required");
       } else {
         toast({ title: t('listings.request.toastFailed'), description: getErrorMessage(e, t('listings.request.toastFailed')), variant: "destructive" });

@@ -276,7 +276,8 @@ function PricingPageInner() {
     const plan = selectedPlanParam as PlanKey;
     if (!['basic', 'standard', 'pro', 'business'].includes(plan)) return;
     autoLaunchRef.current = true;
-    void handleChoose(plan);
+    const timer = window.setTimeout(() => void handleChoose(plan), 0);
+    return () => window.clearTimeout(timer);
   }, [shouldAutostart, selectedPlanParam, loading, user]);
 
   return (

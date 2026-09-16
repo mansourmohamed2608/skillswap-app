@@ -104,7 +104,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
-const rawWebhookPaths = ['/payments/webhook'];
+const rawWebhookPaths = ['/payments/webhook', '/kyc/webhook'];
 const rawMiddleware = express.raw({ type: '*/*', limit: '10mb' });
 const matchesWebhookPath = (req: express.Request, p: string) => {
   const original = req.originalUrl || '';
@@ -298,7 +298,7 @@ app.use('/', (req, res, next) => {
   runRequest().catch(next);
 });
 
-export const api = onRequest({ timeoutSeconds: 540 }, app);
+export const api = onRequest({ timeoutSeconds: 540, secrets: ['DIDIT_WEBHOOK_SECRET'] }, app);
 export { moderateListing } from './moderation';
 export { onListingWrite } from './search';
 export { moderateWish } from './moderation';

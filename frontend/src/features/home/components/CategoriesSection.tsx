@@ -15,6 +15,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getCategoryBrowseAction } from '@/lib/home-cta';
 import { getCategoryDisplayName, getHomeCategoryRow } from '@/features/home/constants/homeCategoryRow';
 import { Reveal } from '@/components/motion/Reveal';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -31,6 +32,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 export function CategoriesSection() {
+  const browseAction = getCategoryBrowseAction();
   const { t } = useTranslation();
   const reduced = useReducedMotion();
   const trackRef = useRef<HTMLDivElement>(null);
@@ -83,7 +85,7 @@ export function CategoriesSection() {
           subtitle={t('home.categories.subtitle')}
           action={
             <Button variant="outline" size="sm" asChild className="rounded-xl border-[#3f7752] text-[#3f7752]">
-              <Link href="/listings">{t('home.categories.viewAll')}</Link>
+              <Link href={browseAction.href}>{t(browseAction.translationKey)}</Link>
             </Button>
           }
         />

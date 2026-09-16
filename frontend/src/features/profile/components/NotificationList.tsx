@@ -6,9 +6,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { BellIcon, Star, MessageSquare, Briefcase, Info } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { formatDistanceToNow } from 'date-fns';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNotificationTime, normalizeNotificationLink } from '@/lib/notifications';
 
 interface NotificationListProps {
   notifications: Notification[];
@@ -26,10 +26,10 @@ export function NotificationList({ notifications }: NotificationListProps) {
   const notificationTimes = useMemo<Record<string, string>>(() => {
     const times: Record<string, string> = {};
     notifications.forEach(n => {
-      times[n.id] = formatDistanceToNow(new Date(n.date), { addSuffix: true });
+      times[n.id] = formatNotificationTime(n.date, t('profile.notifications.recent'));
     });
     return times;
-  }, [notifications]);
+  }, [notifications, t]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (notifications.length === 0) {
@@ -60,11 +60,13 @@ export function NotificationList({ notifications }: NotificationListProps) {
         </div>
         <ul className="divide-y divide-border">
           {notifications.map((notification) => {
+            const safeLink = normalizeNotificationLink(notification.link);
+            const icon = iconMap[notification.type] || iconMap.system;
             const content = (
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 pt-0.5">
                   <div className="h-10 w-10 flex items-center justify-center bg-muted rounded-full">
-                    {iconMap[notification.type]}
+                    {icon}
                   </div>
                 </div>
                 <div className="min-w-0 flex-1">
@@ -87,11 +89,11 @@ export function NotificationList({ notifications }: NotificationListProps) {
                 className={cn(
                   'p-4 transition-colors sm:p-5',
                   notification.isRead ? 'bg-card/60' : 'bg-muted/40',
-                  notification.link && 'hover:bg-muted/50'
+                  safeLink && 'hover:bg-muted/50'
                 )}
               >
-                {notification.link ? (
-                  <Link href={notification.link} className="block break-words">
+                {safeLink ? (
+                  <Link href={safeLink} className="block break-words">
                     {content}
                   </Link>
                 ) : (

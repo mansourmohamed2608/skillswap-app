@@ -6,11 +6,13 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Reveal } from '@/components/motion/Reveal';
+import { getJoinPrimaryAction } from '@/lib/home-cta';
 
 export function JoinNowBanner() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const reduced = useReducedMotion();
+  const primaryAction = getJoinPrimaryAction(Boolean(user));
 
   return (
     <Reveal>
@@ -40,8 +42,8 @@ export function JoinNowBanner() {
               asChild
               className="h-11 rounded-xl bg-[#d4642f] text-white hover:bg-[#d4642f]/90"
             >
-              <Link href={user ? '/listings/new' : '/auth/signup'}>
-                {t('home.joinCta.primary')}
+              <Link href={primaryAction.href}>
+                {t(primaryAction.translationKey)}
               </Link>
             </Button>
             <Button

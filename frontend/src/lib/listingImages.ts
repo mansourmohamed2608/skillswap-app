@@ -31,6 +31,19 @@ const CATEGORY_COVER_SLUGS: Record<string, string> = {
   other: 'default',
 };
 
+export const MAX_LISTING_IMAGE_BYTES = 5 * 1024 * 1024;
+export const LISTING_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+export type ListingImageValidation = 'VALID' | 'FILE_TOO_LARGE' | 'INVALID_FILE_TYPE';
+
+export function validateListingImage(file: { size: number; type: string }): ListingImageValidation {
+  if (!LISTING_IMAGE_TYPES.includes(file.type.toLowerCase() as (typeof LISTING_IMAGE_TYPES)[number])) {
+    return 'INVALID_FILE_TYPE';
+  }
+  if (file.size > MAX_LISTING_IMAGE_BYTES) return 'FILE_TOO_LARGE';
+  return 'VALID';
+}
+
 function normalizeCategory(value: string) {
   return String(value || '').trim().toLowerCase();
 }

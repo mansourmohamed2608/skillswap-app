@@ -16,7 +16,7 @@ export class UsersController {
       return { available };
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw err;
     }
@@ -31,7 +31,7 @@ export class UsersController {
       return { available };
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw err;
     }
@@ -63,7 +63,7 @@ export class UsersController {
       return { success: true };
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw new HttpException('Invalid or expired token', 401);
     }
@@ -78,7 +78,7 @@ export class UsersController {
       await this.usersService.updateProfile(userId || '', body.profile);
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw err;
     }
@@ -95,7 +95,7 @@ export class UsersController {
       return { success: true, updated };
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw err;
     }
@@ -111,7 +111,7 @@ export class UsersController {
       return { success: true, deleted };
     } catch (err) {
       if (err instanceof StatusError) {
-        throw new HttpException(err.message, err.status);
+        throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       }
       throw err;
     }
@@ -130,7 +130,7 @@ export class UsersController {
       await this.usersService.blockUser(userId, targetUid);
       return { success: true };
     } catch (err) {
-      if (err instanceof StatusError) throw new HttpException(err.message, err.status);
+      if (err instanceof StatusError) throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       throw err;
     }
   }
@@ -147,7 +147,7 @@ export class UsersController {
       await this.usersService.unblockUser(userId, targetUid);
       return { success: true };
     } catch (err) {
-      if (err instanceof StatusError) throw new HttpException(err.message, err.status);
+      if (err instanceof StatusError) throw new HttpException(err.code ? { code: err.code, message: err.message } : err.message, err.status);
       throw err;
     }
   }

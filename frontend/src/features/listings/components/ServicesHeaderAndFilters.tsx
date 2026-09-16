@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, LocateFixedIcon, SearchIcon, FilterIcon, PlusCircleIcon, MapPinIcon } from 'lucide-react';
-import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { useEffect, useRef, useState } from 'react';
 import { SearchResults } from '@/features/listings/components/SearchResults';
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
@@ -36,6 +37,8 @@ type SubmittedFilters = {
 export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { initialItems: ListingWithUser[]; initialCategory?: string }) {
   const { t, i18n } = useTranslation();
   const { user, selectedPlan } = useAuth();
+  const { categories } = useServiceCategories();
+  const serviceCategories = useMemo(() => categories.map((item) => item.label), [categories]);
   const [search, setSearch] = useState('');
   // Normalize initial category to one of the known serviceCategories for consistent matching
   const normalize = (s?: string | null) => String(s || '').trim().toLowerCase();
@@ -66,7 +69,7 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
   useEffect(() => {
     const match = serviceCategories.find((c) => normalize(c) === normalize(initialCategory));
     setCategory(match ?? (initialCategory || undefined));
-  }, [initialCategory]);
+  }, [initialCategory, serviceCategories]);
 
   // Auto-apply category filter when category state changes
   useEffect(() => {

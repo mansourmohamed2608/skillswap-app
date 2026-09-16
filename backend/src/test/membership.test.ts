@@ -102,6 +102,7 @@ describe('Membership Service', () => {
         };
         const result = canCreateListing(membership);
         expect(result.allowed).toBe(false);
+        expect(result.code).toBe('LISTING_LIMIT_REACHED');
         expect(result.reason).toContain('9');
         expect(result.reason).toContain('Basic');
       });
@@ -174,16 +175,26 @@ describe('Membership Service', () => {
       });
     });
 
-    describe('Inactive Membership', () => {
-      it('should block listing when membership is expired', () => {
+    describe('Free plan fallback', () => {
+      it('should allow one listing when membership is expired', () => {
         const membership = {
           plan: 'Pro',
           endDate: new Date(Date.now() - 86400000), // Expired
           listingCount: 0,
         };
         const result = canCreateListing(membership);
+        expect(result.allowed).toBe(true);
+      });
+
+      it('should block a second active listing without membership', () => {
+        const result = canCreateListing(null, 1);
         expect(result.allowed).toBe(false);
-        expect(result.reason).toContain('inactive');
+        expect(result.code).toBe('LISTING_LIMIT_REACHED');
+        expect(result.reason).toContain('Free');
+      });
+
+      it('uses the authoritative active-listing count instead of a stale counter', () => {
+        expect(canCreateListing({ listingCount: 8 }, 0).allowed).toBe(true);
       });
     });
 
@@ -208,6 +219,7 @@ describe('Membership Service', () => {
       };
       const result = canCreateBooking(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('BOOKING_LIMIT_REACHED');
       expect(result.reason).toContain('9');
     });
 
@@ -229,6 +241,7 @@ describe('Membership Service', () => {
       };
       const result = canCreateBooking(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('MEMBERSHIP_REQUIRED');
     });
   });
 
@@ -241,6 +254,7 @@ describe('Membership Service', () => {
       };
       const result = canSendMessage(membership);
       expect(result.allowed).toBe(false);
+      expect(result.code).toBe('MESSAGE_LIMIT_REACHED');
       expect(result.reason).toContain('9');
     });
 
@@ -330,7 +344,8 @@ describe('Membership Service', () => {
       );
     });
 
-    it('should throw error when user has no membership', async () => {
+    it('should initialize a listing counter when user has no membership', async () => {
+      const mockUpdate = jest.fn();
       const mockGet = jest.fn().mockResolvedValue({
         get: () => null,
       });
@@ -342,13 +357,15 @@ describe('Membership Service', () => {
         runTransaction: jest.fn(async (callback) => {
           await callback({
             get: mockGet,
-            update: jest.fn(),
+            update: mockUpdate,
           });
         }),
       });
 
-      await expect(incrementListingCount('user-123')).rejects.toThrow(
-        'No membership found'
+      await expect(incrementListingCount('user-123')).resolves.toBeUndefined();
+      expect(mockUpdate).toHaveBeenCalledWith(
+        expect.anything(),
+        { 'membership.listingCount': 1 }
       );
     });
   });

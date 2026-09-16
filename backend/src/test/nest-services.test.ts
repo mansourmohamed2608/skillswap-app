@@ -31,7 +31,6 @@ jest.mock('firebase-admin', () => ({
 jest.mock('../core/membership', () => ({
   getUserDocument: jest.fn(),
   canCreateListing: jest.fn(),
-  incrementListingCount: jest.fn(),
   decrementListingCount: jest.fn(),
   isMembershipActive: jest.fn(),
 }));
@@ -42,7 +41,7 @@ jest.mock('../core/moderation-utils', () => ({
 }));
 
 import * as admin from 'firebase-admin';
-import { getUserDocument, canCreateListing, incrementListingCount, isMembershipActive } from '../core/membership';
+import { getUserDocument, canCreateListing, isMembershipActive } from '../core/membership';
 import { findBannedKeywordInFields } from '../core/moderation-utils';
 import { ListingsService } from '../nest/listings/listings.service';
 import { HealthController } from '../nest/health/health.controller';
@@ -71,6 +70,23 @@ describe('ListingsService', () => {
   let mockAdd: jest.Mock;
   let mockGet: jest.Mock;
   let mockUpdate: jest.Mock;
+  let mockTxCreate: jest.Mock;
+  let mockTxUpdate: jest.Mock;
+  const mockUserSnap = {
+    exists: true,
+    id: 'user-123',
+    data: () => ({
+      membership: { active: true, plan: 'Standard', endDate: new Date(Date.now() + 86400000) },
+      kyc: { status: 'VERIFIED' },
+    }),
+    get: (field: string) => {
+      const data: any = {
+        membership: { active: true, plan: 'Standard', endDate: new Date(Date.now() + 86400000) },
+        kyc: { status: 'VERIFIED' },
+      };
+      return data[field];
+    },
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -78,6 +94,8 @@ describe('ListingsService', () => {
     mockAdd = jest.fn().mockResolvedValue({ id: 'new-listing-123' });
     mockGet = jest.fn();
     mockUpdate = jest.fn().mockResolvedValue({});
+    mockTxCreate = jest.fn();
+    mockTxUpdate = jest.fn();
 
     (admin.firestore as unknown as jest.Mock).mockReturnValue({
       collection: jest.fn(() => ({
@@ -96,6 +114,11 @@ describe('ListingsService', () => {
       FieldValue: {
         serverTimestamp: jest.fn(() => new Date()),
       },
+      runTransaction: jest.fn(async (callback) => callback({
+        get: jest.fn().mockResolvedValue(mockUserSnap),
+        create: mockTxCreate,
+        update: mockTxUpdate,
+      })),
     });
 
     const module: TestingModule = await Test.createTestingModule({
@@ -106,26 +129,9 @@ describe('ListingsService', () => {
   });
 
   describe('createListing', () => {
-    const mockUserSnap = {
-      exists: true,
-      id: 'user-123',
-      data: () => ({
-        membership: { active: true, plan: 'Standard', endDate: new Date(Date.now() + 86400000) },
-        kyc: { status: 'VERIFIED' },
-      }),
-      get: (field: string) => {
-        const data: any = {
-          membership: { active: true, plan: 'Standard', endDate: new Date(Date.now() + 86400000) },
-          kyc: { status: 'VERIFIED' },
-        };
-        return data[field];
-      },
-    };
-
     beforeEach(() => {
       (getUserDocument as jest.Mock).mockResolvedValue(mockUserSnap);
       (canCreateListing as jest.Mock).mockReturnValue({ allowed: true });
-      (incrementListingCount as jest.Mock).mockResolvedValue({});
       (findBannedKeywordInFields as jest.Mock).mockResolvedValue(null);
     });
 
@@ -164,27 +170,43 @@ describe('ListingsService', () => {
       await expect(service.createListing('user-123', {
         listing: {
           requestedKind: 'service',
-          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Tech' },
-          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Art' },
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
           location: 'Cairo, Egypt',
         },
       })).rejects.toThrow(ForbiddenException);
     });
 
-    it('should create listing and increment count on success', async () => {
+    it('should create listing and reserve its quota in one transaction', async () => {
       const result = await service.createListing('user-123', {
         listing: {
           title: 'Web Development',
           description: 'Professional web development services',
           requestedKind: 'service',
-          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Technology' },
-          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Creative' },
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
           location: 'Cairo, Egypt',
         },
       });
 
       expect(result).toEqual(expect.objectContaining({ id: 'new-listing-123' }));
-      expect(incrementListingCount).toHaveBeenCalledWith('user-123');
+      expect(mockTxCreate).toHaveBeenCalledTimes(1);
+      expect(mockTxUpdate).toHaveBeenCalledWith(expect.anything(), { 'membership.listingCount': 1 });
+    });
+
+    it('rechecks the quota inside the creation transaction', async () => {
+      (canCreateListing as jest.Mock)
+        .mockReturnValueOnce({ allowed: true })
+        .mockReturnValueOnce({ allowed: false, code: 'LISTING_LIMIT_REACHED', reason: 'Listing limit reached' });
+      await expect(service.createListing('user-123', {
+        listing: {
+          requestedKind: 'service',
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
+          location: 'Cairo, Egypt',
+        },
+      })).rejects.toMatchObject({ response: expect.objectContaining({ code: 'LISTING_LIMIT_REACHED' }) });
+      expect(mockTxCreate).not.toHaveBeenCalled();
     });
 
     it('should check content moderation for all relevant fields', async () => {
@@ -197,12 +219,12 @@ describe('ListingsService', () => {
           offeredService: {
             title: 'Web Development',
             description: 'Professional web development services',
-            category: 'Technology',
+            category: 'Web Development',
           },
           requestedService: {
             title: 'Graphic Design',
             description: 'Looking for graphic design help',
-            category: 'Creative',
+            category: 'Graphic Design',
           },
         },
       });
@@ -276,7 +298,7 @@ describe('ListingsService', () => {
         .rejects.toThrow(BadRequestException);
     });
 
-    it('should throw ForbiddenException when membership is inactive', async () => {
+    it('allows the owner to edit an active listing without paid membership', async () => {
       mockGet.mockResolvedValue({
         exists: true,
         data: () => ({
@@ -287,7 +309,7 @@ describe('ListingsService', () => {
       (isMembershipActive as jest.Mock).mockReturnValue(false);
 
       await expect(service.updateListing('user-123', 'listing-123', { title: 'Updated' }))
-        .rejects.toThrow(ForbiddenException);
+        .resolves.toEqual({ success: true });
     });
 
     it('should check banned keywords for update fields', async () => {

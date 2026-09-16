@@ -5,7 +5,8 @@
 
 export type SubscriptionPlan = 'Basic' | 'Standard' | 'Pro' | 'Business';
 
-export const PLAN_LISTING_LIMITS: Record<SubscriptionPlan, number> = {
+export const PLAN_LISTING_LIMITS: Record<SubscriptionPlan | 'Free', number> = {
+  Free: 1,
   Basic: 9,
   Standard: 12,
   Pro: Infinity,

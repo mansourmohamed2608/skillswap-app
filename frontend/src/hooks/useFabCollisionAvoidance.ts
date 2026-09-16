@@ -131,7 +131,7 @@ export function useFabCollisionAvoidance(enabled: boolean) {
         );
         lift = Math.min(lift, maxLift);
 
-        let fabRect = getFabScreenRect(viewportHeight, viewportWidthPx, baseBottom, lift, size, insetEnd);
+        const fabRect = getFabScreenRect(viewportHeight, viewportWidthPx, baseBottom, lift, size, insetEnd);
         let stillOverlaps = false;
         let minOverlapTop = viewportHeight;
 

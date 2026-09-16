@@ -3,7 +3,8 @@
 
 import { useEffect, useMemo, useRef, useState, FormEvent } from 'react';
 import Image from 'next/image';
-import { getServiceCategoryLabel, serviceCategories } from '@/services/serviceCategories';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,17 +16,16 @@ import { Loader2, PlusCircleIcon, AlertCircleIcon, RepeatIcon, UploadCloudIcon, 
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { ApiError, createListing, updateListing, recordAnalyticsEvent } from '@/services/api';
-import { db, storage } from '@/services/firebase';
+import { storage } from '@/services/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useMembership } from '@/hooks/useMembership';
 import { useTranslation } from 'react-i18next';
 import type { ServiceListing } from '@/types';
 import { getErrorMessage } from '@/lib/errors';
 import { findBannedKeywordInFields, hasLowQualityText } from '@/lib/moderation';
 import { isCoordinatePair } from '@/lib/location';
 import { getListingPath } from '@/lib/public-ids';
+import { validateListingImage } from '@/lib/listingImages';
 
 type NewListingFormProps = {
   initialListing?: ServiceListing | null;
@@ -55,13 +55,12 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const { toast } = useToast();
   const router = useRouter();
   const { t, i18n } = useTranslation();
-  const { active, loading: membershipLoading, membership } = useMembership();
+  const { categories } = useServiceCategories();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [existingImageUrl, setExistingImageUrl] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [customCategories, setCustomCategories] = useState<string[]>([]);
 
   // form fields
   const [offeredServiceTitle, setOfferedServiceTitle] = useState('');
@@ -83,41 +82,17 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const [locationHintTone, setLocationHintTone] = useState<'neutral' | 'warning' | 'success'>('neutral');
   const [offeredFile, setOfferedFile] = useState<File | null>(null);
   const [offeredFileName, setOfferedFileName] = useState('');
-  const isBusiness = membership?.plan === 'Business' && active;
   const autoLocationRequestedRef = useRef(false);
   const offeredFileInputRef = useRef<HTMLInputElement | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      if (!isBusiness || !user || !db) {
-        if (mounted) setCustomCategories([]);
-        return;
-      }
-      try {
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const data: any = snap.exists() ? snap.data() : {};
-        const raw = data?.businessProfile?.customCategories;
-        const next = Array.isArray(raw)
-          ? raw.map((item) => String(item || '').trim()).filter(Boolean)
-          : [];
-        if (mounted) setCustomCategories(next);
-      } catch {
-        if (mounted) setCustomCategories([]);
-      }
-    })();
-    return () => { mounted = false; };
-  }, [isBusiness, user]);
 
   const categoryOptions = useMemo(() => {
     const extras = [
       initialListing?.offeredService?.category,
       initialListing?.requestedService?.category,
-      ...customCategories,
     ].map((item) => String(item || '').trim()).filter(Boolean);
-    const combined = [...serviceCategories, ...extras];
+    const combined = [...categories.map((category) => category.label), ...extras];
     return Array.from(new Set(combined));
-  }, [customCategories, initialListing?.offeredService?.category, initialListing?.requestedService?.category]);
+  }, [categories, initialListing?.offeredService?.category, initialListing?.requestedService?.category]);
 
   const localizedCategoryOptions = useMemo(() => {
     return categoryOptions.map((value) => ({
@@ -169,6 +144,18 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      const validation = validateListingImage(file);
+      if (validation !== 'VALID') {
+        setMessage(validation === 'FILE_TOO_LARGE'
+          ? t('listings.form.imageTooLarge')
+          : t('listings.form.imageInvalidType'));
+        setOfferedFile(null);
+        setOfferedFileName('');
+        setImagePreview(existingImageUrl || null);
+        event.target.value = '';
+        return;
+      }
+      setMessage('');
       setOfferedFile(file);
       setOfferedFileName(file.name);
       const reader = new FileReader();
@@ -299,9 +286,6 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       setMessage(t('listings.form.signInRequired'));
       return;
     }
-    if (membershipLoading) return; // wait for membership state
-    // Redirect only when the user attempts the action and is not subscribed
-    if (active === false) { router.push('/pricing?alert=sub-required'); return; }
     if (!offeredServiceTitle.trim() || !offeredServiceCategory || !offeredServiceDescription.trim()) {
       setMessage(t('listings.form.completeOfferedDetails'));
       return;
@@ -426,7 +410,7 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
         toast({ title: t('listings.form.updatedTitle'), description: t('listings.form.updatedDescription') });
         router.push(getListingPath({ id: listingId, publicId: initialListing?.publicId, offeredService: listing.offeredService }));
       } else {
-        // Call backend endpoint which enforces membership and bypasses Firestore rules
+        // The backend authoritatively enforces KYC and the active-listing quota.
         const created = await createListing(listing);
         recordAnalyticsEvent('listing_created', { category: offeredServiceCategory, requestedKind });
         toast({ title: t('listings.form.successTitle'), description: t('listings.form.successDescription') });
@@ -454,14 +438,21 @@ export function NewListingForm({ initialListing, listingId }: NewListingFormProp
       }
     } catch (err: any) {
       if (err instanceof ApiError && err.status === 403) {
-        // Detect backend KYC requirement and redirect to verification flow
-        if (err.code === 'KYC_REQUIRED' || String(err.message || '').toLowerCase().includes('kyc')) {
+        if (err.code === 'KYC_REQUIRED') {
           const currentPath = (typeof window !== 'undefined') ? (window.location.pathname + window.location.search) : '/listings/new';
           try { localStorage.setItem('kyc:returnTo', currentPath); } catch {}
           router.push(`/kyc/verify?returnTo=${encodeURIComponent(currentPath)}`);
           return;
         }
-        router.push('/pricing?alert=sub-required');
+        if (err.code === 'KYC_FAILED') {
+          router.push('/profile/verify');
+          return;
+        }
+        if (err.code === 'KYC_PENDING' || err.code === 'LISTING_LIMIT_REACHED') {
+          setMessage(err.message);
+          return;
+        }
+        setMessage(err.message || t('listings.form.errorGeneric'));
         return;
       }
       if (err instanceof ApiError && (err.code === 'content/banned' || err.message === 'content/banned')) {

@@ -21,10 +21,28 @@ const FUNCTIONS_BASE = (getEnv('EXPO_PUBLIC_FUNCTIONS_BASE') as string)
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string;
+  field?: string;
+  keyword?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
+}
+
+export type ServiceCategoryDefinition = { id: string; label: string };
+
+export async function getServiceCategories(): Promise<ServiceCategoryDefinition[]> {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const response = await fetch(`${FUNCTIONS_BASE}/api/categories`);
+  if (!response.ok) throw await toApiError(response);
+  const payload = await response.json();
+  if (!Array.isArray(payload?.categories)) throw new Error('Invalid category response');
+  return payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
+    const category = item as ServiceCategoryDefinition;
+    return Boolean(category && typeof category.id === 'string' && typeof category.label === 'string');
+  });
 }
 
 const SAFE_MESSAGE_MAX = 140;
@@ -50,6 +68,9 @@ async function toApiError(res: Response, fallback?: string) {
     text = '';
   }
   let serverMessage = text.trim() || undefined;
+  let errorCode: string | undefined;
+  let errorField: string | undefined;
+  let errorKeyword: string | undefined;
   if (serverMessage && (serverMessage.startsWith('{') || serverMessage.startsWith('['))) {
     try {
       const data = JSON.parse(serverMessage);
@@ -62,13 +83,25 @@ async function toApiError(res: Response, fallback?: string) {
         const msg = (data as any).message ?? (data as any).error ?? (data as any).detail ?? (data as any).code;
         if (Array.isArray(msg)) serverMessage = msg.filter(Boolean).join(', ');
         else if (typeof msg === 'string') serverMessage = msg;
+        else if (msg && typeof msg === 'object') {
+          if (typeof (msg as any).message === 'string') serverMessage = (msg as any).message;
+          if (typeof (msg as any).code === 'string') errorCode = (msg as any).code;
+          if (typeof (msg as any).field === 'string') errorField = (msg as any).field;
+          if (typeof (msg as any).keyword === 'string') errorKeyword = (msg as any).keyword;
+        }
+        if (!errorCode && typeof (data as any).code === 'string') errorCode = (data as any).code;
+        if (!errorField && typeof (data as any).field === 'string') errorField = (data as any).field;
+        if (!errorKeyword && typeof (data as any).keyword === 'string') errorKeyword = (data as any).keyword;
       }
     } catch {
       // keep raw text
     }
   }
   const message = messageForStatus(res.status, serverMessage, fallback);
-  return new ApiError(res.status, message);
+  const error = new ApiError(res.status, message, errorCode);
+  if (errorField) error.field = errorField;
+  if (errorKeyword) error.keyword = errorKeyword;
+  return error;
 }
 
 async function authedFetch(path: string, init?: RequestInit) {
@@ -108,10 +141,6 @@ export async function createListing(listing: any) {
   const res = await authedFetch(`/api/listings/create`, {
     body: JSON.stringify({ userId: u.uid, listing })
   });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { id: string };
 }
@@ -152,11 +181,7 @@ export async function createServiceRequest(args: {
   if (args.proposedTime) body.proposedTime = args.proposedTime;
   if (args.message) body.message = args.message;
   const res = await authedFetch(`/api/requests`, { body: JSON.stringify(body) });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'Unable to send this request.');
   return (await res.json()) as { id: string };
 }
 
@@ -165,11 +190,7 @@ export async function rescheduleRequest(requestId: string, proposedTime: string 
   const res = await authedFetch(`/api/requests/${encodeURIComponent(requestId)}/reschedule`, {
     body: JSON.stringify({ proposedTime }),
   });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'Unable to reschedule this request.');
   return (await res.json()) as { success: boolean };
 }
 

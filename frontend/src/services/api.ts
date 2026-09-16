@@ -57,8 +57,8 @@ export async function toApiError(res: Response, fallback?: string) {
           const nestedMessage = (msg as any).message;
           const nestedField = (msg as any).field;
           const nestedKeyword = (msg as any).keyword;
-          if (typeof nestedCode === 'string') serverMessage = nestedCode;
-          else if (typeof nestedMessage === 'string') serverMessage = nestedMessage;
+          if (typeof nestedMessage === 'string') serverMessage = nestedMessage;
+          else if (typeof nestedCode === 'string') serverMessage = nestedCode;
           if (typeof nestedCode === 'string') errorCode = nestedCode;
           if (typeof nestedField === 'string') errorField = nestedField;
           if (typeof nestedKeyword === 'string') errorKeyword = nestedKeyword;
@@ -359,11 +359,7 @@ export async function createServiceRequest(args: {
   const res = await authedFetch(`/api/requests`, {
     body: JSON.stringify(body),
   });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'Unable to send this request.');
   return (await res.json()) as { id: string; publicId?: string };
 }
 
@@ -374,11 +370,7 @@ export async function rescheduleRequest(requestId: string, proposedTime: string 
   const res = await authedFetch(`/api/requests/${encodeURIComponent(requestId)}/reschedule`, {
     body: JSON.stringify({ proposedTime }),
   });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'Unable to reschedule this request.');
   return (await res.json()) as { success: boolean };
 }
 
@@ -388,11 +380,7 @@ export async function acceptRequest(requestId: string) {
   const res = await authedFetch(`/api/requests/${encodeURIComponent(requestId)}/accept`, {
     body: JSON.stringify({}),
   });
-  if (res.status === 403) {
-    const msg = await res.text();
-    throw new ApiError(403, messageForStatus(403, msg, 'Subscription required'));
-  }
-  if (!res.ok) throw await toApiError(res);
+  if (!res.ok) throw await toApiError(res, 'Unable to accept this request.');
   return (await res.json()) as { success: boolean };
 }
 

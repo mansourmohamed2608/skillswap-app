@@ -3,12 +3,15 @@ import * as admin from 'firebase-admin';
 import { isMembershipActive } from '../../core/membership';
 import { findBannedKeywordInFields } from '../../core/moderation-utils';
 import { geocodeAddress, readGeoPoint } from '../../core/geo';
+import { normalizeBusinessEmail } from '../../core/business-email';
 
 export class StatusError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
 }
 
@@ -23,6 +26,29 @@ export class UsersService {
     const normalized = raw.replace(/[^\d+]/g, '');
     if (normalized.startsWith('00')) return `+${normalized.slice(2)}`;
     return normalized;
+  }
+
+  private normalizeTeamMemberEmail(value: string): string {
+    const email = String(value || '').trim().toLowerCase();
+    if (email.length > 100) {
+      throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new StatusError(400, 'Each teamMembers entry must be a valid email address');
+    }
+    return email;
+  }
+
+  private requireBusinessEmail(value: unknown): string {
+    const email = normalizeBusinessEmail(value);
+    if (!email) {
+      throw new StatusError(
+        400,
+        'A business-domain email is required; consumer email providers are not accepted.',
+        'BUSINESS_EMAIL_REQUIRED',
+      );
+    }
+    return email;
   }
 
   private validateUsernameOrThrow(value: string): string {
@@ -172,6 +198,7 @@ export class UsersService {
         throw new StatusError(403, 'Business plan required to update business profile');
       }
       const bp = sanitized.businessProfile || {};
+      this.requireBusinessEmail((current as any).email);
       const cleaned: Record<string, any> = {};
       const name = String(bp.name || '').trim();
       const description = String(bp.description || '').trim();
@@ -198,10 +225,7 @@ export class UsersService {
         ? bp.teamMembers
             .map((item: any) => String(item || '').trim())
             .filter(Boolean)
-            .map((item: string) => {
-              if (item.length > 100) throw new StatusError(400, 'Each teamMembers entry must be 100 characters or fewer');
-              return item;
-            })
+            .map((item: string) => this.requireBusinessEmail(this.normalizeTeamMemberEmail(item)))
             .slice(0, 5)
         : [];
       if (teamMembers.length) cleaned.teamMembers = teamMembers;

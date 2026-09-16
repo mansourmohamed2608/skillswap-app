@@ -10,6 +10,9 @@ import { ShieldCheck, Loader2, Upload, CheckCircle, XCircle } from 'lucide-react
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/errors';
+import { auth } from '@/services/firebase';
+import { isAuthContextSyncing, shouldRedirectToSignIn } from '@/lib/auth-routing';
 
 
 export default function VerifyProfilePage() {
@@ -20,6 +23,8 @@ export default function VerifyProfilePage() {
   const [status, setStatus] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [loadingStatus, setLoadingStatus] = useState(true);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusReloadKey, setStatusReloadKey] = useState(0);
   const [frontFile, setFrontFile] = useState<File | null>(null);
   const [backFile, setBackFile] = useState<File | null>(null);
   const [frontPreview, setFrontPreview] = useState<string | null>(null);
@@ -32,22 +37,24 @@ export default function VerifyProfilePage() {
     : '';
 
   useEffect(() => {
-    if (!loading && !user) router.push('/auth/signin');
+    if (shouldRedirectToSignIn(loading, user?.uid, auth?.currentUser?.uid)) router.push('/auth/signin');
   }, [user, loading, router]);
 
   useEffect(() => {
     async function load() {
+      setLoadingStatus(true);
+      setStatusError(null);
       try {
         const s = await fetchKycStatus();
         setStatus(s.result || null);
-      } catch {
-        /* ignore */
+      } catch (error) {
+        setStatusError(getErrorMessage(error, t('profile.verify.errorBody')));
       } finally {
         setLoadingStatus(false);
       }
     }
     if (user) load();
-  }, [user]);
+  }, [statusReloadKey, t, user]);
 
 
 
@@ -148,7 +155,7 @@ export default function VerifyProfilePage() {
     }
   }
 
-  if (loadingStatus) {
+  if (loadingStatus || isAuthContextSyncing(loading, user?.uid, auth?.currentUser?.uid)) {
     return (
       <div className="max-w-2xl mx-auto py-8 flex justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -166,6 +173,20 @@ export default function VerifyProfilePage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          {statusError && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+              <p>{statusError}</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-3"
+                onClick={() => setStatusReloadKey((value) => value + 1)}
+              >
+                {t('common.retry', { defaultValue: 'Retry' })}
+              </Button>
+            </div>
+          )}
           {status && (
             <div className="rounded-lg border bg-muted/30 p-4">
               <div className="flex items-center gap-2 font-medium mb-2">
@@ -184,11 +205,6 @@ export default function VerifyProfilePage() {
               {status.verifiedName && (
                 <div className="text-sm text-muted-foreground">
                   {t('profile.verify.verifiedAs', { name: status.verifiedName })}
-                </div>
-              )}
-              {status.documentNumber && (
-                <div className="text-sm text-muted-foreground">
-                  {t('profile.verify.documentNumber', { number: status.documentNumber })}
                 </div>
               )}
             </div>

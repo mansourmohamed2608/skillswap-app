@@ -55,14 +55,17 @@ function KycDonePageContent() {
   useEffect(() => {
     if (!auth || !db) return;
 
+    let unsubKyc: (() => void) | null = null;
     const unsubAuth = onAuthStateChanged(auth, (user) => {
+      unsubKyc?.();
+      unsubKyc = null;
       setUid(user?.uid || null);
       if (!user || !db) {
         setLiveStatus("pending");
         return;
       }
       const kycRef = doc(db, "users", user.uid, "kyc", "status");
-      const unsubKyc = onSnapshot(
+      unsubKyc = onSnapshot(
         kycRef,
         (snap) => {
           const data = snap.data() as { status?: string } | undefined;
@@ -72,10 +75,10 @@ function KycDonePageContent() {
           setLiveStatus("pending");
         }
       );
-      return () => unsubKyc();
     });
     return () => {
       unsubAuth();
+      unsubKyc?.();
     };
   }, []);
 

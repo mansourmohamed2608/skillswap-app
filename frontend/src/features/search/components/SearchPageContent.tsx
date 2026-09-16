@@ -25,7 +25,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { getFeaturedWishes, getListingsWithUsers, getUserById } from '@/services/data';
 import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
-import { serviceCategories, getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { getListingPath } from '@/lib/public-ids';
 import { getPublicLocationLabel } from '@/lib/location';
 import type { LucideIcon } from 'lucide-react';
@@ -268,6 +269,7 @@ function WishCard({ wish, t }: { wish: WishSummary; t: ReturnType<typeof useTran
 }
 
 export function SearchPageContent() {
+  const { categories: serviceCategories } = useServiceCategories();
   const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -332,9 +334,9 @@ export function SearchPageContent() {
     }));
 
     const fromServices = serviceCategories.map((category) => ({
-      id: `svc-${category.toLowerCase().replace(/\s+/g, '-')}`,
-      name: category,
-      listingCategory: category,
+      id: `svc-${category.id}`,
+      name: category.label,
+      listingCategory: category.label,
     }));
 
     const unique = new Map<string, CategoryResult>();
@@ -344,7 +346,7 @@ export function SearchPageContent() {
     });
 
     return Array.from(unique.values());
-  }, []);
+  }, [serviceCategories]);
 
   const pageResults = useMemo(
     () => (query ? staticPageIndex.filter((page) => matchesQuery([page.title, page.description, ...page.keywords], query)) : []),

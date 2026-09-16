@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
 import { ServicesEmptyState } from '@/features/listings/components/ServicesEmptyState';
 import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
-import { serviceCategories, getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { getPublicLocationLabel } from '@/lib/location';
 import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
 import type { ServiceListing, User } from '@/types';
@@ -31,15 +32,6 @@ type FilterState = {
   radius: string;
   country: string;
 };
-
-const CATEGORY_OPTIONS = Array.from(
-  new Map(
-    [...marketplaceCategories.map((item) => item.name), ...serviceCategories].map((value) => [
-      String(value).trim().toLowerCase(),
-      String(value),
-    ])
-  ).values()
-);
 
 const CATEGORY_ALIASES: Record<string, string[]> = {
   programming: ['programming', 'web development'],
@@ -144,6 +136,14 @@ function categoryDisplayLabel(value: string, t: ReturnType<typeof useTranslation
 }
 
 export function ListingsPageContent({ initialItems }: { initialItems: ListingWithUser[] }) {
+  const { categories } = useServiceCategories();
+  const categoryOptions = useMemo(() => Array.from(
+    new Map(
+      [...marketplaceCategories.map((item) => item.name), ...categories.map((item) => item.label)].map((value) => [
+        String(value).trim().toLowerCase(), String(value),
+      ])
+    ).values()
+  ), [categories]);
   const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
@@ -261,12 +261,13 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const isPro = selectedPlan === 'pro';
 
   useEffect(() => {
+    let nextCountry: string | null = null;
     try {
       const stored = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
-      setUserCountry(stored || null);
-    } catch {
-      setUserCountry(null);
-    }
+      nextCountry = stored || null;
+    } catch {}
+    const frame = requestAnimationFrame(() => setUserCountry(nextCountry));
+    return () => cancelAnimationFrame(frame);
   }, [user?.uid]);
 
   return (
@@ -333,7 +334,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('services.allCategories')}</SelectItem>
-                    {CATEGORY_OPTIONS.map((category) => (
+                    {categoryOptions.map((category) => (
                       <SelectItem key={category} value={category}>
                         {getServiceCategoryLabel(category, t)}
                       </SelectItem>

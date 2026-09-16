@@ -10,7 +10,8 @@ import * as admin from 'firebase-admin';
 import axios from 'axios';
 import FormData from 'form-data';
 import { createHash, createHmac } from 'crypto';
-import { getKycStatus, clean } from '../../core/kyc';
+import { getKycStatus, clean, toPublicKycResult } from '../../core/kyc';
+import { DiditWebhookError, verifyDiditWebhook } from '../../core/didit-webhook';
 
 @Injectable()
 export class KycService {
@@ -38,6 +39,13 @@ export class KycService {
   async verifyIdDocument(uid: string, frontFile: Express.Multer.File, backFile: Express.Multer.File) {
     if (!uid) throw new UnauthorizedException('Authentication required');
 
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const statusRef = userRef.collection('kyc').doc('status');
+    const currentStatus = String((await statusRef.get()).data()?.status || '').toUpperCase();
+    if (currentStatus === 'VERIFIED') {
+      throw new BadRequestException({ code: 'kyc/already-verified' });
+    }
+
     const apiKey = process.env.DIDIT_API_KEY;
     const baseUrl = process.env.DIDIT_BASE_URL || 'https://verification.didit.me';
     const preferredCharacters = String(process.env.DIDIT_PREFERRED_CHARACTERS || 'non_latin').toLowerCase();
@@ -47,11 +55,18 @@ export class KycService {
     }
 
     // Set initial PENDING status
-    await admin.firestore().collection('users').doc(uid).collection('kyc').doc('status').set({
+    const pendingAt = new Date();
+    const pendingBatch = admin.firestore().batch();
+    pendingBatch.set(statusRef, {
       status: 'PENDING',
       provider: 'didit',
-      createdAt: new Date(),
+      createdAt: pendingAt,
+      updatedAt: pendingAt,
+    });
+    pendingBatch.set(userRef, {
+      kyc: { status: 'PENDING', provider: 'didit', updatedAt: pendingAt },
     }, { merge: true });
+    await pendingBatch.commit();
 
     try {
       // Prepare multipart form data
@@ -134,33 +149,23 @@ export class KycService {
         status,
         provider: 'didit',
         referenceId: data.id || verification.id || undefined,
-        documentType: verification.document_type,
-        documentNumber: rawDocumentNumber,
         documentNumberHash,
-        firstName: verification.first_name,
-        lastName: verification.last_name,
-        fullName: diditFullName || undefined,
-        birthDate: verification.birth_date,
-        expirationDate: verification.expiration_date,
-        verifiedName,
+        verifiedName: status === 'VERIFIED' ? verifiedName : undefined,
         updatedAt: new Date(),
       };
 
-      await admin.firestore().collection('users').doc(uid).collection('kyc').doc('status').set(
-        clean(kycData),
-        { merge: true }
-      );
-
-      // Also update user document with KYC status
-      await admin.firestore().collection('users').doc(uid).set({
+      const resultBatch = admin.firestore().batch();
+      resultBatch.set(statusRef, clean(kycData));
+      resultBatch.set(userRef, {
         kyc: {
           status,
           provider: 'didit',
           updatedAt: new Date(),
         },
       }, { merge: true });
+      await resultBatch.commit();
 
-      return kycData;
+      return toPublicKycResult(kycData);
     } catch (error: any) {
       this.logger.error(`[KYC] ID verification failed: ${error.response?.data || error.message}`);
 
@@ -176,10 +181,12 @@ export class KycService {
         updatedAt: new Date(),
       };
 
-      await admin.firestore().collection('users').doc(uid).collection('kyc').doc('status').set(
-        failedData,
-        { merge: true }
-      );
+      const failureBatch = admin.firestore().batch();
+      failureBatch.set(statusRef, failedData);
+      failureBatch.set(userRef, {
+        kyc: { status: 'FAILED', provider: 'didit', updatedAt: failedData.updatedAt },
+      }, { merge: true });
+      await failureBatch.commit();
 
       if (error instanceof HttpException) throw error;
       throw new HttpException(failedData.reason, error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR);
@@ -208,7 +215,7 @@ export class KycService {
         provider: 'dev',
         referenceId: 'dev-local',
         updatedAt: now,
-      }, { merge: true } as any);
+      });
       await admin.firestore().collection('users').doc(uid).set({
         kyc: { status: 'VERIFIED', provider: 'dev', updatedAt: now },
       }, { merge: true });
@@ -234,16 +241,61 @@ export class KycService {
     }
     const provider = String((statusSnap.data() as any)?.provider || 'didit');
     const now = new Date();
-    await statusRef.set({
+    const cancelBatch = admin.firestore().batch();
+    cancelBatch.set(statusRef, {
       status: 'CANCELLED',
       provider,
       updatedAt: now,
       cancelledAt: now,
-    }, { merge: true } as any);
-    await admin.firestore().collection('users').doc(uid).set({
+    });
+    cancelBatch.set(admin.firestore().collection('users').doc(uid), {
       kyc: { status: 'CANCELLED', provider, updatedAt: now },
     }, { merge: true } as any);
+    await cancelBatch.commit();
     return { ok: true, status: 'CANCELLED' };
+  }
+
+  async handleDiditWebhook(rawBody: Buffer, headers: Record<string, unknown>) {
+    const event = verifyDiditWebhook(rawBody, headers, process.env.DIDIT_WEBHOOK_SECRET);
+    const db = admin.firestore();
+    const referenceRef = db.collection('kycReferences').doc(event.sessionId);
+    const reference = await referenceRef.get();
+    const uid = String(reference.data()?.uid || '').trim();
+    if (!reference.exists || !uid) {
+      throw new DiditWebhookError(404, 'UNKNOWN_SESSION', 'Unknown KYC session');
+    }
+    if (event.vendorData && event.vendorData !== uid) {
+      throw new DiditWebhookError(403, 'SESSION_MISMATCH', 'KYC session correlation failed');
+    }
+
+    const eventRef = db.collection('kycWebhookEvents').doc(event.eventId);
+    const userRef = db.collection('users').doc(uid);
+    const statusRef = userRef.collection('kyc').doc('status');
+    const result = await db.runTransaction(async (transaction) => {
+      const previous = await transaction.get(eventRef);
+      if (previous.exists) return { accepted: true, duplicate: true };
+      const updatedAt = new Date();
+      transaction.create(eventRef, {
+        provider: 'didit',
+        eventId: event.eventId,
+        sessionId: event.sessionId,
+        status: event.status,
+        webhookType: event.webhookType || null,
+        receivedAt: updatedAt,
+      });
+      transaction.set(statusRef, {
+        status: event.status,
+        provider: 'didit',
+        referenceId: event.sessionId,
+        updatedAt,
+      });
+      transaction.set(userRef, {
+        kyc: { status: event.status, provider: 'didit', referenceId: event.sessionId, updatedAt },
+      }, { merge: true });
+      return { accepted: true, duplicate: false };
+    });
+    this.logger.log(`[KYC] Didit webhook accepted for session ${event.sessionId.slice(0, 8)}`);
+    return result;
   }
 
 

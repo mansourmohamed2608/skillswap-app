@@ -134,6 +134,7 @@ import { ChatService } from '../nest/chat/chat.service';
 import { ReviewsService } from '../nest/reviews/reviews.service';
 import { WishesService } from '../nest/wishes/wishes.service';
 import { UsersService, StatusError } from '../nest/users/users.service';
+import { RequestsService } from '../nest/requests/requests.service';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -313,6 +314,33 @@ describe('ChatService - message guards', () => {
     await expect(
       service.sendMessage(SENDER, { recipientId: RECIPIENT, text: longText }),
     ).rejects.toThrow(BadRequestException);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// RequestsService - ownership guards
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('RequestsService - request guards', () => {
+  let service: RequestsService;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    resetFirestoreChain();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [RequestsService],
+    }).compile();
+    service = module.get(RequestsService);
+  });
+
+  it('rejects requesting a listing owned by the requester', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(mockSnap({ userId: 'owner-uid' }));
+
+    await expect(
+      service.createRequest('owner-uid', { listingId: 'listing-1' }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'SELF_REQUEST_NOT_ALLOWED' }),
+    });
   });
 });
 
@@ -513,6 +541,11 @@ describe('UsersService - businessProfile input validation', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     resetFirestoreChain();
+    (isMembershipActive as jest.Mock).mockReturnValue(true);
+    mockFirestoreGet.mockResolvedValue(mockSnap({
+      email: 'owner@company.example',
+      membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) },
+    }));
     const module: TestingModule = await Test.createTestingModule({
       providers: [UsersService],
     }).compile();
@@ -529,6 +562,26 @@ describe('UsersService - businessProfile input validation', () => {
         businessProfile: { teamMembers: [longMember] },
       }),
     ).rejects.toThrow(StatusError);
+  });
+
+  it('rejects a teamMembers entry that is not an email address', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(
+      mockSnap({ email: 'owner@company.example', membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) } }),
+    );
+    await expect(
+      service.updateProfile('uid-1', {
+        businessProfile: { teamMembers: ['A team member name'] },
+      }),
+    ).rejects.toThrow('valid email address');
+  });
+
+  it('returns the stable business email code for a consumer owner address', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(mockSnap({
+      email: 'owner@gmail.com',
+      membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) },
+    }));
+    await expect(service.updateProfile('uid-1', { businessProfile: { name: 'Example Co' } }))
+      .rejects.toMatchObject({ status: 400, code: 'BUSINESS_EMAIL_REQUIRED' });
   });
 
   it('rejects a customCategories entry longer than 50 characters', async () => {

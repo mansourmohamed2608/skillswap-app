@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { cn } from '@/lib/cn';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/Card';
 import { useMessagesRTDB, conversationIdWith } from '@/services/chatRTDB';
@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { getUserById, getUserByIdentifier } from '@/services/data';
 
 export default function ChatThreadScreen() {
+  const router = useRouter();
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const { user } = useAuth();
   const { convId, otherUserId } = useMemo(() => {
@@ -70,6 +71,10 @@ export default function ChatThreadScreen() {
       await sendChatMessageMobile({ recipientId: resolvedRecipientId, text: text.trim() });
       setText('');
     } catch (e: any) {
+      if (e?.code === 'KYC_REQUIRED' || e?.code === 'KYC_FAILED') {
+        router.push('/profile/verify');
+        return;
+      }
       Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('errors.generic')));
     } finally {
       setSending(false);

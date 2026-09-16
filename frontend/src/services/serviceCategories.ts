@@ -1,30 +1,17 @@
-import type { ServiceCategory } from '@/types';
 import type { TFunction } from 'i18next';
 
-export const serviceCategories: ServiceCategory[] = [
-  'Graphic Design',
-  'Gardening',
-  'Web Development',
-  'Home Repair',
-  'Tech Support',
-  'Tutoring',
-  'Pet Care',
-  'Photography',
-  'Videography',
-  'Repair Services',
-  'Cooking',
-  'Writing',
-  'Music Lessons',
-  'Fitness Training',
-  'Event Planning',
-  'Consulting',
-  'Language Lessons',
-  'Arts & Crafts',
-  'Moving Help',
-  'Beauty Services',
-  'Personal Care',
-  'Transportation',
-];
+export type ServiceCategoryDefinition = { id: string; label: string };
+
+export async function fetchServiceCategories(url = '/api/categories'): Promise<ServiceCategoryDefinition[]> {
+  const response = await fetch(url, { cache: 'no-store' });
+  if (!response.ok) throw new Error('Unable to load service categories');
+  const payload = await response.json();
+  if (!Array.isArray(payload?.categories)) throw new Error('Invalid category response');
+  return payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
+    const value = item as ServiceCategoryDefinition;
+    return Boolean(value && typeof value.id === 'string' && typeof value.label === 'string');
+  });
+}
 
 function normalizeCategory(category: string): string {
   return category

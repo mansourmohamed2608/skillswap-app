@@ -4,9 +4,9 @@ import { toApiError, getFunctionsBase } from '@/services/api';
 
 export function getKycApiBase(): string {
   if (process.env.NEXT_PUBLIC_API_BASE) return process.env.NEXT_PUBLIC_API_BASE;
+  if (typeof window !== 'undefined') return '/api';
   const fnBase = getFunctionsBase();
-  // Never fall back to a relative '/api' path; that would hit Next.js routes, not the backend.
-  return fnBase ? `${fnBase}/api` : '';
+  return fnBase ? `${fnBase}/api` : '/api';
 }
 
 export async function fetchKycStatus(): Promise<any> {

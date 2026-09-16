@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { sendChatMessage } from "@/services/api";
+import { ApiError, sendChatMessage } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/context/AuthContext";
@@ -48,6 +48,14 @@ export function SendBar({ recipientId, disabled, onSent }: SendBarProps) {
       setText("");
       onSent?.();
     } catch (err: any) {
+      if (err instanceof ApiError && (err.code === 'KYC_REQUIRED' || err.code === 'KYC_FAILED')) {
+        router.push('/profile/verify');
+        return;
+      }
+      if (err instanceof ApiError && err.code === 'MEMBERSHIP_REQUIRED') {
+        router.push('/pricing?alert=sub-required');
+        return;
+      }
       toast({
         title: t('chat.detail.sendFailed'),
         description: getErrorMessage(err, t('chat.detail.sendFailed')),

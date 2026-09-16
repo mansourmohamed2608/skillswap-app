@@ -1,26 +1,28 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { cn } from '@/lib/cn';
 import { Avatar } from '@/components/ui/Avatar';
 import type { Notification } from '@/types';
-import { formatDistanceToNow } from 'date-fns';
+import { formatNotificationTime } from '@/lib/notifications';
 
 export interface NotificationListProps {
   notifications: Notification[];
 }
 
 export default function NotificationList({ notifications }: NotificationListProps) {
-  const [times, setTimes] = useState<Record<string, string>>({});
-
-  useEffect(() => {
+  const safeNotifications = useMemo(
+    () => Array.isArray(notifications) ? notifications : [],
+    [notifications],
+  );
+  const times = useMemo(() => {
     const t: Record<string, string> = {};
-    notifications.forEach((n) => {
-      t[n.id] = formatDistanceToNow(new Date(n.date), { addSuffix: true });
+    safeNotifications.forEach((n) => {
+      t[n.id] = formatNotificationTime(n.date, 'Recently');
     });
-    setTimes(t);
-  }, [notifications]);
+    return t;
+  }, [safeNotifications]);
 
-  if (!notifications || notifications.length === 0) {
+  if (safeNotifications.length === 0) {
     return (
       <View style={cn('items-center py-8')}>
         <Text style={cn('text-muted-foreground')}>No notifications yet</Text>
@@ -30,7 +32,7 @@ export default function NotificationList({ notifications }: NotificationListProp
 
   return (
     <View>
-      {notifications.map((n) => (
+      {safeNotifications.map((n) => (
         <View key={n.id} style={cn('flex-row items-center gap-3 py-3 border-b border-border')}>
           <Avatar size="md" fallback={(n.userId || 'N').slice(0,1).toUpperCase()} />
           <View style={{ flex: 1 }}>

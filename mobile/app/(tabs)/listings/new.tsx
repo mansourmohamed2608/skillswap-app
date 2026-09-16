@@ -1,15 +1,7 @@
   import { View, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
   import React, { useEffect, useRef, useState } from 'react';
   import { useRouter } from 'expo-router';
-  import { createListing } from '@/services/api';
-
-  const SERVICE_CATEGORIES = [
-    'Graphic Design', 'Gardening', 'Web Development', 'Home Repair',
-    'Tech Support', 'Tutoring', 'Pet Care', 'Photography', 'Videography',
-    'Repair Services', 'Cooking', 'Writing', 'Music Lessons', 'Fitness Training',
-    'Event Planning', 'Consulting', 'Language Lessons', 'Arts & Crafts',
-    'Moving Help', 'Beauty Services', 'Personal Care', 'Transportation',
-  ];
+  import { createListing, getServiceCategories, type ServiceCategoryDefinition } from '@/services/api';
   import { useAuth } from '@/context/AuthContext';
   import { useTranslation } from 'react-i18next';
   import * as ImagePicker from 'expo-image-picker';
@@ -21,6 +13,7 @@
   import { cn } from '@/lib/cn';
   import { getErrorMessage } from '@/lib/errors';
   import { findBannedKeywordInFields } from '@/lib/moderation';
+  import { listingImageExtension, validateListingImage } from '@/lib/listing-image';
 
   export default function NewListingScreen() {
     const { user } = useAuth();
@@ -40,7 +33,17 @@
     const [geo, setGeo] = useState<{ lat: number; lng: number } | undefined>(undefined);
     const [locating, setLocating] = useState(false);
     const [image, setImage] = useState<string | null>(null);
+    const [imageMimeType, setImageMimeType] = useState('image/jpeg');
+    const [serviceCategories, setServiceCategories] = useState<ServiceCategoryDefinition[]>([]);
     const autoLocationRequestedRef = useRef(false);
+
+    useEffect(() => {
+      let active = true;
+      getServiceCategories()
+        .then((categories) => { if (active) setServiceCategories(categories); })
+        .catch(() => { if (active) setServiceCategories([]); });
+      return () => { active = false; };
+    }, []);
 
     async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
       try {
@@ -78,6 +81,7 @@
           return;
         }
         if (!title.trim()) return Alert.alert(t('common.error') || 'Error', t('listings.validation.offerTitleRequired'));
+        if (!offeredCategory) return Alert.alert(t('common.error') || 'Error', t('listings.form.categoryPlaceholder'));
         if (!location.trim() && !geo) {
           return Alert.alert(t('common.error') || 'Error', t('listings.form.locationRequired'));
         }
@@ -100,9 +104,9 @@
         if (image && storage) {
           const resp = await fetch(image);
           const buf = await resp.arrayBuffer();
-          const key = `listing-images/${user.uid}/${Date.now()}.jpg`;
+          const key = `listing-images/${user.uid}/${Date.now()}.${listingImageExtension(imageMimeType)}`;
           const r = ref(storage, key);
-          await uploadBytes(r, new Uint8Array(buf), { contentType: 'image/jpeg' });
+          await uploadBytes(r, new Uint8Array(buf), { contentType: imageMimeType });
           imageUrl = await getDownloadURL(r);
         }
         let requestedServicePayload: { title: string; category: string; description: string };
@@ -136,7 +140,7 @@
           };
         }
         const res = await createListing({
-          offeredService: { title, category: offeredCategory.trim() || 'General', description, imageUrl },
+          offeredService: { title, category: offeredCategory, description, imageUrl },
           requestedService: requestedServicePayload,
           requestedKind,
           requestedProduct: requestedProductPayload,
@@ -149,6 +153,14 @@
           { text: t('common.ok') || 'OK', onPress: () => router.push('/listings') },
         ]);
       } catch (e: any) {
+        if (e?.code === 'KYC_REQUIRED') {
+          router.push('/profile/verify');
+          return;
+        }
+        if (e?.code === 'KYC_FAILED') {
+          router.push('/profile/verify');
+          return;
+        }
         Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('errors.generic')));
       }
     }
@@ -156,7 +168,21 @@
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) return;
       const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-      if (!res.canceled) setImage(res.assets[0].uri);
+      if (!res.canceled) {
+        const asset = res.assets[0];
+        const validation = validateListingImage(asset);
+        if (validation !== 'VALID') {
+          Alert.alert(
+            t('common.error') || 'Error',
+            validation === 'FILE_TOO_LARGE'
+              ? t('listings.image_too_large')
+              : t('listings.image_invalid_type'),
+          );
+          return;
+        }
+        setImageMimeType(asset.mimeType || 'image/jpeg');
+        setImage(asset.uri);
+      }
     }
 
     async function useCurrentLocation(options?: { auto?: boolean }) {
@@ -207,9 +233,9 @@
         <Input className="mb-3" value={title} onChangeText={setTitle} />
         <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.offer_category') || 'Offer category'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-          {SERVICE_CATEGORIES.map((cat) => (
+          {serviceCategories.map(({ id, label: cat }) => (
             <TouchableOpacity
-              key={cat}
+              key={id}
               onPress={() => setOfferedCategory(cat)}
               style={cn(`rounded-full border px-3 py-1 ${offeredCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
             >
@@ -237,9 +263,9 @@
             <Input className="mb-3" value={requestedTitle} onChangeText={setRequestedTitle} />
             <Text style={cn('mb-1 text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mb-3')} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-              {SERVICE_CATEGORIES.map((cat) => (
+              {serviceCategories.map(({ id, label: cat }) => (
                 <TouchableOpacity
-                  key={cat}
+                  key={id}
                   onPress={() => setRequestedCategory(cat)}
                   style={cn(`rounded-full border px-3 py-1 ${requestedCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
                 >

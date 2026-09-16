@@ -70,12 +70,14 @@ export class ChatService {
       try {
         userSnap = await getUserDocument(uid);
       } catch {
-        throw new ForbiddenException('Complete your profile to use chat');
+        throw new ForbiddenException({ code: 'PROFILE_REQUIRED', message: 'Complete your profile to use chat' });
       }
       this.ensureKycVerified(userSnap);
       const membership = userSnap.get('membership');
       const check = canSendMessage(membership);
-      if (!check.allowed) throw new ForbiddenException(check.reason || 'Messaging not allowed');
+      if (!check.allowed) {
+        throw new ForbiddenException({ code: check.code || 'FORBIDDEN', message: check.reason || 'Messaging not allowed' });
+      }
 
       const convId = conversationIdFor(uid, recipientId);
       const now = Date.now();
@@ -140,9 +142,14 @@ export class ChatService {
 
   private ensureKycVerified(userSnap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>) {
     const status = String(userSnap.get('kyc.status') || userSnap.get('kyc')?.status || '').toUpperCase();
-    if (status !== 'VERIFIED') {
-      throw new ForbiddenException('KYC verification required');
+    if (status === 'VERIFIED') return;
+    if (status === 'PENDING' || status === 'IN_REVIEW') {
+      throw new ForbiddenException({ code: 'KYC_PENDING', message: 'Identity verification is still under review' });
     }
+    if (status === 'FAILED' || status === 'DECLINED' || status === 'REJECTED' || status === 'CANCELLED') {
+      throw new ForbiddenException({ code: 'KYC_FAILED', message: 'Identity verification was unsuccessful; please resubmit' });
+    }
+    throw new ForbiddenException({ code: 'KYC_REQUIRED', message: 'Identity verification is required before messaging' });
   }
 
   // In-process TTL cache: avoids N+1 Firestore queries for repeated username lookups.
