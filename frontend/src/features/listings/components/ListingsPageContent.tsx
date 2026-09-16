@@ -261,12 +261,13 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const isPro = selectedPlan === 'pro';
 
   useEffect(() => {
+    let nextCountry: string | null = null;
     try {
       const stored = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
-      setUserCountry(stored || null);
-    } catch {
-      setUserCountry(null);
-    }
+      nextCountry = stored || null;
+    } catch {}
+    const frame = requestAnimationFrame(() => setUserCountry(nextCountry));
+    return () => cancelAnimationFrame(frame);
   }, [user?.uid]);
 
   return (

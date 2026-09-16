@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
+import { getCategoryBrowseAction } from '@/lib/home-cta';
 import {
   Code,
   Palette,
@@ -60,6 +61,7 @@ const CATEGORY_META = {
 } as const;
 
 export function ServiceCategories() {
+  const browseAction = getCategoryBrowseAction();
   const { t } = useTranslation();
   const mobileCategories = featuredMarketplaceCategories.slice(0, 6);
 
@@ -99,7 +101,7 @@ export function ServiceCategories() {
 
         <div className="pt-1">
           <Button size="sm" asChild className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href="/listings">{t('home.categories.viewAll', 'View All Categories')}</Link>
+            <Link href={browseAction.href}>{t(browseAction.translationKey, 'Browse All Listings')}</Link>
           </Button>
         </div>
       </div>
@@ -134,8 +136,8 @@ export function ServiceCategories() {
 
       <div className="text-center mt-8 hidden md:block">
         <Button size="lg" asChild className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-          <Link href="/listings">
-            {t('home.categories.viewAll', 'View All Categories')}
+          <Link href={browseAction.href}>
+            {t(browseAction.translationKey, 'Browse All Listings')}
           </Link>
         </Button>
       </div>
