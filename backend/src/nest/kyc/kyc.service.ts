@@ -11,6 +11,7 @@ import axios from 'axios';
 import FormData from 'form-data';
 import { createHash, createHmac } from 'crypto';
 import { getKycStatus, clean, toPublicKycResult } from '../../core/kyc';
+import { DiditWebhookError, verifyDiditWebhook } from '../../core/didit-webhook';
 
 @Injectable()
 export class KycService {
@@ -252,6 +253,49 @@ export class KycService {
     }, { merge: true } as any);
     await cancelBatch.commit();
     return { ok: true, status: 'CANCELLED' };
+  }
+
+  async handleDiditWebhook(rawBody: Buffer, headers: Record<string, unknown>) {
+    const event = verifyDiditWebhook(rawBody, headers, process.env.DIDIT_WEBHOOK_SECRET);
+    const db = admin.firestore();
+    const referenceRef = db.collection('kycReferences').doc(event.sessionId);
+    const reference = await referenceRef.get();
+    const uid = String(reference.data()?.uid || '').trim();
+    if (!reference.exists || !uid) {
+      throw new DiditWebhookError(404, 'UNKNOWN_SESSION', 'Unknown KYC session');
+    }
+    if (event.vendorData && event.vendorData !== uid) {
+      throw new DiditWebhookError(403, 'SESSION_MISMATCH', 'KYC session correlation failed');
+    }
+
+    const eventRef = db.collection('kycWebhookEvents').doc(event.eventId);
+    const userRef = db.collection('users').doc(uid);
+    const statusRef = userRef.collection('kyc').doc('status');
+    const result = await db.runTransaction(async (transaction) => {
+      const previous = await transaction.get(eventRef);
+      if (previous.exists) return { accepted: true, duplicate: true };
+      const updatedAt = new Date();
+      transaction.create(eventRef, {
+        provider: 'didit',
+        eventId: event.eventId,
+        sessionId: event.sessionId,
+        status: event.status,
+        webhookType: event.webhookType || null,
+        receivedAt: updatedAt,
+      });
+      transaction.set(statusRef, {
+        status: event.status,
+        provider: 'didit',
+        referenceId: event.sessionId,
+        updatedAt,
+      });
+      transaction.set(userRef, {
+        kyc: { status: event.status, provider: 'didit', referenceId: event.sessionId, updatedAt },
+      }, { merge: true });
+      return { accepted: true, duplicate: false };
+    });
+    this.logger.log(`[KYC] Didit webhook accepted for session ${event.sessionId.slice(0, 8)}`);
+    return result;
   }
 
 

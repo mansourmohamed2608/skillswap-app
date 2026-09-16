@@ -1,9 +1,10 @@
-import { BadRequestException, Body, Controller, Get, Logger, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, HttpException, Logger, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { Request } from 'express';
 import Busboy from 'busboy';
 import * as admin from 'firebase-admin';
 import { KycService } from './kyc.service';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
+import { DiditWebhookError } from '../../core/didit-webhook';
 
 const IS_EMULATOR = Boolean(process.env.FUNCTIONS_EMULATOR || process.env.FIREBASE_AUTH_EMULATOR_HOST || process.env.FIREBASE_EMULATOR_HUB);
 const ALLOWED_KYC_VENDORS = new Set(['didit', 'verified']);
@@ -153,6 +154,18 @@ export class KycController {
     const uid = (req as any)?.user?.uid || null;
     if (!uid) throw new UnauthorizedException('Authentication required');
     return this.kycService.cancel(uid);
+  }
+
+  @Post('webhook')
+  async webhook(@Req() req: Request & { rawBody?: Buffer }) {
+    try {
+      return await this.kycService.handleDiditWebhook(req.rawBody as Buffer, req.headers as Record<string, unknown>);
+    } catch (error) {
+      if (error instanceof DiditWebhookError) {
+        throw new HttpException({ code: error.code, message: error.message }, error.status);
+      }
+      throw error;
+    }
   }
 
   /**

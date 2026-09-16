@@ -37,7 +37,7 @@ describe('KYC Service', () => {
     // Set up Didit config
     process.env.DIDIT_API_KEY = 'test-api-key';
     process.env.DIDIT_WORKFLOW_ID = 'test-workflow-id';
-    process.env.DIDIT_CALLBACK_URL = 'https://example.com/kyc/webhook';
+    process.env.DIDIT_CALLBACK_URL = 'https://example.com/kyc/done';
     process.env.DIDIT_BASE_URL = 'https://verification.didit.me';
 
     mockSet = jest.fn().mockResolvedValue({});

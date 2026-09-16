@@ -97,7 +97,8 @@ export class DiditSessionController {
     const requestedLanguage = String(body?.language || process.env.DIDIT_SESSION_LANGUAGE || 'ar').trim();
     const language = requestedLanguage || 'ar';
     // APP_URL is a backend-only env var (e.g. https://skillswap-69yxi.web.app)
-    // DIDIT_CALLBACK_URL takes priority; fall back to APP_URL + /kyc/done
+    // This is the browser return URL, not the server-to-server webhook URL.
+    // Didit webhook destinations are configured separately in the Didit console.
     const callbackUrl = process.env.DIDIT_CALLBACK_URL ||
       (process.env.APP_URL ? `${process.env.APP_URL}/kyc/done` : undefined);
 
