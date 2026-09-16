@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { auth } from '@/services/firebase';
+import { isAuthContextSyncing, shouldRedirectToSignIn } from '@/lib/auth-routing';
 
 export default function NewListingPage() {
   const { user, loading } = useAuth();
@@ -17,14 +19,14 @@ export default function NewListingPage() {
   const { t } = useTranslation();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (shouldRedirectToSignIn(loading, user?.uid, auth?.currentUser?.uid)) {
       router.push('/auth/signin');
     }
   }, [user, loading, router]);
 
   // Do not proactively redirect for membership; redirect only when the user attempts the action in the form
   
-  if (loading) {
+  if (isAuthContextSyncing(loading, user?.uid, auth?.currentUser?.uid)) {
     return null; // Or a loading spinner
   }
 

@@ -17,7 +17,7 @@ import { RatingDisplay } from '@/components/RatingDisplay';
 import { getUserById, getListingsByUserId } from '@/services/data';
 import type { User, ServiceListing, Notification } from '@/types';
 import { NotificationList } from '@/features/profile/components/NotificationList';
-import { db } from '@/services/firebase';
+import { auth, db } from '@/services/firebase';
 import { collection, doc, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useMembership } from '@/hooks/useMembership';
 import { useTranslation } from 'react-i18next';
@@ -25,6 +25,9 @@ import { formatDate } from '@/lib/utils';
 import { fetchReviewsForUser, markNotificationsRead } from '@/services/api';
 import { getErrorMessage } from '@/lib/errors';
 import { cancelKyc } from '@/services/kyc';
+import { normalizeNotificationLink } from '@/lib/notifications';
+import { normalizeProfileTab, type ProfileTab, withProfileTab } from '@/lib/profile-tabs';
+import { shouldRedirectToSignIn } from '@/lib/auth-routing';
 
 function CurrentUserProfilePageContent() {
   const { user: authUser, loading: authLoading } = useAuth();
@@ -35,10 +38,10 @@ function CurrentUserProfilePageContent() {
   const [userProfile, setUserProfile] = useState<User | null>(null);
   const [userListings, setUserListings] = useState<ServiceListing[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsError, setNotificationsError] = useState<string | null>(null);
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('active-listings');
   const [kycStatus, setKycStatus] = useState<string>('PENDING');
   const [retryBusy, setRetryBusy] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
@@ -57,6 +60,7 @@ function CurrentUserProfilePageContent() {
     messageCount,
   } = useMembership();
   const businessProfile = userProfile?.businessProfile;
+  const activeTab = normalizeProfileTab(searchParams.get('tab'));
 
   const normalizeKycStatus = (raw?: string) => {
     const s = String(raw || '').toUpperCase();
@@ -67,27 +71,20 @@ function CurrentUserProfilePageContent() {
     return 'PENDING';
   };
 
-  useEffect(() => {
-    const nextTab = String(searchParams.get('tab') || '').trim();
-    if (['active-listings', 'past-exchanges', 'reviews', 'notifications'].includes(nextTab)) {
-      setActiveTab(nextTab);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const current = String(searchParams.get('tab') || '').trim();
-    if (activeTab === current || !pathname) return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.set('tab', activeTab);
-    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
-  }, [activeTab, pathname, router, searchParams]);
+  const handleTabChange = (nextTab: string) => {
+    if (!pathname) return;
+    const normalized = normalizeProfileTab(nextTab);
+    if (normalized === activeTab) return;
+    router.replace(`${pathname}?${withProfileTab(searchParams.toString(), normalized as ProfileTab)}`, { scroll: false });
+  };
 
   useEffect(() => {
     if (authLoading) return;
-    if (!authUser) {
+    if (shouldRedirectToSignIn(authLoading, authUser?.uid, auth?.currentUser?.uid)) {
       router.push('/auth/signin');
       return;
     }
+    if (!authUser) return;
 
     let mounted = true;
     let unsubscribe: (() => void) | undefined;
@@ -110,6 +107,7 @@ function CurrentUserProfilePageContent() {
             orderBy('date', 'desc')
           );
           unsubscribe = onSnapshot(qy, (snap) => {
+            setNotificationsError(null);
             const items = snap.docs.map((d) => {
               const data: any = d.data();
               let dateIso: string;
@@ -121,9 +119,21 @@ function CurrentUserProfilePageContent() {
                 else if (dt instanceof Date) dateIso = dt.toISOString();
                 else dateIso = new Date().toISOString();
               } catch { dateIso = new Date().toISOString(); }
-              return { id: d.id, type: data.type || 'system', content: data.content || '', date: dateIso, isRead: !!data.isRead, userId: data.userId, link: data.link } as any;
+              return {
+                id: d.id,
+                type: ['review', 'message', 'request', 'system'].includes(data.type) ? data.type : 'system',
+                content: typeof data.content === 'string' ? data.content : '',
+                date: dateIso,
+                isRead: !!data.isRead,
+                userId: typeof data.userId === 'string' ? data.userId : undefined,
+                link: normalizeNotificationLink(data.link),
+              } as Notification;
             });
             setNotifications(items);
+          }, () => {
+            if (!mounted) return;
+            setNotifications([]);
+            setNotificationsError(t('profile.notifications.loadFailed', { defaultValue: 'Notifications could not be loaded. Please try again.' }));
           });
         }
       } catch {
@@ -139,7 +149,7 @@ function CurrentUserProfilePageContent() {
       mounted = false;
       if (unsubscribe) unsubscribe();
     };
-  }, [authUser, authLoading, router]);
+  }, [authUser, authLoading, router, t]);
 
   useEffect(() => {
     if (!db || !authUser?.uid) return;
@@ -379,7 +389,7 @@ function CurrentUserProfilePageContent() {
         </Button>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid h-auto w-full grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <TabsTrigger value="active-listings" className="h-auto min-h-10 px-3 py-2 text-center leading-tight whitespace-normal">{t('profile.tabs.activeListings')} ({activeListings.length})</TabsTrigger>
           <TabsTrigger value="past-exchanges" className="h-auto min-h-10 px-3 py-2 text-center leading-tight whitespace-normal">{t('profile.tabs.pastExchanges')} ({pastExchanges.length})</TabsTrigger>
@@ -444,6 +454,11 @@ function CurrentUserProfilePageContent() {
         </TabsContent>
          <TabsContent value="notifications">
           <h2 className="text-2xl font-semibold mb-6 text-primary">{t('profile.yourNotifications')}</h2>
+          {notificationsError ? (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive" role="alert">
+              {notificationsError}
+            </div>
+          ) : null}
           <NotificationList notifications={notifications} />
         </TabsContent>
       </Tabs>
