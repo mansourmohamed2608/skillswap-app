@@ -86,6 +86,10 @@ declare global {
   }
 }
 
+function shouldUseEmulators(): boolean {
+  return ['true', '1'].includes(String(process.env.NEXT_PUBLIC_USE_EMULATORS || '').trim().toLowerCase());
+}
+
 /**
  * From a Studio preview host like:
  * 3000-<hash>.cloudworkstations.dev
@@ -104,6 +108,7 @@ function detectStudioBaseHost(): string | null {
 
 function connectEmulatorsIfNeeded() {
   if (process.env.NODE_ENV !== "development") return;
+  if (!shouldUseEmulators()) return;
   if (typeof window === "undefined") return;
   if (window.__EMULATORS_CONNECTED__) return;
   if (!auth || !db || !storage) return;
@@ -184,6 +189,7 @@ function connectEmulatorsForServer(): void {
   // Only run on the server in development mode.
   if (typeof window !== 'undefined') return;
   if (process.env.NODE_ENV !== 'development') return;
+  if (!shouldUseEmulators()) return;
   if (!auth || !db || !storage) return;
   // Prevent connecting more than once
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
