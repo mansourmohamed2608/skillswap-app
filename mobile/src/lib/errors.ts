@@ -1,7 +1,7 @@
 const SAFE_MESSAGE_MAX = 140;
 const UNSAFE_MESSAGE_RE = /(exception|stack|trace|firebase|at\s)/i;
 
-type ApiLikeError = { status: number; message: string };
+type ApiLikeError = { status: number; message: string; code?: string };
 type ErrorMessageOptions = {
   authMessages?: Record<string, string>;
   codeMessages?: Record<string, string>;
@@ -50,6 +50,9 @@ const DEFAULT_CODE_MESSAGES: Record<string, string> = {
   'storage/invalid-checksum': 'Upload failed. Please try again.',
   'storage/invalid-argument': 'Invalid file.',
   'storage/unknown': 'File upload failed.',
+  'listing_limit_reached': 'You have reached your active listing limit.',
+  'business_email_required': 'Use a business-domain email; consumer email providers are not accepted.',
+  'auth_required': 'Please sign in to continue.',
 };
 const DEFAULT_STATUS_MESSAGES: Record<string, string> = {
   '0': 'Network error. Check your connection and try again.',
@@ -179,6 +182,10 @@ export function getStatusMessage(
 export function getErrorMessage(error: unknown, fallback: string, options?: ErrorMessageOptions) {
   const merged = mergeOptions(options);
   if (isApiLikeError(error)) {
+    if (error.code) {
+      const mappedCode = resolveCodeMessage(error.code, merged);
+      if (mappedCode) return mappedCode;
+    }
     return error.message || fallback;
   }
 

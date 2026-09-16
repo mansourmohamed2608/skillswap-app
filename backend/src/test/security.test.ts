@@ -541,6 +541,11 @@ describe('UsersService - businessProfile input validation', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     resetFirestoreChain();
+    (isMembershipActive as jest.Mock).mockReturnValue(true);
+    mockFirestoreGet.mockResolvedValue(mockSnap({
+      email: 'owner@company.example',
+      membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) },
+    }));
     const module: TestingModule = await Test.createTestingModule({
       providers: [UsersService],
     }).compile();
@@ -561,13 +566,22 @@ describe('UsersService - businessProfile input validation', () => {
 
   it('rejects a teamMembers entry that is not an email address', async () => {
     mockFirestoreGet.mockResolvedValueOnce(
-      mockSnap({ membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) } }),
+      mockSnap({ email: 'owner@company.example', membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) } }),
     );
     await expect(
       service.updateProfile('uid-1', {
         businessProfile: { teamMembers: ['A team member name'] },
       }),
     ).rejects.toThrow('valid email address');
+  });
+
+  it('returns the stable business email code for a consumer owner address', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(mockSnap({
+      email: 'owner@gmail.com',
+      membership: { plan: 'Business', active: true, endDate: new Date(Date.now() + 60_000) },
+    }));
+    await expect(service.updateProfile('uid-1', { businessProfile: { name: 'Example Co' } }))
+      .rejects.toMatchObject({ status: 400, code: 'BUSINESS_EMAIL_REQUIRED' });
   });
 
   it('rejects a customCategories entry longer than 50 characters', async () => {
