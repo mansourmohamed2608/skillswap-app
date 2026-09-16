@@ -13,19 +13,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Required GitHub Secrets to configure:
-# =======================================
-# FIREBASE_SERVICE_ACCOUNT_BACKDUP_333CF - Service Account JSON (preferred)
-# FIREBASE_TOKEN              - Firebase CI token (firebase login:ci) — fallback
-# NEXT_PUBLIC_FIREBASE_API_KEY
-# NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-# NEXT_PUBLIC_FIREBASE_PROJECT_ID
-# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-# NEXT_PUBLIC_FIREBASE_APP_ID
-# NEXT_PUBLIC_FIREBASE_VAPID_KEY
-# NEXT_PUBLIC_FUNCTIONS_BASE
-# NEXT_PUBLIC_API_BASE        - (optional) API base URL
+# Pull-request checks use only the placeholders below and require no production
+# credentials. Deploy credentials are consulted only for a push to main.
 #
 # Backend secrets (set via Firebase Secrets Manager, not GitHub):
 # - ALGOLIA_APP_ID, ALGOLIA_API_KEY
@@ -160,6 +149,15 @@ jobs:
 
       - name: Run tests
         run: npm test
+
+      - name: Validate Expo dependency versions
+        run: npx expo install --check
+
+      - name: Validate Expo public config
+        run: npx expo config --type public --json > /dev/null
+
+      - name: Run Expo Doctor
+        run: npx --yes expo-doctor@1.20.4
 
   # ==========================================
   # Deploy to Firebase (only on main)
