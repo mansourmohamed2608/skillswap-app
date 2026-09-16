@@ -13,8 +13,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Pull-request checks use only the placeholders below and require no production
-# credentials. Deploy credentials are consulted only for a push to main.
+# CI checks use only the placeholders below and require no production credentials.
+# Production frontend deployment is handled by Firebase App Hosting's GitHub integration.
 #
 # Backend secrets (set via Firebase Secrets Manager, not GitHub):
 # - ALGOLIA_APP_ID, ALGOLIA_API_KEY
@@ -158,73 +158,3 @@ jobs:
 
       - name: Run Expo Doctor
         run: npx --yes expo-doctor@1.20.4
-
-  # ==========================================
-  # Deploy to Firebase (only on main)
-  # ==========================================
-  deploy:
-    name: Deploy to Firebase
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    env:
-      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-      FIREBASE_TOKEN_VALUE: ${{ secrets.FIREBASE_TOKEN }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      # Backend deployment
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-
-      - name: Build backend
-        working-directory: backend
-        run: npm run build
-
-      - name: Write Firebase service account key
-        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
-        shell: bash
-        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/firebase-sa.json"
-
-      - name: Deploy Functions (service account)
-        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON != '' }}
-        working-directory: backend
-        env:
-          FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
-        run: firebase deploy --only functions --project skillswap-69yxi
-
-      - name: Deploy Functions (token fallback)
-        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON == '' && env.FIREBASE_TOKEN_VALUE != '' }}
-        working-directory: backend
-        env:
-          FIREBASE_CONFIG: '{"projectId":"skillswap-69yxi"}'
-        run: firebase deploy --only functions --token "$FIREBASE_TOKEN_VALUE"
-
-      - name: Fail when deploy credentials are missing
-        if: ${{ env.FIREBASE_SERVICE_ACCOUNT_JSON == '' && env.FIREBASE_TOKEN_VALUE == '' }}
-        run: |
-          echo "Missing Firebase deploy credentials. Set FIREBASE_SERVICE_ACCOUNT_JSON (preferred) or FIREBASE_TOKEN." >&2
-          exit 1
-
-      # Frontend deployment (Firebase App Hosting handles this via GitHub integration)
-      # If using manual deployment:
-      # - name: Install frontend dependencies
-      #   working-directory: frontend
-      #   run: npm ci
-      # - name: Build frontend
-      #   working-directory: frontend
-      #   run: npm run build
-      # - name: Deploy Hosting
-      #   run: firebase deploy --only hosting --token "${{ secrets.FIREBASE_TOKEN }}"
