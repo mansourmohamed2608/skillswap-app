@@ -19,6 +19,8 @@ describe('mobile-nav', () => {
   });
 
   it('activates settings before profile for edit routes', () => {
+    expect(getActiveMobileNavTab('/settings')).toBe('settings');
+    expect(getActiveMobileNavTab('/settings/account')).toBe('settings');
     expect(getActiveMobileNavTab('/profile/edit')).toBe('settings');
     expect(getActiveMobileNavTab('/profile/edit/notifications')).toBe('settings');
     expect(getActiveMobileNavTab('/profile')).toBe('profile');
