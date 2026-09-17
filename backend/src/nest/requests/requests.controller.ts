@@ -3,11 +3,20 @@ import { Request } from 'express';
 import { RequestsService } from './requests.service';
 import { CreateRequestDto } from './dto/create-request.dto';
 import { RescheduleRequestDto } from './dto/reschedule-request.dto';
+import { ListingRequestStatesDto } from './dto/listing-request-states.dto';
 import { FirebaseAuthGuard } from '../common/firebase-auth.guard';
 
 @Controller('requests')
 export class RequestsController {
   constructor(private readonly requestsService: RequestsService) {}
+
+  @UseGuards(FirebaseAuthGuard)
+  @Post('listing-status')
+  async listingStatuses(@Body() body: ListingRequestStatesDto, @Req() req: Request) {
+    const uid = (req as any)?.user?.uid;
+    if (!uid) throw new BadRequestException('Authentication required');
+    return this.requestsService.getListingRequestStates(uid, body.listingIds);
+  }
 
   @UseGuards(FirebaseAuthGuard)
   @Post()
