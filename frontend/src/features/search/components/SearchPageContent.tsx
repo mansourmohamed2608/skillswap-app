@@ -29,6 +29,7 @@ import { getServiceCategoryLabel } from '@/services/serviceCategories';
 import { useServiceCategories } from '@/hooks/useServiceCategories';
 import { getListingPath } from '@/lib/public-ids';
 import { getPublicLocationLabel } from '@/lib/location';
+import { RequestExchangeButton } from '@/features/listings/components/RequestExchangeButton';
 import type { LucideIcon } from 'lucide-react';
 import type { ServiceListing, User as AppUser, WishSummary } from '@/types';
 
@@ -222,9 +223,12 @@ function ListingCard({ listing, user, t }: { listing: ServiceListing; user: AppU
           {user?.name && <p className="truncate">By {user.name}</p>}
         </div>
 
-        <Button asChild size="sm" className="h-9 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          <Link href={getListingPath(listing)}>View Details</Link>
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact className="h-9" />
+          <Button asChild size="sm" className="h-9 w-full bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link href={getListingPath(listing)}>View Details</Link>
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

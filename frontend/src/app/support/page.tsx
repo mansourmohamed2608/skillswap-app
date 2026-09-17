@@ -1,8 +1,6 @@
 'use client';
 
-import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { LifeBuoy } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -32,11 +30,6 @@ export default function SupportPage() {
               <p>{section.body}</p>
             </section>
           ))}
-          <div className="pt-2">
-            <Button asChild variant="outline">
-              <Link href="/chat">{doc.chatCta}</Link>
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

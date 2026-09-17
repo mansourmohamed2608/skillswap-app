@@ -12,6 +12,7 @@ import {
   Trash2 as Trash2Icon,
   MenuIcon,
   LogOut,
+  SettingsIcon,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
@@ -250,16 +251,24 @@ export function MoreDropdown() {
             </Button>
 
             {isAuthenticated && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="justify-start gap-2 w-full"
-                onClick={handleSignOut}
-                aria-label={t('header.logout', 'Logout')}
-              >
-                <LogOut className="h-4 w-4" />
-                {t('header.logout', 'Logout')}
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" className="justify-start gap-2 w-full" asChild>
+                  <Link href="/settings" onClick={() => setDropdownOpen(false)}>
+                    <SettingsIcon className="h-4 w-4" />
+                    {t('nav.mobile.settings', 'Settings')}
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="justify-start gap-2 w-full"
+                  onClick={handleSignOut}
+                  aria-label={t('header.logout', 'Logout')}
+                >
+                  <LogOut className="h-4 w-4" />
+                  {t('header.logout', 'Logout')}
+                </Button>
+              </>
             )}
           </div>
         </PopoverContent>

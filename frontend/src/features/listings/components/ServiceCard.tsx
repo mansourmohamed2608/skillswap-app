@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_LISTING_COVER, getListingCoverImage } from '@/lib/listingImages';
 import { ServiceVisual } from '@/components/listings/ServiceVisual';
+import { RequestExchangeButton } from './RequestExchangeButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -219,9 +220,12 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
         </CardContent>
 
         <CardFooter className="p-3.5 pt-0">
-          <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
-            <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
-          </Button>
+          <div className={isOwner ? 'w-full' : 'grid w-full grid-cols-2 gap-2'}>
+            {!isOwner ? <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact /> : null}
+            <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
+              <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
+            </Button>
+          </div>
         </CardFooter>
       </Card>
     );
@@ -350,11 +354,14 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
               {publicListingLocation && <span className="truncate text-xs">{publicListingLocation}</span>}
             </div>
           </div>
-          <Button asChild size="sm" className="mt-auto h-9 w-full bg-primary text-xs text-primary-foreground hover:bg-primary/90">
-            <Link href={getListingPath(listing)}>
-              {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-1 h-3 w-3" />
-            </Link>
-          </Button>
+          <div className={isOwner ? 'w-full' : 'grid w-full grid-cols-2 gap-2'}>
+            {!isOwner ? <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact /> : null}
+            <Button asChild size="sm" className="mt-auto h-10 w-full bg-primary text-xs text-primary-foreground hover:bg-primary/90">
+              <Link href={getListingPath(listing)}>
+                {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-1 h-3 w-3" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardFooter>
 
