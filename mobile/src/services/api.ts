@@ -45,6 +45,15 @@ export async function getServiceCategories(): Promise<ServiceCategoryDefinition[
   });
 }
 
+export async function fetchPublicListingsMobile(pageSize = 50): Promise<Record<string, unknown>[]> {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const size = Math.min(50, Math.max(1, Number(pageSize) || 50));
+  const response = await fetch(`${FUNCTIONS_BASE}/api/search/listings?pageSize=${size}`);
+  if (!response.ok) throw await toApiError(response, 'Unable to load listings.');
+  const payload = await response.json();
+  return Array.isArray(payload?.hits) ? payload.hits : [];
+}
+
 const SAFE_MESSAGE_MAX = 140;
 
 function isSafeServerMessage(message: string) {
@@ -130,6 +139,12 @@ async function authedFetch(path: string, init?: RequestInit) {
   let res = await doFetch(false);
   if (res.status === 401) res = await doFetch(true);
   return res;
+}
+
+export async function authedPost<T = unknown>(path: string, body?: unknown): Promise<T> {
+  const res = await authedFetch(path, { body: JSON.stringify(body) });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
 }
 
 export async function createListing(listing: any) {

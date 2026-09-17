@@ -4,16 +4,21 @@ import { Link } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import AppLogo from '@/components/ui/AppLogo';
-import { Menu } from 'lucide-react-native';
+import { Menu, MessagesSquare } from 'lucide-react-native';
 import MobileBurgerMenu from '@/components/layout/MobileBurgerMenu';
 import { BlurView } from 'expo-blur';
 
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { BLUR_INTENSITY_MIN, BLUR_INTENSITY_MAX, OVERLAY_OPACITY_BOTTOM, OVERLAY_OPACITY_TOP, SHADOW_OPACITY_MAX, ELEVATION_MAX } from './constants';
+import { useAuth } from '@/context/AuthContext';
+import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
 
 export default function MobileHeader() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const { user } = useAuth();
+  const conversations = useConversationsRTDB();
+  const unreadChats = getUnreadConversationCount(conversations, user?.uid);
   const { fade, setHeaderHeight } = useHeaderFade();
   const f = Math.min(1, Math.max(0, fade));
   // Match the original fade curve via shared constants
@@ -56,12 +61,26 @@ export default function MobileHeader() {
               <Text style={cn('text-xl font-bold text-foreground')}>{t('app_name')}</Text>
             </View>
           </Link>
-          {/* Glassy circular trigger without border */}
-          <View style={cn('rounded-full overflow-hidden')}>
-            <BlurView pointerEvents="none" intensity={28} tint="light" style={styles.blurCircle} />
-            <TouchableOpacity onPress={() => setOpen(true)} style={cn('p-2 rounded-full bg-background/30')} accessibilityRole="button" accessibilityLabel={t('nav.menu') || 'Menu'}>
-              <Menu size={22} color="#111" />
-            </TouchableOpacity>
+          <View style={cn('flex-row items-center gap-1')}>
+            {user ? (
+              <Link href="/chat" asChild>
+                <TouchableOpacity style={cn('relative p-2 rounded-full bg-background/30')} accessibilityRole="button" accessibilityLabel={t('header.chat') || 'Messages'}>
+                  <MessagesSquare size={21} color="#111" />
+                  {unreadChats > 0 ? (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>{unreadChats > 99 ? '99+' : unreadChats}</Text>
+                    </View>
+                  ) : null}
+                </TouchableOpacity>
+              </Link>
+            ) : null}
+            {/* Glassy circular trigger without border */}
+            <View style={cn('rounded-full overflow-hidden')}>
+              <BlurView pointerEvents="none" intensity={28} tint="light" style={styles.blurCircle} />
+              <TouchableOpacity onPress={() => setOpen(true)} style={cn('p-2 rounded-full bg-background/30')} accessibilityRole="button" accessibilityLabel={t('nav.menu') || 'Menu'}>
+                <Menu size={22} color="#111" />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </View>
@@ -75,4 +94,17 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     // Ensure the blur is clipped to the rounded container
   },
+  unreadBadge: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#d4642f',
+  },
+  unreadText: { color: '#fff', fontSize: 9, fontWeight: '700' },
 });
