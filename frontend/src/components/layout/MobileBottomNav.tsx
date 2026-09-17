@@ -23,7 +23,7 @@ const items: NavItem[] = [
   { tab: 'home', href: '/', labelKey: 'nav.mobile.home', fallback: 'Home', icon: HomeIcon, guestOk: true },
   { tab: 'ai', href: '/matchmaking', labelKey: 'nav.mobile.ai', fallback: 'AI', icon: SparklesIcon, guestOk: true },
   { tab: 'profile', href: '/profile', labelKey: 'nav.mobile.profile', fallback: 'Profile', icon: UserIcon, guestOk: false },
-  { tab: 'settings', href: '/profile/edit', labelKey: 'nav.mobile.settings', fallback: 'Settings', icon: SettingsIcon, guestOk: false },
+  { tab: 'settings', href: '/settings', labelKey: 'nav.mobile.settings', fallback: 'Settings', icon: SettingsIcon, guestOk: false },
 ];
 
 const springTransition = { type: 'spring' as const, stiffness: 420, damping: 34 };

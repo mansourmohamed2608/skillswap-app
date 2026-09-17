@@ -467,7 +467,7 @@ export default function EditProfilePage() {
                 </div>
               </div>
             )}
-            <div>
+            <div id="account-security" className="scroll-mt-24">
               <Label htmlFor="email">{t('profile.edit.emailLabel')}</Label>
               <Input
                 id="email"

@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, FlatList, ActivityIndicator, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import React, { useEffect, useState, useRef, Fragment } from 'react';
-import { Link, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { useMembership } from '@/hooks/useMembership';
@@ -26,6 +26,7 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const { active, plan, loading: membershipLoading, listingCount, listingLimit, bookingCount, bookingLimit, messageCount, messageLimit } = useMembership();
   const router = useRouter();
+  const { tab } = useLocalSearchParams<{ tab?: string }>();
   const [profile, setProfile] = useState<any | null>(null);
   const [listings, setListings] = useState<ServiceListing[]>([]);
   const [reviews, setReviews] = useState<Array<{ id: string; reviewerName?: string; rating: number; comment: string }>>([]);
@@ -37,6 +38,10 @@ export default function ProfileScreen() {
   const [activeProfileTab, setActiveProfileTab] = useState('profile');
   const notificationsMarkingRef = useRef(false);
   const { setFade } = useHeaderFade();
+
+  useEffect(() => {
+    if (tab === 'notifications') setActiveProfileTab('notifications');
+  }, [tab]);
 
   useEffect(() => {
     setFade(0);

@@ -10,6 +10,78 @@ import { createRequestPublicId } from '../../core/public-ids';
 export class RequestsService {
   private readonly logger = new Logger(RequestsService.name);
 
+  async getListingRequestStates(userId: string, rawListingIds: string[]) {
+    if (!userId) throw new UnauthorizedException('Authentication required');
+    const listingIds = Array.from(new Set(
+      (Array.isArray(rawListingIds) ? rawListingIds : [])
+        .map((id) => String(id || '').trim())
+        .filter(Boolean),
+    ));
+    if (!listingIds.length) throw new BadRequestException('At least one listingId is required');
+    if (listingIds.length > 100) throw new BadRequestException('A maximum of 100 listingIds is allowed');
+
+    const db = admin.firestore();
+    const states: Record<string, { state: 'none' | 'owner' | 'pending' | 'accepted'; requestId?: string; publicId?: string }> = {};
+    listingIds.forEach((listingId) => { states[listingId] = { state: 'none' }; });
+
+    // getAll keeps this to one Firestore RPC while still verifying listing ownership
+    // server-side; clients cannot declare themselves to be (or not be) the owner.
+    const listingRefs = listingIds.map((listingId) => db.collection('listings').doc(listingId));
+    const listingSnaps = await db.getAll(...listingRefs);
+    const requesterListingIds: string[] = [];
+    listingSnaps.forEach((listingSnap, index) => {
+      const listingId = listingIds[index];
+      if (!listingSnap?.exists) return;
+      const listingData = listingSnap.data() || {};
+      const ownerId = String((listingData as any).userId || (listingData as any).offeredByUserId || '');
+      if (ownerId === userId) states[listingId] = { state: 'owner' };
+      else requesterListingIds.push(listingId);
+    });
+
+    if (!requesterListingIds.length) return { states };
+
+    const guardRefs = requesterListingIds.map((listingId) => (
+      db.collection('activeRequestGuards').doc(this.activeRequestGuardId(listingId, userId))
+    ));
+    const guardSnaps = await db.getAll(...guardRefs);
+    const guardedByRequestId = new Map<string, string>();
+    guardSnaps.forEach((guardSnap, index) => {
+      if (!guardSnap?.exists || !(guardSnap.data() as any)?.active) return;
+      const requestId = String((guardSnap.data() as any)?.requestId || '');
+      if (requestId) guardedByRequestId.set(requestId, requesterListingIds[index]);
+    });
+
+    if (guardedByRequestId.size) {
+      const requestIds = Array.from(guardedByRequestId.keys());
+      const requestRefs = requestIds.map((requestId) => db.collection('requests').doc(requestId));
+      const requestSnaps = await db.getAll(...requestRefs);
+      requestSnaps.forEach((requestSnap, index) => {
+        const listingId = guardedByRequestId.get(requestIds[index]);
+        if (!listingId) return;
+        const active = this.activeRequestResult(requestSnap, listingId, userId);
+        if (active) states[listingId] = active;
+      });
+    }
+
+    const unresolved = new Set(requesterListingIds.filter((listingId) => states[listingId].state === 'none'));
+    if (unresolved.size) {
+      // Compatibility for requests created before activeRequestGuards existed. One
+      // caller-scoped query replaces a query per card and never returns other users' data.
+      const legacy = await db.collection('requests').where('requesterId', '==', userId).limit(500).get();
+      for (const requestSnap of legacy.docs) {
+        const listingId = String((requestSnap.data() as any)?.listingId || '');
+        if (!unresolved.has(listingId)) continue;
+        const active = this.activeRequestResult(requestSnap, listingId, userId);
+        if (active) {
+          states[listingId] = active;
+          unresolved.delete(listingId);
+        }
+      }
+    }
+
+    return { states };
+  }
+
   async createRequest(userId: string, params: { listingId: string; proposedTime?: string; message?: string }) {
     if (!userId) throw new UnauthorizedException('Authentication required');
     const { listingId, proposedTime, message } = params;
@@ -28,6 +100,9 @@ export class RequestsService {
     if (!ownerId) throw new ForbiddenException('Listing missing ownerId');
     if (ownerId === userId) {
       throw new BadRequestException({ code: 'SELF_REQUEST_NOT_ALLOWED', message: 'You cannot request your own listing' });
+    }
+    if (!this.isListingActive((listingData as any).status)) {
+      throw new BadRequestException({ code: 'VALIDATION_ERROR', message: 'Listing is no longer active' });
     }
 
     const userSnap = await getUserDocument(userId);
@@ -428,11 +503,32 @@ export class RequestsService {
 
   private isListingActive(status: string | undefined): boolean {
     const normalized = String(status || 'open').toLowerCase();
-    return !['closed', 'removed', 'fulfilled', 'inactive'].includes(normalized);
+    return !['closed', 'removed', 'fulfilled', 'inactive', 'archived', 'deleted', 'completed', 'cancelled'].includes(normalized);
   }
 
   private activeRequestGuardId(listingId: string, requesterId: string): string {
     return createHash('sha256').update(`${listingId}:${requesterId}`).digest('hex');
+  }
+
+  private activeRequestResult(
+    snap: FirebaseFirestore.DocumentSnapshot<FirebaseFirestore.DocumentData>,
+    listingId: string,
+    requesterId: string,
+  ) {
+    if (!snap.exists) return null;
+    const data = snap.data() || {};
+    if (String((data as any).listingId || '') !== listingId) return null;
+    if (String((data as any).requesterId || '') !== requesterId) return null;
+    const status = String((data as any).status || 'pending').toLowerCase();
+    if (status !== 'pending' && status !== 'accepted') return null;
+    const ownerId = String((data as any).ownerId || '');
+    const publicId = String((data as any).publicId || createRequestPublicId({
+      id: snap.id,
+      listingId,
+      ownerId,
+      requesterId,
+    }));
+    return { state: status as 'pending' | 'accepted', requestId: snap.id, publicId };
   }
 
   private parseProposedTime(value: string): Date {

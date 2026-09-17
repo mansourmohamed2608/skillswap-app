@@ -1,25 +1,18 @@
-/**
- * User-level Firestore operations (block/unblock).
- * These write directly to Firestore, mirroring the frontend services/users.ts.
- */
+/** User-level block mutations are validated and logged by the backend. */
 import { auth, db } from './firebase';
-import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
+import { authedPost } from './api';
 
 export async function blockUser(targetUid: string): Promise<void> {
   const u = auth?.currentUser;
   if (!u) throw new Error('Not signed in');
-  if (!db) throw new Error('Firestore not available');
-  await setDoc(doc(db, 'users', u.uid, 'blockedUsers', targetUid), {
-    targetUid,
-    blockedAt: new Date().toISOString(),
-  });
+  await authedPost('/api/user/block', { targetUid });
 }
 
 export async function unblockUser(targetUid: string): Promise<void> {
   const u = auth?.currentUser;
   if (!u) throw new Error('Not signed in');
-  if (!db) throw new Error('Firestore not available');
-  await deleteDoc(doc(db, 'users', u.uid, 'blockedUsers', targetUid));
+  await authedPost('/api/user/unblock', { targetUid });
 }
 
 export async function isUserBlocked(targetUid: string): Promise<boolean> {

@@ -21,12 +21,14 @@ const mockFirestoreUpdate = jest.fn();
 const mockFirestoreAdd = jest.fn();
 const mockFirestoreDoc = jest.fn();
 const mockFirestoreCollection = jest.fn();
+const mockFirestoreGetAll = jest.fn();
 const mockDbRef = jest.fn();
 const mockDbRefUpdate = jest.fn();
 const mockDbRefSet = jest.fn();
 const mockDbRefGet = jest.fn();
 const mockDbRefChild = jest.fn();
 const mockDbRefPush = jest.fn();
+const mockVerifyIdToken = jest.fn();
 
 jest.mock('firebase-admin', () => {
   const docChain = () => ({
@@ -58,11 +60,11 @@ jest.mock('firebase-admin', () => {
 
   return {
     firestore: Object.assign(
-      jest.fn(() => ({ collection: mockFirestoreCollection })),
+      jest.fn(() => ({ collection: mockFirestoreCollection, getAll: mockFirestoreGetAll })),
       { FieldValue: { serverTimestamp: jest.fn(() => new Date()), delete: jest.fn() } },
     ),
     database: jest.fn(() => ({ ref: mockDbRef })),
-    auth: jest.fn(() => ({ verifyIdToken: jest.fn() })),
+    auth: jest.fn(() => ({ verifyIdToken: mockVerifyIdToken })),
   };
 });
 
@@ -97,6 +99,7 @@ jest.mock('../core/moderation-utils', () => ({
 
 jest.mock('../core/public-ids', () => ({
   createWishPublicId: jest.fn().mockReturnValue('wish_ABC123'),
+  createRequestPublicId: jest.fn().mockReturnValue('booking_ABC123'),
 }));
 
 jest.mock('../core/notifications', () => ({
@@ -135,6 +138,7 @@ import { ReviewsService } from '../nest/reviews/reviews.service';
 import { WishesService } from '../nest/wishes/wishes.service';
 import { UsersService, StatusError } from '../nest/users/users.service';
 import { RequestsService } from '../nest/requests/requests.service';
+import { FirebaseAuthGuard } from '../nest/common/firebase-auth.guard';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -179,11 +183,33 @@ function resetFirestoreChain() {
     limit: jest.fn().mockReturnThis(),
     get: mockFirestoreGet,
   });
-  (admin.firestore as unknown as jest.Mock).mockReturnValue({ collection: jest.fn().mockReturnValue(colMock()) });
+  (admin.firestore as unknown as jest.Mock).mockReturnValue({
+    collection: jest.fn().mockReturnValue(colMock()),
+    getAll: mockFirestoreGetAll,
+  });
   // Default: every .get() returns a "not found" snapshot so tests that don't
   // set up specific mocks are deterministic.
   mockFirestoreGet.mockResolvedValue({ exists: false, id: 'doc-id', data: () => ({}), docs: [], empty: true });
 }
+
+describe('FirebaseAuthGuard - account restriction code', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    resetFirestoreChain();
+    mockVerifyIdToken.mockResolvedValue({ uid: 'restricted-user' });
+  });
+
+  it('preserves the restricted-account 403 and stable code after valid authentication', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(mockSnap({ accountStatus: 'suspended' }));
+    const request: any = { headers: { authorization: 'Bearer valid-token' } };
+    const context: any = { switchToHttp: () => ({ getRequest: () => request }) };
+
+    await expect(new FirebaseAuthGuard().canActivate(context)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'ACCOUNT_RESTRICTED' }),
+    });
+    expect(mockVerifyIdToken).toHaveBeenCalledWith('valid-token');
+  });
+});
 
 // ════════════════════════════════════════════════════════════════════════════
 // PaymentsService - plan / duration input validation
@@ -341,6 +367,90 @@ describe('RequestsService - request guards', () => {
     ).rejects.toMatchObject({
       response: expect.objectContaining({ code: 'SELF_REQUEST_NOT_ALLOWED' }),
     });
+  });
+
+  it('rejects requesting an inactive listing', async () => {
+    mockFirestoreGet.mockResolvedValueOnce(mockSnap({ userId: 'owner-uid', status: 'fulfilled' }));
+
+    await expect(
+      service.createRequest('requester-uid', { listingId: 'listing-1' }),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'VALIDATION_ERROR' }),
+    });
+  });
+
+  it('batches caller-scoped owner, guarded, and legacy request states', async () => {
+    mockFirestoreGetAll
+      .mockResolvedValueOnce([
+        mockSnap({ userId: 'requester-uid' }),
+        mockSnap({ userId: 'owner-uid' }),
+        mockSnap({ userId: 'legacy-owner' }),
+        mockSnap({ userId: 'unrelated-owner' }),
+        missingSnap(),
+      ])
+      .mockResolvedValueOnce([
+        mockSnap({ active: true, requestId: 'request-guarded' }),
+        missingSnap(),
+        mockSnap({ active: true, requestId: 'request-unrelated' }),
+      ])
+      .mockResolvedValueOnce([
+        {
+          ...mockSnap({
+            listingId: 'listing-guarded',
+            ownerId: 'owner-uid',
+            requesterId: 'requester-uid',
+            status: 'pending',
+            publicId: 'booking-guarded',
+          }),
+          id: 'request-guarded',
+        },
+        {
+          ...mockSnap({
+            listingId: 'listing-unrelated',
+            ownerId: 'unrelated-owner',
+            requesterId: 'another-requester',
+            status: 'accepted',
+            publicId: 'booking-unrelated',
+          }),
+          id: 'request-unrelated',
+        },
+      ]);
+    mockFirestoreGet.mockResolvedValueOnce({
+      docs: [{
+        ...mockSnap({
+          listingId: 'listing-legacy',
+          ownerId: 'legacy-owner',
+          requesterId: 'requester-uid',
+          status: 'accepted',
+          publicId: 'booking-legacy',
+        }),
+        id: 'request-legacy',
+      }],
+      empty: false,
+    });
+
+    await expect(service.getListingRequestStates('requester-uid', [
+      'listing-owned',
+      'listing-guarded',
+      'listing-legacy',
+      'listing-unrelated',
+      'listing-missing',
+    ])).resolves.toEqual({
+      states: {
+        'listing-owned': { state: 'owner' },
+        'listing-guarded': { state: 'pending', requestId: 'request-guarded', publicId: 'booking-guarded' },
+        'listing-legacy': { state: 'accepted', requestId: 'request-legacy', publicId: 'booking-legacy' },
+        'listing-unrelated': { state: 'none' },
+        'listing-missing': { state: 'none' },
+      },
+    });
+    expect(mockFirestoreGetAll).toHaveBeenCalledTimes(3);
+  });
+
+  it('rejects an oversized listing-status batch', async () => {
+    const listingIds = Array.from({ length: 101 }, (_, index) => `listing-${index}`);
+    await expect(service.getListingRequestStates('requester-uid', listingIds)).rejects.toThrow(BadRequestException);
+    expect(mockFirestoreGetAll).not.toHaveBeenCalled();
   });
 });
 

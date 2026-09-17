@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Alert, Modal, View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { Link } from 'expo-router';
-import { Home, List, Sparkles, Gem, LogIn, UserPlus, X, CalendarDays, MessageCircle, User, LifeBuoy, CalendarCheck } from 'lucide-react-native';
+import { Home, List, Sparkles, Gem, LogIn, UserPlus, X, CalendarDays, User, LifeBuoy, CalendarCheck, Settings } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/cn';
@@ -35,8 +35,8 @@ export default function MobileBurgerMenu({ open, onClose }: MobileBurgerMenuProp
   ];
   const privateNav = [
     { href: '/bookings', label: label('header.bookings', 'Bookings'), icon: CalendarDays },
-    { href: '/chat', label: label('header.chat', 'Open Chats'), icon: MessageCircle },
     { href: '/profile', label: label('header.profile', 'Profile'), icon: User },
+    { href: '/settings', label: label('nav.mobile.settings', 'Settings'), icon: Settings },
   ];
   const authNav = [
     { href: '/auth/signin', label: label('header.signIn', 'Sign In'), icon: LogIn },

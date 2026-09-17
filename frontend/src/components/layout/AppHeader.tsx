@@ -16,9 +16,9 @@ import {
   MenuIcon,
   HomeIcon,
   ListIcon,
-  UserIcon,
   SparklesIcon,
   MessageCircle,
+  MessagesSquareIcon,
   CalendarDays,
   BellIcon,
   Heart,
@@ -44,6 +44,7 @@ import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { usePathname } from 'next/navigation';
 import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
+import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
@@ -55,8 +56,6 @@ const primaryNavItems = [
 // Authenticated user items
 const privateNavItems = [
   { href: '/bookings', label: 'bookings', icon: CalendarDays },
-  { href: '/chat', label: 'chat', icon: MessageCircle },
-  { href: '/profile', label: 'profile', icon: UserIcon },
 ];
 
 // Unauthenticated user items
@@ -130,6 +129,8 @@ export function AppHeader() {
   const [notifications, setNotifications] = useState([] as any[]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+  const conversations = useConversationsRTDB();
+  const unreadChats = getUnreadConversationCount(conversations, user?.uid);
   const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
 
   const openNotifications = () => {
@@ -363,12 +364,14 @@ export function AppHeader() {
                         </span>
                       ) : null}
                     </Button>
-                    <Button variant="ghost" size="icon" asChild className="rounded-full" aria-label={t('header.profile')}>
-                      <Link href="/profile">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user?.photoURL || undefined} alt="" />
-                          <AvatarFallback className="text-xs">{(user?.displayName || 'U').slice(0, 1)}</AvatarFallback>
-                        </Avatar>
+                    <Button variant="ghost" size="icon" asChild className="relative" aria-label={t('chat.list.title', { defaultValue: 'Messages' })}>
+                      <Link href="/chat" title={t('chat.list.title', { defaultValue: 'Messages' })}>
+                        <MessagesSquareIcon className="h-4 w-4" aria-hidden="true" />
+                        {unreadChats > 0 ? (
+                          <span className="absolute -top-0.5 -end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#d4642f] px-1 text-[10px] font-bold text-white">
+                            {unreadChats > 99 ? '99+' : unreadChats}
+                          </span>
+                        ) : null}
                       </Link>
                     </Button>
                   </>

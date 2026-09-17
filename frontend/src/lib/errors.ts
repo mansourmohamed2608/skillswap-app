@@ -58,6 +58,9 @@ const DEFAULT_CODE_MESSAGES: Record<string, string> = {
   'listing_limit_reached': 'You have reached your active listing limit.',
   'business_email_required': 'Use a business-domain email; consumer email providers are not accepted.',
   'auth_required': 'Please sign in to continue.',
+  'account_restricted': 'This account is restricted and cannot perform that action.',
+  'duplicate_request': 'You already have an active request for this listing.',
+  'self_request_not_allowed': 'You cannot request your own listing.',
 };
 const DEFAULT_STATUS_MESSAGES: Record<string, string> = {
   '0': 'Network error. Check your connection and try again.',

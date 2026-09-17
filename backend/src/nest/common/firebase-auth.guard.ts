@@ -16,7 +16,7 @@ export class FirebaseAuthGuard implements CanActivate {
       const userSnap = await admin.firestore().collection('users').doc(decoded.uid).get();
       const status = (userSnap.data() as any)?.accountStatus || 'active';
       if (status !== 'active') {
-        throw new ForbiddenException('Account is not active');
+        throw new ForbiddenException({ code: 'ACCOUNT_RESTRICTED', message: 'Account is not active' });
       }
       return true;
     } catch (e) {

@@ -45,6 +45,15 @@ export async function getServiceCategories(): Promise<ServiceCategoryDefinition[
   });
 }
 
+export async function fetchPublicListingsMobile(pageSize = 50): Promise<Record<string, unknown>[]> {
+  if (!FUNCTIONS_BASE) throw new Error('Functions base URL is not configured.');
+  const size = Math.min(50, Math.max(1, Number(pageSize) || 50));
+  const response = await fetch(`${FUNCTIONS_BASE}/api/search/listings?pageSize=${size}`);
+  if (!response.ok) throw await toApiError(response, 'Unable to load listings.');
+  const payload = await response.json();
+  return Array.isArray(payload?.hits) ? payload.hits : [];
+}
+
 const SAFE_MESSAGE_MAX = 140;
 
 function isSafeServerMessage(message: string) {
@@ -132,6 +141,12 @@ async function authedFetch(path: string, init?: RequestInit) {
   return res;
 }
 
+export async function authedPost<T = unknown>(path: string, body?: unknown): Promise<T> {
+  const res = await authedFetch(path, { body: JSON.stringify(body) });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as T;
+}
+
 export async function createListing(listing: any) {
   if (!FUNCTIONS_BASE) {
     throw new Error('Functions base URL is not configured. Set EXPO_PUBLIC_FUNCTIONS_BASE or provide EXPO_PUBLIC_FIREBASE_PROJECT_ID for emulator default.');
@@ -143,6 +158,85 @@ export async function createListing(listing: any) {
   });
   if (!res.ok) throw await toApiError(res);
   return (await res.json()) as { id: string };
+}
+
+export type ListingRequestState = {
+  state: 'none' | 'owner' | 'pending' | 'accepted';
+  requestId?: string;
+  publicId?: string;
+};
+
+type PendingListingRequestState = {
+  resolve: (state: ListingRequestState) => void;
+  reject: (error: unknown) => void;
+};
+
+const pendingListingStates = new Map<string, Map<string, PendingListingRequestState[]>>();
+const scheduledListingStateUsers = new Set<string>();
+
+function normalizeListingRequestState(value: unknown): ListingRequestState {
+  const candidate = value as ListingRequestState | undefined;
+  if (!candidate || !['none', 'owner', 'pending', 'accepted'].includes(candidate.state)) return { state: 'none' };
+  return candidate;
+}
+
+async function flushListingRequestStates(userId: string) {
+  scheduledListingStateUsers.delete(userId);
+  const pending = pendingListingStates.get(userId);
+  pendingListingStates.delete(userId);
+  if (!pending?.size) return;
+
+  if (auth?.currentUser?.uid !== userId) {
+    const error = new ApiError(401, messageForStatus(401));
+    pending.forEach((waiters) => waiters.forEach(({ reject }) => reject(error)));
+    return;
+  }
+
+  const listingIds = Array.from(pending.keys());
+  try {
+    const mergedStates: Record<string, ListingRequestState> = {};
+    for (let index = 0; index < listingIds.length; index += 100) {
+      const chunk = listingIds.slice(index, index + 100);
+      const res = await authedFetch('/api/requests/listing-status', {
+        method: 'POST',
+        body: JSON.stringify({ listingIds: chunk }),
+      });
+      if (!res.ok) throw await toApiError(res, 'Unable to load request status.');
+      const payload = await res.json() as { states?: Record<string, ListingRequestState> };
+      chunk.forEach((listingId) => {
+        mergedStates[listingId] = normalizeListingRequestState(payload?.states?.[listingId]);
+      });
+    }
+    pending.forEach((waiters, listingId) => {
+      const state = mergedStates[listingId] || { state: 'none' as const };
+      waiters.forEach(({ resolve }) => resolve(state));
+    });
+  } catch (error) {
+    pending.forEach((waiters) => waiters.forEach(({ reject }) => reject(error)));
+  }
+}
+
+export function fetchListingRequestState(listingId: string): Promise<ListingRequestState> {
+  if (!FUNCTIONS_BASE) return Promise.reject(new Error('Functions base URL is not configured.'));
+  const userId = auth?.currentUser?.uid;
+  if (!userId) return Promise.reject(new ApiError(401, messageForStatus(401)));
+  const normalizedListingId = String(listingId || '').trim();
+  if (!normalizedListingId) return Promise.reject(new ApiError(400, 'Missing listingId'));
+
+  return new Promise((resolve, reject) => {
+    let pending = pendingListingStates.get(userId);
+    if (!pending) {
+      pending = new Map();
+      pendingListingStates.set(userId, pending);
+    }
+    const waiters = pending.get(normalizedListingId) || [];
+    waiters.push({ resolve, reject });
+    pending.set(normalizedListingId, waiters);
+    if (!scheduledListingStateUsers.has(userId)) {
+      scheduledListingStateUsers.add(userId);
+      void Promise.resolve().then(() => flushListingRequestStates(userId));
+    }
+  });
 }
 
 export async function createSubscriptionSession(args: {
@@ -182,7 +276,7 @@ export async function createServiceRequest(args: {
   if (args.message) body.message = args.message;
   const res = await authedFetch(`/api/requests`, { body: JSON.stringify(body) });
   if (!res.ok) throw await toApiError(res, 'Unable to send this request.');
-  return (await res.json()) as { id: string };
+  return (await res.json()) as { id: string; publicId?: string };
 }
 
 export async function rescheduleRequest(requestId: string, proposedTime: string | number | Date) {

@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
 import { computeFade } from '@/components/layout/constants';
-import { createReviewMobile, fetchReviewsForListingMobile, createServiceRequest, submitReportMobile } from '@/services/api';
+import { createReviewMobile, fetchReviewsForListingMobile, createServiceRequest, fetchListingRequestState, submitReportMobile, type ListingRequestState } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMembership } from '@/hooks/useMembership';
 import { getErrorMessage } from '@/lib/errors';
@@ -26,7 +26,7 @@ export default function ListingDetailsScreen() {
   const { user: authUser } = useAuth();
   const { active, canCreateBooking, loading: membershipLoading } = useMembership();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, request } = useLocalSearchParams<{ id: string; request?: string }>();
   const [listing, setListing] = useState<ServiceListing | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,6 +40,8 @@ export default function ListingDetailsScreen() {
   const [requestWhen, setRequestWhen] = useState('');
   const [requestMessage, setRequestMessage] = useState('');
   const [requestBusy, setRequestBusy] = useState(false);
+  const [requestState, setRequestState] = useState<ListingRequestState>({ state: 'none' });
+  const [resolvedRequestStateKey, setResolvedRequestStateKey] = useState('');
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState('');
   const [reportNote, setReportNote] = useState('');
@@ -47,6 +49,36 @@ export default function ListingDetailsScreen() {
   const { setFade } = useHeaderFade();
   const ownerId = listing?.offeredByUserId;
   const isOwner = !!authUser?.uid && ownerId === authUser.uid;
+  const requestStateKey = id && authUser?.uid ? `${id}:${authUser.uid}` : '';
+  const requestStateLoading = Boolean(requestStateKey && !isOwner && resolvedRequestStateKey !== requestStateKey);
+
+  useEffect(() => {
+    let mounted = true;
+    if (!id || !authUser?.uid || isOwner) {
+      setRequestState({ state: isOwner ? 'owner' : 'none' });
+      setResolvedRequestStateKey('');
+      return () => { mounted = false; };
+    }
+    const lookupKey = `${id}:${authUser.uid}`;
+    setResolvedRequestStateKey('');
+    fetchListingRequestState(id)
+      .then((next) => {
+        if (mounted) setRequestState(next);
+      })
+      .catch(() => {
+        if (mounted) setRequestState({ state: 'none' });
+      })
+      .finally(() => {
+        if (mounted) setResolvedRequestStateKey(lookupKey);
+      });
+    return () => { mounted = false; };
+  }, [authUser?.uid, id, isOwner]);
+
+  useEffect(() => {
+    if (request === '1' && listing && !isOwner && requestStateKey && resolvedRequestStateKey === requestStateKey && requestState.state === 'none') {
+      setRequestOpen(true);
+    }
+  }, [isOwner, listing, request, requestState.state, requestStateKey, resolvedRequestStateKey]);
 
   useEffect(() => {
     setFade(0);
@@ -98,7 +130,8 @@ export default function ListingDetailsScreen() {
     setRequestBusy(true);
     try {
       const proposedTime = requestWhen ? new Date(requestWhen).toISOString() : undefined;
-      await createServiceRequest({ listingId: listing.id, proposedTime, message: requestMessage.trim() || undefined });
+      const created = await createServiceRequest({ listingId: listing.id, proposedTime, message: requestMessage.trim() || undefined });
+      setRequestState({ state: 'pending', requestId: created.id, publicId: created.publicId });
       Alert.alert(t('common.success') || 'Success', t('requests.sent') || 'Request sent.');
       setRequestWhen('');
       setRequestMessage('');
@@ -107,6 +140,10 @@ export default function ListingDetailsScreen() {
       if (e?.code === 'KYC_REQUIRED' || e?.code === 'KYC_FAILED') {
         router.push('/profile/verify');
         return;
+      }
+      if (e?.code === 'DUPLICATE_REQUEST') {
+        setRequestState({ state: 'pending' });
+        setRequestOpen(false);
       }
       Alert.alert(t('common.error') || 'Error', getErrorMessage(e, t('requests.failed') || 'Failed to send request.'));
     } finally {
@@ -323,9 +360,25 @@ export default function ListingDetailsScreen() {
                   </Button>
                 </Link>
               )}
-              <Button variant="outline" size="lg" onPress={() => setRequestOpen((v) => !v)}>
+              <Button
+                variant="outline"
+                size="lg"
+                disabled={requestStateLoading}
+                onPress={() => {
+                  if (requestState.state === 'pending' || requestState.state === 'accepted') {
+                    const requestId = requestState.publicId || requestState.requestId;
+                    if (requestId) router.push(`/bookings/${requestId}` as any);
+                    return;
+                  }
+                  setRequestOpen((v) => !v);
+                }}
+              >
                 <Text style={cn('text-foreground font-medium')}>
-                  {t('listings.request_exchange') || 'Request Exchange'}
+                  {requestState.state === 'accepted'
+                    ? (t('listings.request_connected') || 'Connected')
+                    : requestState.state === 'pending'
+                      ? (t('listings.request_pending') || 'Request Pending')
+                      : (t('listings.request_exchange') || 'Request Exchange')}
                 </Text>
               </Button>
             </>

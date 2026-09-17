@@ -6,7 +6,6 @@ import { LanguageController } from '@/components/i18n/LanguageController';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav';
 import AppFooter from '@/components/layout/AppFooter';
-import FloatingChatButton from '@/components/layout/FloatingChatButton';
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from '@/context/AuthContext';
 import { KycGate } from '@/components/auth/KycGate';
@@ -71,7 +70,6 @@ export default function RootLayout({
               {children}
             </main>
             <MobileBottomNav />
-            <FloatingChatButton />
             <Toaster />
             <AppFooter />
           </KycGate>

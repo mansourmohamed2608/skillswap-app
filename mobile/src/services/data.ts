@@ -1,6 +1,7 @@
 import { db, isFirebaseConfigured } from './firebase';
 import { collection, getDocs, doc, getDoc, Timestamp, query, where, orderBy, limit } from 'firebase/firestore';
 import type { ServiceListing, User } from '@/types';
+import { fetchPublicListingsMobile } from './api';
 
 function docToServiceListing(d: any): ServiceListing {
   const data = d.data();
@@ -46,10 +47,26 @@ function docToServiceListing(d: any): ServiceListing {
 }
 
 export async function getListings(): Promise<ServiceListing[]> {
-  if (!isFirebaseConfigured() || !db) return [];
-  const col = collection(db, 'listings');
-  const snap = await getDocs(col);
-  return snap.docs.map(docToServiceListing);
+  try {
+    const hits = await fetchPublicListingsMobile(50);
+    return hits.map((hit: any) => docToServiceListing({
+      id: String(hit.objectID || hit.id || ''),
+      data: () => hit,
+    }));
+  } catch {
+    if (!isFirebaseConfigured() || !db) return [];
+    // Keep a local-emulator fallback. In deployed environments the public API
+    // avoids unfiltered collection reads that cannot satisfy the removed-item rule.
+    try {
+      const col = collection(db, 'listings');
+      const snap = await getDocs(col);
+      return snap.docs
+        .map(docToServiceListing)
+        .filter((listing) => !['closed', 'removed', 'fulfilled', 'inactive'].includes(String(listing.status || 'open').toLowerCase()));
+    } catch {
+      return [];
+    }
+  }
 }
 
 export async function getListingById(id: string): Promise<ServiceListing | null> {
@@ -62,19 +79,15 @@ export async function getListingById(id: string): Promise<ServiceListing | null>
 
 export async function getUserById(userId: string): Promise<User | null> {
   if (!isFirebaseConfigured() || !db) return null;
-  const ref = doc(db, 'users', userId);
+  // Private users/{uid} documents are owner-only. Public cards and profiles
+  // must use the server-maintained public projection instead.
+  const ref = doc(db, 'publicProfiles', userId);
   const d = await getDoc(ref);
   if (!d.exists()) return null;
   const data: any = d.data() || {};
   // Determine membership status and plan label
-  const m = data.membership;
   let planLabel = data.membership?.plan || 'Free';
-  let active = false;
-  try {
-    const endRaw = m?.endDate;
-    const end = endRaw instanceof Timestamp ? endRaw.toDate() : (endRaw ? new Date(endRaw) : null);
-    active = !!end && end.getTime() > Date.now();
-  } catch {}
+  const active = data.membershipActive === true;
   return {
     id: d.id,
     name: data.name || data.fullName || 'Anonymous User',
