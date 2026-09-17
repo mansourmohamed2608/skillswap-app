@@ -111,18 +111,18 @@ Regression test: backend self-request and inactive-listing rejection; owner stat
 Invariant evidence: before the creation-time check, backend and frontend search excluded `closed`, `removed`, `fulfilled`, and `inactive` listings; active-listing counters used the same terminal concept; request acceptance rejected `removed`, `fulfilled`, or `closed`; completing an exchange moved its listing to `fulfilled`; and UI/profile views treated only open/pending-exchange listings as active. Rejecting a new request for a terminal listing therefore restores an existing lifecycle invariant rather than creating a new membership or KYC rule.
 Notes: UI checks are not relied on for authorization.
 
-### AUD-020 — Settings navigation opened Edit Profile directly
+### AUD-020 — Settings navigation and row hierarchy were incomplete
 
-Issue: The responsive Settings tab was only an alias for `/profile/edit`.
+Issue: The responsive Settings tab was only an alias for `/profile/edit`; after the hub was introduced, its rows rendered icons and chevrons without visible text because the referenced translations were missing.
 Severity: P2
-Status: PARTIAL
-Root cause: no settings landing route existed, so account preferences, membership, KYC, notification feed, and security entry points were conflated with public-profile editing.
+Status: FIXED
+Root cause: no settings landing route originally existed, so account preferences, membership, KYC, notification feed, and security entry points were conflated with public-profile editing. The later hub referenced a top-level `settings.*` namespace that did not exist, while the missing-key handler returned an empty string.
 Backend affected: NO
 Desktop Web affected: YES
 Responsive Web affected: YES
 Native Mobile affected: YES
-Fix: added authenticated web/native Settings hubs containing only existing destinations: language, Edit Profile, notification feed, membership, KYC, account/security, and the existing informational support/contact routes. The misleading web Support-to-peer-chat CTA was removed because no support-chat service exists. The responsive bottom Settings tab now routes to `/settings`; desktop More and native burger navigation expose the same hub. No fake notification-preference toggles were added because the repository has a notification feed but no preference model/API.
-Regression test: mobile-nav route selection covers `/settings`, nested settings, Edit Profile, and Profile precedence.
+Fix: added authenticated web/native Settings hubs containing only existing destinations: language, Edit Profile, notification feed, membership, KYC, account/security, and the existing informational support/contact routes. The misleading web Support-to-peer-chat CTA was removed because no support-chat service exists. The responsive bottom Settings tab now routes to `/settings`; desktop More and native burger navigation expose the same hub. No fake notification-preference toggles were added because the repository has a notification feed but no preference model/API. The web hub now has explicit English/Arabic labels and descriptions, a compact language row, consistent touch targets, and RTL-aware chevrons while preserving every route.
+Regression test: mobile-nav route selection covers `/settings`, nested settings, Edit Profile, and Profile precedence. The Settings page test asserts all seven visible labels, descriptions, exact destinations, and English-to-Arabic switching.
 
 ### AUD-021 — responsive header duplicated Profile navigation
 
@@ -427,7 +427,7 @@ No backup commit was merged, rebased, or cherry-picked.
 |---|---|---|
 | Frontend | `npm run lint -- --quiet` + final changed-test lint | PASS — 0 errors |
 | Frontend | `npm run typecheck` | PASS |
-| Frontend | `npm test` | PASS — 18 files, 164 tests |
+| Frontend | `npm test` | PASS — 19 files, 166 tests |
 | Frontend | `npm run build` | PASS — Next.js 16.3.5, including `/settings` and the request proxy |
 | Backend | `npm run lint -- --quiet` | PASS — 0 errors |
 | Backend | `npm run typecheck` | PASS |
@@ -440,6 +440,7 @@ No backup commit was merged, rebased, or cherry-picked.
 | Firebase | `npx --yes firebase-tools emulators:exec --only firestore --project skillswap-69yxi 'cmd /c exit 0'` | BLOCKED — Firebase CLI 15.30.1 resolved, but Firestore emulator could not start because `java` is absent (`spawn java ENOENT`) |
 | Git | `git diff --check` | PASS — line-ending notices only |
 | Browser | Playwright Chromium `/listings` at 390x844, 430x932, and 1440x900 | PASS for public layout/no overflow; local Functions emulator was unavailable, so cards/authenticated flows were not populated |
+| Browser | Playwright Chromium authenticated `/settings` at 390x844, 430x932, and 1440x900 in English and Arabic | PASS — all labels visible, LTR/RTL direction correct, no horizontal overflow |
 | GitHub Actions | PR run `35116403594` | PASS — Backend, Frontend, and Mobile jobs; deploy skipped on PR |
 
 ## 17. Build results
@@ -447,7 +448,7 @@ No backup commit was merged, rebased, or cherry-picked.
 - Backend: PASS (`tsc` production build).
 - Frontend: PASS (Next.js 16.3.5 production build).
 - Native: no store/device build script exists; TypeScript, Expo dependency compatibility, and public-config generation pass.
-- Browser viewport runs (390x844, 430x932, 1440x900): public `/listings` layout PASS with no visible horizontal overflow, clipped controls, bottom-nav overlap, or FAB. Authenticated header/settings and populated request cards remain NOT VERIFIED because no test account/fixture was available and local configuration targeted an unavailable Functions emulator on port 5001.
+- Browser viewport runs (390x844, 430x932, 1440x900): public `/listings` layout PASS with no visible horizontal overflow, clipped controls, bottom-nav overlap, or FAB. Authenticated `/settings` PASS in English/LTR and Arabic/RTL using a disposable local Auth emulator account; all labels were visible and no horizontal overflow was detected. Other authenticated flows and populated request cards remain NOT VERIFIED because the configured Functions emulator was unavailable.
 
 ## 18. Remaining external integration dependencies
 
@@ -457,7 +458,7 @@ No backup commit was merged, rebased, or cherry-picked.
 - Exercise Didit success/failure/cancel/webhook flows with provider credentials.
 - Configure and test the deployed Didit webhook destination and Secret Manager injection.
 - Exercise production Realtime Database chat/presence on a native device/EAS build.
-- Run responsive/desktop authenticated browser smoke tests against a configured environment.
+- Run responsive/desktop authenticated browser smoke tests for flows other than the now-verified Settings hub against a configured environment.
 - Re-run populated listing-card/request-state smoke tests with the backend/Firebase environment available; the local viewport run received `ECONNREFUSED` from the configured Functions emulator.
 
 ## 19. Remaining product-owner decisions
@@ -488,7 +489,7 @@ No product decision remains for the three final-pass items. Future category-list
 | Matchmaking | PARTIAL | PARTIAL | PARTIAL | PARTIAL | inspected; runtime not verified |
 | Chat | FIXED | FIXED | FIXED | FIXED | persistent Messages navigation and unread logic pass; RTDB/device runtime pending |
 | Notifications | FIXED | FIXED | FIXED | FIXED | authenticated runtime pending |
-| Settings | NOT APPLICABLE | FIXED | FIXED | FIXED | hubs/routes compile; authenticated runtime/device pending |
+| Settings | NOT APPLICABLE | FIXED | FIXED | FIXED | web labels/routes/English/Arabic verified at mobile and desktop viewports; native device pending |
 | Reviews | FIXED | PARTIAL | PARTIAL | PARTIAL | inspected; runtime not verified |
 | Business Accounts | FIXED | FIXED | FIXED | FIXED | domain policy static checks pass; live profile/storage pending |
 | CI | PARTIAL | NOT APPLICABLE | NOT APPLICABLE | PASS | validation jobs pass, but this branch still contains the redundant Firebase deploy job; its removal exists only on `main` in `af2f031` and must be reconciled before merge |
