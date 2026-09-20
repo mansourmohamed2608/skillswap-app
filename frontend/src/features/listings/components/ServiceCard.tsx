@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_LISTING_COVER, getListingCoverImage } from '@/lib/listingImages';
 import { ServiceVisual } from '@/components/listings/ServiceVisual';
-import { RequestExchangeButton } from './RequestExchangeButton';
+import { MessageListingButton } from './MessageListingButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -221,7 +221,14 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
 
         <CardFooter className="p-3.5 pt-0">
           <div className={isOwner ? 'w-full' : 'grid w-full grid-cols-2 gap-2'}>
-            {!isOwner ? <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact /> : null}
+            {!isOwner ? (
+              <MessageListingButton
+                listingId={listing.id}
+                ownerId={listing.offeredByUserId}
+                ownerName={ownerName}
+                compact
+              />
+            ) : null}
             <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
               <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
             </Button>
@@ -355,7 +362,14 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
             </div>
           </div>
           <div className={isOwner ? 'w-full' : 'grid w-full grid-cols-2 gap-2'}>
-            {!isOwner ? <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact /> : null}
+            {!isOwner ? (
+              <MessageListingButton
+                listingId={listing.id}
+                ownerId={listing.offeredByUserId}
+                ownerName={ownerName}
+                compact
+              />
+            ) : null}
             <Button asChild size="sm" className="mt-auto h-10 w-full bg-primary text-xs text-primary-foreground hover:bg-primary/90">
               <Link href={getListingPath(listing)}>
                 {t('listings.card.viewDetails')} <ArrowRightIcon className="ml-1 h-3 w-3" />

@@ -29,17 +29,22 @@ export function isMembershipActive(membership: any): boolean {
   return end.getTime() > Date.now();
 }
 
-export type ListingEligibilityCode = 'LISTING_LIMIT_REACHED';
+export type ListingEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'LISTING_LIMIT_REACHED';
 export type UsageEligibilityCode = 'MEMBERSHIP_REQUIRED' | 'BOOKING_LIMIT_REACHED' | 'MESSAGE_LIMIT_REACHED';
 
 export function canCreateListing(
   membership: any,
   activeListingCount?: number,
 ): { allowed: boolean; code?: ListingEligibilityCode; reason?: string } {
-  const paidPlan = isMembershipActive(membership) && membership?.plan in PLAN_LISTING_LIMITS
-    ? membership.plan as SubscriptionPlan
-    : null;
-  const plan: SubscriptionPlan | 'Free' = paidPlan || 'Free';
+  const plan = membership?.plan as SubscriptionPlan | undefined;
+  const qualifyingPlan = Boolean(plan && plan !== ('Free' as SubscriptionPlan) && plan in PLAN_LISTING_LIMITS);
+  if (membership?.active !== true || !isMembershipActive(membership) || !qualifyingPlan || !plan) {
+    return {
+      allowed: false,
+      code: 'MEMBERSHIP_REQUIRED',
+      reason: 'An active paid subscription is required to publish a new listing.',
+    };
+  }
   const currentCount: number = activeListingCount ?? membership?.listingCount ?? 0;
   const limit = PLAN_LISTING_LIMITS[plan];
   if (limit !== Infinity && currentCount >= limit) {
@@ -53,7 +58,7 @@ export function canCreateListing(
 }
 
 export function canCreateBooking(membership: any): { allowed: boolean; code?: UsageEligibilityCode; reason?: string } {
-  if (!isMembershipActive(membership)) {
+  if (membership?.active !== true || !isMembershipActive(membership) || !(membership?.plan in PLAN_BOOKING_LIMITS)) {
     return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
   }
   const plan: SubscriptionPlan = membership.plan;
@@ -66,7 +71,7 @@ export function canCreateBooking(membership: any): { allowed: boolean; code?: Us
 }
 
 export function canSendMessage(membership: any): { allowed: boolean; code?: UsageEligibilityCode; reason?: string } {
-  if (!isMembershipActive(membership)) {
+  if (membership?.active !== true || !isMembershipActive(membership) || !(membership?.plan in PLAN_MESSAGE_LIMITS)) {
     return { allowed: false, code: 'MEMBERSHIP_REQUIRED', reason: 'Membership is inactive or expired.' };
   }
   const plan: SubscriptionPlan = membership.plan;

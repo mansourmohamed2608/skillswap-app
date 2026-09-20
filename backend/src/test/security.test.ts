@@ -250,6 +250,18 @@ describe('PaymentsService - input validation', () => {
     ).rejects.toThrow(BadRequestException);
   });
 
+  it('rejects the legacy Free label as a checkout plan', async () => {
+    await expect(
+      service.createSubscriptionSession('uid-123', 'Free', '3_months'),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('rejects an unsupported checkout currency', async () => {
+    await expect(
+      service.createSubscriptionSession('uid-123', 'Basic', '3_months', 'USD'),
+    ).rejects.toThrow(BadRequestException);
+  });
+
   it('accepts valid plan + duration before reaching KYC check', async () => {
     (getUserDocument as jest.Mock).mockResolvedValueOnce(
       mockSnap({ kyc: { status: 'VERIFIED' } }),
@@ -257,6 +269,8 @@ describe('PaymentsService - input validation', () => {
     (createGeideaSession as jest.Mock).mockResolvedValueOnce({
       paymentUrl: 'https://example.com/pay',
       sessionId: 'sess_1',
+      amount: 750,
+      currency: 'EGP',
     });
     (savePaymentRecord as jest.Mock).mockResolvedValueOnce(undefined);
     mockFirestoreAdd.mockResolvedValueOnce({ id: 'payment-doc' });

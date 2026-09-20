@@ -87,6 +87,7 @@ describe('Membership Service', () => {
       it('should allow listing when under limit', () => {
         const membership = {
           plan: 'Basic',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 5,
         };
@@ -97,6 +98,7 @@ describe('Membership Service', () => {
       it('should block listing at limit (9)', () => {
         const membership = {
           plan: 'Basic',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 9,
         };
@@ -110,6 +112,7 @@ describe('Membership Service', () => {
       it('should block listing over limit', () => {
         const membership = {
           plan: 'Basic',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 15,
         };
@@ -122,6 +125,7 @@ describe('Membership Service', () => {
       it('should allow listing when under limit', () => {
         const membership = {
           plan: 'Standard',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 10,
         };
@@ -132,6 +136,7 @@ describe('Membership Service', () => {
       it('should block listing at limit (12)', () => {
         const membership = {
           plan: 'Standard',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 12,
         };
@@ -145,6 +150,7 @@ describe('Membership Service', () => {
       it('should allow unlimited listings', () => {
         const membership = {
           plan: 'Pro',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 100,
         };
@@ -155,6 +161,7 @@ describe('Membership Service', () => {
       it('should allow listings with very high count', () => {
         const membership = {
           plan: 'Pro',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 10000,
         };
@@ -167,6 +174,7 @@ describe('Membership Service', () => {
       it('should allow unlimited listings', () => {
         const membership = {
           plan: 'Business',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
           listingCount: 500,
         };
@@ -175,26 +183,32 @@ describe('Membership Service', () => {
       });
     });
 
-    describe('Free plan fallback', () => {
-      it('should allow one listing when membership is expired', () => {
+    describe('subscribed-only publication policy', () => {
+      it('blocks listing publication when membership is expired', () => {
         const membership = {
           plan: 'Pro',
+          active: true,
           endDate: new Date(Date.now() - 86400000), // Expired
           listingCount: 0,
         };
         const result = canCreateListing(membership);
-        expect(result.allowed).toBe(true);
+        expect(result.allowed).toBe(false);
+        expect(result.code).toBe('MEMBERSHIP_REQUIRED');
       });
 
-      it('should block a second active listing without membership', () => {
+      it('blocks even a first listing without membership', () => {
         const result = canCreateListing(null, 1);
         expect(result.allowed).toBe(false);
-        expect(result.code).toBe('LISTING_LIMIT_REACHED');
-        expect(result.reason).toContain('Free');
+        expect(result.code).toBe('MEMBERSHIP_REQUIRED');
       });
 
       it('uses the authoritative active-listing count instead of a stale counter', () => {
-        expect(canCreateListing({ listingCount: 8 }, 0).allowed).toBe(true);
+        expect(canCreateListing({ plan: 'Basic', active: true, endDate: new Date(Date.now() + 86400000), listingCount: 9 }, 0).allowed).toBe(true);
+      });
+
+      it('blocks malformed and pending memberships', () => {
+        expect(canCreateListing({ plan: 'Unknown', active: true, endDate: new Date(Date.now() + 86400000) }).code).toBe('MEMBERSHIP_REQUIRED');
+        expect(canCreateListing({ plan: 'Basic', active: false, endDate: new Date(Date.now() + 86400000) }).code).toBe('MEMBERSHIP_REQUIRED');
       });
     });
 
@@ -202,6 +216,7 @@ describe('Membership Service', () => {
       it('should default listingCount to 0 when not provided', () => {
         const membership = {
           plan: 'Basic',
+          active: true,
           endDate: new Date(Date.now() + 86400000),
         };
         const result = canCreateListing(membership);
@@ -214,6 +229,7 @@ describe('Membership Service', () => {
     it('should enforce Basic plan booking limit of 9', () => {
       const membership = {
         plan: 'Basic',
+        active: true,
         endDate: new Date(Date.now() + 86400000),
         bookingCount: 9,
       };
@@ -226,6 +242,7 @@ describe('Membership Service', () => {
     it('should allow unlimited bookings for Pro plan', () => {
       const membership = {
         plan: 'Pro',
+        active: true,
         endDate: new Date(Date.now() + 86400000),
         bookingCount: 1000,
       };
@@ -236,6 +253,7 @@ describe('Membership Service', () => {
     it('should block booking when membership expired', () => {
       const membership = {
         plan: 'Pro',
+        active: true,
         endDate: new Date(Date.now() - 86400000),
         bookingCount: 0,
       };
@@ -249,6 +267,7 @@ describe('Membership Service', () => {
     it('should enforce Basic plan message limit of 9', () => {
       const membership = {
         plan: 'Basic',
+        active: true,
         endDate: new Date(Date.now() + 86400000),
         messageCount: 9,
       };
@@ -261,6 +280,7 @@ describe('Membership Service', () => {
     it('should enforce Standard plan message limit of 12', () => {
       const membership = {
         plan: 'Standard',
+        active: true,
         endDate: new Date(Date.now() + 86400000),
         messageCount: 12,
       };
@@ -271,6 +291,7 @@ describe('Membership Service', () => {
     it('should allow unlimited messages for Business plan', () => {
       const membership = {
         plan: 'Business',
+        active: true,
         endDate: new Date(Date.now() + 86400000),
         messageCount: 5000,
       };

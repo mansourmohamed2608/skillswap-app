@@ -7,17 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ShieldCheck, Loader2, Upload, CheckCircle, XCircle } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errors';
 import { auth } from '@/services/firebase';
 import { isAuthContextSyncing, shouldRedirectToSignIn } from '@/lib/auth-routing';
+import { safeReturnPath } from '@/lib/safe-return-path';
 
 
 export default function VerifyProfilePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const intendedDestination = safeReturnPath(searchParams.get('next'), '/profile');
   const { t } = useTranslation();
   const { toast } = useToast();
   const [status, setStatus] = useState<any>(null);
@@ -39,6 +42,16 @@ export default function VerifyProfilePage() {
   useEffect(() => {
     if (shouldRedirectToSignIn(loading, user?.uid, auth?.currentUser?.uid)) router.push('/auth/signin');
   }, [user, loading, router]);
+
+  useEffect(() => {
+    try { localStorage.setItem('kyc:returnTo', intendedDestination); } catch {}
+  }, [intendedDestination]);
+
+  useEffect(() => {
+    if (statusCode !== 'VERIFIED') return;
+    const timer = window.setTimeout(() => router.replace(intendedDestination), 500);
+    return () => window.clearTimeout(timer);
+  }, [intendedDestination, router, statusCode]);
 
   useEffect(() => {
     async function load() {
@@ -308,7 +321,7 @@ export default function VerifyProfilePage() {
           {statusCode === 'IN_REVIEW' && (
             <div className="text-center space-y-3">
               <p className="text-amber-600">{t('profile.verify.inReviewLongBody')}</p>
-              <Button onClick={() => router.push('/profile')} variant="outline">
+              <Button onClick={() => router.push(intendedDestination)} variant="outline">
                 {t('profile.verify.backToProfile')}
               </Button>
             </div>

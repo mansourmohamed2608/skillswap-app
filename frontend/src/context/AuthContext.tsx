@@ -13,8 +13,8 @@ type AuthCtx = {
   user: User | null; 
   loading: boolean; 
   error?: string;
-  selectedPlan?: 'free' | 'basic' | 'pro' | 'business';
-  setSelectedPlan?: (plan: 'free' | 'basic' | 'pro' | 'business') => void;
+  selectedPlan?: 'free' | 'basic' | 'standard' | 'pro' | 'business';
+  setSelectedPlan?: (plan: 'free' | 'basic' | 'standard' | 'pro' | 'business') => void;
 };
 const Ctx = createContext<AuthCtx>({ user: null, loading: true });
 
@@ -22,11 +22,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>();
-  const [selectedPlan, setSelectedPlanState] = useState<'free' | 'basic' | 'pro' | 'business' | undefined>(() => {
+  const [selectedPlan, setSelectedPlanState] = useState<'free' | 'basic' | 'standard' | 'pro' | 'business' | undefined>(() => {
     if (typeof window === 'undefined') return undefined;
     const storedPlan = localStorage.getItem('selectedPlan');
-    return storedPlan && ['free', 'basic', 'pro', 'business'].includes(storedPlan)
-      ? (storedPlan as 'free' | 'basic' | 'pro' | 'business')
+    return storedPlan && ['free', 'basic', 'standard', 'pro', 'business'].includes(storedPlan)
+      ? (storedPlan as 'free' | 'basic' | 'standard' | 'pro' | 'business')
       : undefined;
   });
   const prevUidRef = useRef<string | null>(null);
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user?.uid]);
 
-  const handleSetSelectedPlan = (plan: 'free' | 'basic' | 'pro' | 'business') => {
+  const handleSetSelectedPlan = (plan: 'free' | 'basic' | 'standard' | 'pro' | 'business') => {
     setSelectedPlanState(plan);
     if (typeof window !== 'undefined') {
       localStorage.setItem('selectedPlan', plan);

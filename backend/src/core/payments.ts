@@ -145,15 +145,16 @@ export async function createGeideaSession(
   plan: SubscriptionPlan,
   duration: DurationKey,
   currency: string = 'EGP'
-): Promise<{ paymentUrl: string; sessionId: string }> {
+): Promise<{ paymentUrl: string; sessionId: string; amount: number; currency: 'EGP' | 'SAR' }> {
   const curr = (currency || 'EGP').toUpperCase();
+  if (curr !== 'EGP' && curr !== 'SAR') throw new Error('Unsupported subscription currency');
   const table = curr === 'SAR' ? PRICING_SAR : PRICING_EGP;
   const price = table[plan][toPriceKey(duration)];
 
   if (USE_MOCK) {
     const sessionId = `mock_${Date.now()}_${randomBytes(4).toString('hex')}`;
-    const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${currency}`;
-    return { paymentUrl, sessionId };
+    const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${curr}`;
+    return { paymentUrl, sessionId, amount: price, currency: curr };
   }
 
   const merchantId = process.env.GEIDEA_MERCHANT_ID;
@@ -164,9 +165,9 @@ export async function createGeideaSession(
   if (!merchantId || !apiPassword || !callbackUrl) {
     if (ALLOW_UNCONFIGURED_PAYMENT_FALLBACK) {
       const sessionId = `mock_fallback_${Date.now()}_${randomBytes(4).toString('hex')}`;
-      const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${currency}`;
+      const paymentUrl = `https://mock.local/checkout?sessionId=${sessionId}&amount=${price}&currency=${curr}`;
       logger.warn('[Payments] Geidea config missing. Using mock checkout fallback session.');
-      return { paymentUrl, sessionId };
+      return { paymentUrl, sessionId, amount: price, currency: curr };
     }
     throw new Error('Geidea config missing. Set GEIDEA_MERCHANT_ID, GEIDEA_API_PASSWORD, GEIDEA_CALLBACK_URL env vars OR enable mock via USE_MOCK_PAYMENTS=1.');
   }
@@ -175,7 +176,7 @@ export async function createGeideaSession(
   const payload = {
     merchantId,
     amount: price.toFixed(2),
-    currency,
+    currency: curr,
     callbackUrl,
     customer: { id: userId },
   };
@@ -195,7 +196,7 @@ export async function createGeideaSession(
     throw new Error('Unexpected gateway response (missing paymentUrl/sessionId)');
   }
 
-  return { paymentUrl, sessionId };
+  return { paymentUrl, sessionId, amount: price, currency: curr };
 }
 
 export async function createGeideaDonationSession(args: {
@@ -366,6 +367,10 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
 
   const paymentDoc = paymentsSnap.docs[0];
   const paymentRef = paymentDoc.ref;
+  const storedPayment = paymentDoc.data() as any;
+  const successful = incomingStatus === 'PAID' || incomingStatus === 'SUCCESS';
+
+  if (successful && !isMockSession) assertSuccessfulPaymentMatches(storedPayment, parsed);
 
   const updatedAtVal =
     (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
@@ -379,23 +384,49 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
 
   await updatePaymentStatus(sessionId, incomingStatus || 'UNKNOWN');
 
-  if (!(incomingStatus === 'PAID' || incomingStatus === 'SUCCESS')) {
+  if (!successful) {
     await eventsRef.set({ processed: true, processedAt: tsVal, note: 'status_update' }, { merge: true });
     return { ok: true };
   }
 
+  const paymentData = storedPayment;
+  const userId = String(paymentData.userId || '');
+  const plan = paymentData.plan as SubscriptionPlan;
+  const duration = paymentData.duration as DurationKey;
+  const months = DURATION_IN_MONTHS[duration];
+  if (!userId || !months) throw new Error('Payment record has invalid membership terms');
+  const userRef = admin.firestore().collection('users').doc(userId);
   const membershipGrantedAtVal =
     (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
       ? (admin.firestore.FieldValue as any).serverTimestamp()
       : new Date();
   const txResult = await admin.firestore().runTransaction(async (tx) => {
-    const snap = await tx.get(paymentRef);
+    const [snap, userSnap] = await Promise.all([tx.get(paymentRef), tx.get(userRef)]);
     const data = snap.data() || {};
     const alreadyGranted = Boolean(data.membershipGranted);
     if (alreadyGranted) {
       return { shouldGrant: false, data };
     }
+    if (!userSnap.exists) throw new Error('Payment user does not exist');
+    const currentMembership = userSnap.get('membership') || {};
+    const rawEnd = currentMembership.endDate;
+    const currentEnd = rawEnd && typeof rawEnd.toDate === 'function' ? rawEnd.toDate() : new Date(rawEnd || 0);
+    const now = new Date();
+    const extensionBase = Number.isFinite(currentEnd.getTime()) && currentEnd.getTime() > now.getTime() ? currentEnd : now;
+    const end = new Date(extensionBase);
+    end.setMonth(end.getMonth() + months);
     tx.update(paymentRef, { membershipGranted: true, membershipGrantedAt: membershipGrantedAtVal });
+    tx.set(userRef, {
+      membership: {
+        plan,
+        startDate: now,
+        endDate: end,
+        listingCount: Number(currentMembership.listingCount || 0),
+        bookingCount: Number(currentMembership.bookingCount || 0),
+        messageCount: Number(currentMembership.messageCount || 0),
+        active: true,
+      },
+    }, { merge: true });
     return { shouldGrant: true, data };
   });
   if (!txResult.shouldGrant) {
@@ -403,33 +434,6 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
     logger.info({ eventKey, sessionId }, '[Payments] membership already granted');
     return { ok: true, alreadyProcessed: true };
   }
-
-  const paymentData = txResult.data as any;
-  const userId = paymentData.userId as string;
-  const plan = paymentData.plan as SubscriptionPlan;
-  const duration = paymentData.duration as DurationKey;
-
-  const months = DURATION_IN_MONTHS[duration];
-  if (!months) throw new Error(`Invalid duration on payment: ${duration}`);
-
-  const now = new Date();
-  const end = new Date(now);
-  end.setMonth(end.getMonth() + months);
-
-  await admin.firestore().collection('users').doc(userId).set(
-    {
-      membership: {
-        plan,
-        startDate: now,
-        endDate: end,
-        listingCount: 0,
-        bookingCount: 0,
-        messageCount: 0,
-        active: true,
-      },
-    },
-    { merge: true }
-  );
 
   try {
     await sendInAppNotification({
@@ -447,6 +451,35 @@ export async function handleGeideaWebhook(rawBody: Buffer, headers?: Record<stri
   await eventsRef.set({ processed: true, processedAt: tsVal, note: 'membership_granted' }, { merge: true });
   logger.info({ eventKey, sessionId, userId }, '[Payments] membership granted');
   return { ok: true };
+}
+
+export function assertSuccessfulPaymentMatches(storedPayment: Record<string, any>, webhook: Record<string, any>): void {
+  const receivedAmount = Number(webhook.amount ?? webhook.order?.amount);
+  const receivedCurrency = String((webhook.currency ?? webhook.order?.currency) || '').toUpperCase();
+  const storedCurrency = String(storedPayment.currency || '').toUpperCase();
+  // Records created before amount/currency persistence was added still contain
+  // server-owned plan and duration terms. Accept those in-flight sessions only
+  // when the signed gateway amount matches the canonical price for its currency.
+  const expectedCurrency = storedCurrency || receivedCurrency;
+  const storedAmount = Number(storedPayment.amount);
+  const expectedAmount = storedAmount > 0
+    ? storedAmount
+    : storedPayment.amount == null
+      ? getCanonicalSubscriptionPrice(storedPayment.plan, storedPayment.duration, expectedCurrency)
+      : undefined;
+  const expectedUserId = String(storedPayment.userId || '');
+  const receivedUserId = String(webhook.customer?.id ?? webhook.customerId ?? '');
+  if (!(Number(expectedAmount) > 0) || receivedAmount !== expectedAmount) throw new Error('Payment amount mismatch');
+  if (!expectedCurrency || receivedCurrency !== expectedCurrency) throw new Error('Payment currency mismatch');
+  if (!expectedUserId || receivedUserId !== expectedUserId) throw new Error('Payment customer mismatch');
+}
+
+function getCanonicalSubscriptionPrice(plan: unknown, duration: unknown, currency: string): number | undefined {
+  if (currency !== 'EGP' && currency !== 'SAR') return undefined;
+  if (!['Basic', 'Standard', 'Pro', 'Business'].includes(String(plan))) return undefined;
+  if (!['3_months', '6_months', '12_months'].includes(String(duration))) return undefined;
+  const table = currency === 'SAR' ? PRICING_SAR : PRICING_EGP;
+  return table[plan as SubscriptionPlan][duration as KnownDuration];
 }
 
 async function handleDonationWebhook(args: {
@@ -629,7 +662,8 @@ export async function createGeideaTokenPurchaseSession(args: {
 }): Promise<{ paymentUrl: string; sessionId: string }> {
   const currency = (args.currency || 'EGP').toUpperCase();
   const amount = Number(args.amount || 0);
-  if (!(amount > 0)) throw new Error('Invalid token purchase amount');
+  if (!Number.isSafeInteger(args.tokenAmount) || args.tokenAmount <= 0 || !(amount > 0)) throw new Error('Invalid token purchase amount');
+  if (currency !== 'EGP' && currency !== 'SAR') throw new Error('Unsupported token purchase currency');
 
   if (USE_MOCK) {
     const sessionId = `mock_token_${Date.now()}_${randomBytes(4).toString('hex')}`;

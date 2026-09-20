@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { FilterIcon, PlusCircleIcon, SearchIcon, XIcon } from 'lucide-react';
+import { FilterIcon, GemIcon, Loader2, PlusCircleIcon, SearchIcon, XIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,10 +15,11 @@ import { ServicesEmptyState } from '@/features/listings/components/ServicesEmpty
 import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
 import { useServiceCategories } from '@/hooks/useServiceCategories';
-import { getPublicLocationLabel } from '@/lib/location';
 import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
 import type { ServiceListing, User } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { useMembership } from '@/hooks/useMembership';
+import { SearchResults } from '@/features/listings/components/SearchResults';
 
 export type ListingWithUser = {
   listing: ServiceListing;
@@ -148,8 +149,8 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { user, selectedPlan } = useAuth();
-  const [userCountry, setUserCountry] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { active: membershipActive, plan, loading: membershipLoading } = useMembership();
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [origin, setOrigin] = useState<{ lat: number; lng: number } | null>(null);
   const filters = useMemo(() => parseFilters(searchParams), [searchParams]);
@@ -258,17 +259,8 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
   const allCountriesLabel = t('services.allCountries', 'All countries');
   const middleEastLabel = t('services.middleEastOnly', 'Middle East only');
 
-  const isPro = selectedPlan === 'pro';
-
-  useEffect(() => {
-    let nextCountry: string | null = null;
-    try {
-      const stored = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
-      nextCountry = stored || null;
-    } catch {}
-    const frame = requestAnimationFrame(() => setUserCountry(nextCountry));
-    return () => cancelAnimationFrame(frame);
-  }, [user?.uid]);
+  // Canonical pricing currently grants this regional entitlement to Pro only.
+  const isPro = membershipActive && plan === 'Pro';
 
   return (
     <div className="w-full space-y-6">
@@ -375,7 +367,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
               <div>
                 <label htmlFor="listing-country" className="mb-1 block text-sm font-medium text-foreground">{countryLabel}</label>
                 <Select
-                  value={isPro ? filters.country : (userCountry || 'all')}
+                  value={isPro ? filters.country : 'all'}
                   onValueChange={(value) => {
                     if (!isPro) return; // non-pro users cannot change country filter
                     updateFilters({ country: value });
@@ -390,13 +382,19 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
                         <SelectItem value="all">{allCountriesLabel}</SelectItem>
                         <SelectItem value="middle-east">{middleEastLabel}</SelectItem>
                       </>
-                    ) : (
-                      <>
-                        <SelectItem value={userCountry || 'all'}>{userCountry || allCountriesLabel}</SelectItem>
-                      </>
-                    )}
+                    ) : <SelectItem value="all">{allCountriesLabel}</SelectItem>}
                   </SelectContent>
                 </Select>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {isPro
+                    ? t('services.middleEastLobbyBody', { defaultValue: 'Browse supported Middle East countries with your active Pro plan.' })
+                    : t('services.middleEastUpgradeBody', { defaultValue: 'The Middle East lobby requires an active Pro plan and a supported profile country.' })}
+                  {!isPro ? (
+                    <Link href={`/pricing?next=${encodeURIComponent('/listings?country=middle-east')}`} className="ms-1 font-medium text-primary underline underline-offset-2">
+                      {t('services.middleEastUpgradeCta', { defaultValue: 'View plans' })}
+                    </Link>
+                  ) : null}
+                </p>
               </div>
               <Button type="button" className="h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 lg:col-span-1" onClick={applyFilters}>
                 <FilterIcon className="mr-2 h-4 w-4" />
@@ -419,7 +417,26 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
         </div>
       ) : null}
 
-      {hasFilters && filteredItems.length === 0 ? (
+      {filters.country === 'middle-east' && membershipLoading ? (
+        <div className="flex min-h-40 items-center justify-center" role="status"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+      ) : filters.country === 'middle-east' && (!user || !isPro) ? (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="space-y-3 p-8 text-center">
+            <GemIcon className="mx-auto h-8 w-8 text-primary" />
+            <h2 className="text-xl font-semibold">{t('services.middleEastLobbyTitle', { defaultValue: 'Middle East lobby' })}</h2>
+            <p className="text-sm text-muted-foreground">{t('services.middleEastUpgradeBody', { defaultValue: 'The Middle East lobby requires an active Pro plan and a supported profile country.' })}</p>
+            <Button asChild><Link href={`/pricing?next=${encodeURIComponent('/listings?country=middle-east')}`}>{t('services.middleEastUpgradeCta', { defaultValue: 'View plans' })}</Link></Button>
+          </CardContent>
+        </Card>
+      ) : filters.country === 'middle-east' ? (
+        <SearchResults params={{
+          q: filters.search || undefined,
+          category: filters.category || undefined,
+          location: filters.location || undefined,
+          radiusKm: filters.radius !== 'any' ? Number(filters.radius) : undefined,
+          region: 'middle-east',
+        }} />
+      ) : hasFilters && filteredItems.length === 0 ? (
         <Card className="border-border/70 bg-card/90 shadow-sm">
           <CardContent className="space-y-5 p-8 text-center md:p-12">
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">

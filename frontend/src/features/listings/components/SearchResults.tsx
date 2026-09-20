@@ -1,13 +1,12 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/context/AuthContext';
 import { ServiceCard } from '@/features/listings/components/ServiceCard';
 import type { ServiceListing, User } from '@/types';
 import { track } from '@/services/analytics';
 import { useTranslation } from 'react-i18next';
 import { getFunctionsBase } from '@/services/api';
 import { ListingsGrid } from '@/features/listings/components/ListingsGrid';
-import { isMiddleEastLobbyEligible } from '@/features/listings/lib/regions';
+import { useAuth } from '@/context/AuthContext';
 
 export type SearchParams = {
   q?: string;
@@ -31,15 +30,17 @@ function isVisibleListingStatus(status: unknown) {
 
 export function SearchResults({ params, fallbackItems = [] }: { params: SearchParams; fallbackItems?: ListingWithUser[] }) {
   const { t } = useTranslation();
-  const { user, selectedPlan } = useAuth();
+  const { user } = useAuth();
   const [items, setItems] = useState<any[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     async function run() {
       setItems(null);
       setLoading(true);
+      setError(null);
       try {
         const usp = new URLSearchParams();
         if (params.q) usp.set('q', params.q);
@@ -49,29 +50,20 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
         if (Number.isFinite(params.nearLng)) usp.set('nearLng', String(params.nearLng));
         if (Number.isFinite(params.radiusKm)) usp.set('radiusKm', String(params.radiusKm));
         
-        // Pass user context for access control (Middle East Lobby)
-        const isPro = selectedPlan === 'pro' || selectedPlan === 'business';
-        const userCountry = typeof window !== 'undefined' ? localStorage.getItem('userCountry') : null;
-        if (userCountry) usp.set('userCountry', userCountry);
-        if (isPro) usp.set('isPro', 'true');
+        if (params.region === 'middle-east') usp.set('region', 'MIDDLE_EAST_LOBBY');
         
         const base = getFunctionsBase();
         const url = base
           ? `${base}/api/search/listings?${usp.toString()}`
           : `/api/search/listings?${usp.toString()}`;
-        const resp = await fetch(url);
+        const token = params.region === 'middle-east' ? await user?.getIdToken() : undefined;
+        const resp = await fetch(url, token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+        if (!resp.ok) throw new Error(resp.status === 403 ? 'REGION_SUBSCRIPTION_REQUIRED' : 'SEARCH_FAILED');
         const data = await resp.json();
         if (!cancelled) {
           const nextItems = Array.isArray(data?.hits)
             ? data.hits
                 .filter((hit: any) => isVisibleListingStatus(hit?.status))
-                .filter((hit: any) => {
-                  if (params.region !== 'middle-east') return true;
-                  const regionText = [hit.ownerCountry, hit.country, hit.location]
-                    .map((value) => String(value || '').trim())
-                    .filter(Boolean);
-                  return regionText.some((value) => isMiddleEastLobbyEligible(value));
-                })
             : [];
           setItems(nextItems);
         }
@@ -90,6 +82,9 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
       } catch (e) {
         if (!cancelled) {
           setItems([]);
+          setError(e instanceof Error && e.message === 'REGION_SUBSCRIPTION_REQUIRED'
+            ? t('services.middleEastUpgradeBody', { defaultValue: 'An active Pro plan is required for the Middle East lobby.' })
+            : t('listings.search.failed', { defaultValue: 'Search could not be loaded. Please try again.' }));
         }
       } finally {
         if (!cancelled) {
@@ -101,7 +96,7 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
     return () => {
       cancelled = true;
     };
-  }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm, params.region, selectedPlan]);
+  }, [params.q, params.category, params.location, params.nearLat, params.nearLng, params.radiusKm, params.region, t, user]);
 
   const hasRemoteItems = Array.isArray(items) && items.length > 0;
   const hasFallbackItems = fallbackItems.length > 0;
@@ -118,6 +113,7 @@ export function SearchResults({ params, fallbackItems = [] }: { params: SearchPa
       </div>
     );
   }
+  if (error) return <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive" role="alert">{error}</div>;
   if (!hasRemoteItems && hasFallbackItems) {
     return <ListingsGrid items={fallbackItems} />;
   }

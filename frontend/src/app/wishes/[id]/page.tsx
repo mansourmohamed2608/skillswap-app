@@ -1,4 +1,5 @@
 "use client";
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/services/firebase';
@@ -272,9 +273,12 @@ export default function WishDetailPage() {
           )}
         </CardContent>
         <CardFooter>
-          <Button disabled={busy || isOwner} onClick={onDonate}>
-            {busy ? t('wishes.detail.processing') : t('wishes.detail.donateButton')}
-          </Button>
+          <div className="flex w-full flex-col gap-2 sm:flex-row">
+            <Button disabled={busy || isOwner} onClick={onDonate}>
+              {busy ? t('wishes.detail.processing') : t('wishes.detail.donateButton')}
+            </Button>
+            {!isOwner ? <Button asChild variant="outline"><Link href={`/wallet?wish=${encodeURIComponent(resolvedWishId)}`}>{t('wallet.contributeAction')}</Link></Button> : null}
+          </div>
         </CardFooter>
       </Card>
 

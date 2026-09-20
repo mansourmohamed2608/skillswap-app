@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { SearchIcon } from "lucide-react";
+import { GemIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
@@ -43,6 +43,18 @@ export function HomePageContent({
       <HowItWorksScroll />
 
       <JoinNowBanner />
+
+      <Reveal>
+        <section className="flex flex-col gap-3 rounded-2xl border border-[#c8d5b9] bg-white p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="subscription-plans-entry">
+          <div>
+            <h2 id="subscription-plans-entry" className="text-lg font-semibold text-[#2d4a38]">{t('header.pricing', 'Subscription Plans')}</h2>
+            <p className="text-sm text-muted-foreground">{t('pricing.subRequiredBody')}</p>
+          </div>
+          <Button asChild className="h-11 shrink-0 rounded-xl">
+            <Link href="/pricing"><GemIcon className="mr-2 h-4 w-4" />{t('payments.subscribeNow', { defaultValue: 'Subscribe Now' })}</Link>
+          </Button>
+        </section>
+      </Reveal>
 
       <Reveal>
         <section aria-labelledby="featured-listings-title">

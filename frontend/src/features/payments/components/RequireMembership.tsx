@@ -14,7 +14,7 @@ export function RequireMembership({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
 
   if (loading) return null;
-  if (!active) return null;
+  if (!active) return <p>{t('listings.new.subscriptionRequiredBody', { defaultValue: 'Choose an active subscription plan before publishing a new listing.' })}</p>;
   if (!canCreateListing) return <p>{t('payments.limitReached', { limit: planLimit })}</p>;
   return <>{children}</>;
 }

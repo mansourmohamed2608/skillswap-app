@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -17,6 +17,7 @@ import { auth } from '@/services/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '@/lib/errors';
+import { safeReturnPath } from '@/lib/safe-return-path';
 
 /**
  * Sign-in form component. Handles client-side sign-in using Firebase Auth.
@@ -28,6 +29,7 @@ import { getErrorMessage } from '@/lib/errors';
  */
 export function SignInForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
 
@@ -48,7 +50,7 @@ export function SignInForm() {
         title: t('auth.signIn.successTitle'),
         description: t('auth.signIn.successDescription'),
       });
-      router.push('/profile');
+      router.push(safeReturnPath(searchParams.get('next'), '/profile'));
     } catch (err: any) {
       // Provide a generic error message but log the real error for debugging.
       const message = getErrorMessage(err, t('auth.signIn.invalidCredentials'));
@@ -127,7 +129,7 @@ export function SignInForm() {
           )}
           <p className="text-center text-sm text-muted-foreground">
             {t('auth.signIn.prompt')}{' '}
-            <Link href="/auth/signup" className="font-medium text-primary hover:underline">
+            <Link href={`/auth/signup${searchParams.get('next') ? `?next=${encodeURIComponent(safeReturnPath(searchParams.get('next'), '/profile'))}` : ''}`} className="font-medium text-primary hover:underline">
               {t('auth.signIn.signUpLink')}
             </Link>
           </p>

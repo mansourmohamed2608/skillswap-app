@@ -18,9 +18,9 @@ describe('home join CTA', () => {
 });
 
 describe('home category CTA', () => {
-  it('describes and targets the listings browser', () => {
+  it('describes and targets the category index', () => {
     expect(getCategoryBrowseAction()).toEqual({
-      href: '/listings',
+      href: '/categories',
       translationKey: 'home.categories.viewAll',
     });
   });

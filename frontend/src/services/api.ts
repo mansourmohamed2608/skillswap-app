@@ -202,6 +202,31 @@ export async function mockCompletePaymentPublic(sessionId: string, baseUrl?: str
   return (await res.json()) as { ok: boolean };
 }
 
+// --------------- Wallet ---------------
+export async function fetchWalletBalance() {
+  const res = await authedFetch('/api/wallet/balance', { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { balance: number };
+}
+
+export async function fetchWalletTransactions() {
+  const res = await authedFetch('/api/wallet/transactions', { method: 'GET' });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as Array<Record<string, any>>;
+}
+
+export async function createTokenPurchase(args: { tokenAmount: number; currency: 'EGP' | 'SAR' }) {
+  const res = await authedFetch('/api/wallet/purchase', { body: JSON.stringify(args) });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { paymentUrl: string; sessionId: string; transactionId: string };
+}
+
+export async function contributeTokensToWish(args: { wishId: string; tokenAmount: number; idempotencyKey: string }) {
+  const res = await authedFetch('/api/wallet/contribute-wish', { body: JSON.stringify(args) });
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json()) as { contributionId: string; tokenAmount: number; platformFee: number; contributionAmount: number; duplicate?: boolean };
+}
+
 /**
  * Update the authenticated user's profile.
  *
