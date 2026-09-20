@@ -52,8 +52,9 @@ export class SearchService {
     radiusKm?: number;
     userCountry?: string;
     isPro?: boolean;
+    region?: string;
   }) {
-    const { q, category, location, userCountry, isPro = false } = opts;
+    const { q, category, location, userCountry, isPro = false, region } = opts;
     const page = Number.isFinite(opts.page) ? Number(opts.page) : 0;
     const pageSize = Math.min(50, Math.max(1, Number.isFinite(opts.pageSize as any) ? Number(opts.pageSize) : 20));
     const nearLat = Number.isFinite(opts.nearLat as any) ? Number(opts.nearLat) : undefined;
@@ -113,9 +114,9 @@ export class SearchService {
           })
           .filter((hit: any) => {
             // Enforce Middle East Lobby access.
-            if (!userCountry) return true;
+            if (!userCountry || region !== 'MIDDLE_EAST_LOBBY') return true;
             const ownerCountry = String(hit.ownerCountry || hit.location || '').trim();
-            if (!ownerCountry) return true;
+            if (!ownerCountry) return false;
             return canAccessCountry(userCountry, ownerCountry, isPro);
           });
 
@@ -205,9 +206,9 @@ export class SearchService {
       })
       .filter((l) => {
         // Enforce Middle East Lobby access: check if user is allowed to see this listing.
-        if (!userCountry) return true;
+        if (!userCountry || region !== 'MIDDLE_EAST_LOBBY') return true;
         const ownerCountry = String(l.ownerCountry || l.location || '').trim();
-        if (!ownerCountry) return true;
+        if (!ownerCountry) return false;
         return canAccessCountry(userCountry, ownerCountry, isPro);
       });
     const withDistance = refined.map((l) => {

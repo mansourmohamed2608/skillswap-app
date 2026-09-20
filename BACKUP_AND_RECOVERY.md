@@ -1,8 +1,24 @@
 # Backup and Disaster Recovery Plan
 
-**Document Version:** 1.0  
-**Last Updated:** April 2026  
-**Status:** ACTIVE
+**Document Version:** 1.1
+**Last Reviewed:** September 2026
+**Status:** RUNBOOK ONLY — DEPLOYED BACKUPS AND RESTORES UNVERIFIED
+
+> Evidence warning: the schedules, retention periods, integrity checks, and restore timings below are recovery targets and operator procedures. They are not evidence that production backups are enabled or healthy. No production cloud configuration, backup artifact, last-success timestamp, or completed restore was available in the repository review. Do not report this runbook as an active backup system.
+
+## Evidence status
+
+| Stateful system | Repository evidence | Deployed backup evidence | Restore evidence |
+| --- | --- | --- | --- |
+| Firestore | Rules, indexes, and proposed backup procedure | Not verified | Not verified |
+| Firebase Realtime Database (chat/presence) | Rules and emulator configuration; procedure still required | Not verified | Not verified |
+| Firebase Storage | Rules and proposed bucket-copy procedure | Not verified | Not verified |
+| PostgreSQL audit/transaction data | Schema/client code and proposed Cloud SQL procedure | Not verified | Not verified |
+| Firebase Authentication | Application integration only; export/restore procedure still required | Not verified | Not verified |
+| Secrets/runtime configuration | Required variable names and proposed Secret Manager procedure | Not verified | Not verified |
+| Source/configuration | Current Git checkout contains application source, rules, indexes, and emulator configuration | Git history/remote availability not independently audited | A clean checkout is possible; deployment rollback was not exercised |
+
+Before changing this status, attach non-secret evidence for every applicable system: schedule/policy identifiers, latest successful run timestamps, retention settings, alert ownership, and a dated restore drill result in an isolated project. Never attach credentials, tokens, database contents, or user data.
 
 ## Executive Summary
 

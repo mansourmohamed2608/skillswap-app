@@ -6,7 +6,9 @@
 export type SubscriptionPlan = 'Basic' | 'Standard' | 'Pro' | 'Business';
 
 export const PLAN_LISTING_LIMITS: Record<SubscriptionPlan | 'Free', number> = {
-  Free: 1,
+  // Product policy changed in September 2026: new listing publication now
+  // requires a qualifying paid membership. Existing Free listings are kept.
+  Free: 0,
   Basic: 9,
   Standard: 12,
   Pro: Infinity,
@@ -85,13 +87,43 @@ export const MIDDLE_EAST_COUNTRIES = new Set([
   'PK',  // Pakistan
 ]);
 
+const COUNTRY_CODE_BY_NAME: Record<string, string> = {
+  egypt: 'EG',
+  'saudi arabia': 'SA',
+  uae: 'AE',
+  'united arab emirates': 'AE',
+  kuwait: 'KW',
+  qatar: 'QA',
+  bahrain: 'BH',
+  oman: 'OM',
+  jordan: 'JO',
+  lebanon: 'LB',
+  palestine: 'PS',
+  syria: 'SY',
+  iraq: 'IQ',
+  yemen: 'YE',
+  israel: 'IL',
+  turkey: 'TR',
+  iran: 'IR',
+  afghanistan: 'AF',
+  pakistan: 'PK',
+};
+
+export function normalizeCountryCode(country: string): string {
+  const raw = String(country || '').trim();
+  if (!raw) return '';
+  const upper = raw.toUpperCase();
+  if (upper.length === 2) return upper;
+  return COUNTRY_CODE_BY_NAME[raw.toLowerCase()] || upper;
+}
+
 export function isMiddleEastCountry(countryCode: string): boolean {
-  return MIDDLE_EAST_COUNTRIES.has(String(countryCode || '').toUpperCase());
+  return MIDDLE_EAST_COUNTRIES.has(normalizeCountryCode(countryCode));
 }
 
 export function canAccessCountry(userCountry: string, targetCountry: string, isPro: boolean): boolean {
-  const userCC = String(userCountry || '').toUpperCase();
-  const targetCC = String(targetCountry || '').toUpperCase();
+  const userCC = normalizeCountryCode(userCountry);
+  const targetCC = normalizeCountryCode(targetCountry);
 
   // Same country - always allowed
   if (userCC === targetCC) return true;

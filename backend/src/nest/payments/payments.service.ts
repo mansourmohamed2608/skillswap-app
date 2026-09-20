@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import { createGeideaSession, handleGeideaWebhook, mockComplete } from '../../core/payments';
-import { DURATION_IN_MONTHS, PLAN_LISTING_LIMITS, SubscriptionPlan } from '../../core/constants';
+import { DURATION_IN_MONTHS, SubscriptionPlan } from '../../core/constants';
 import { savePaymentRecord } from '../../core/postgres';
 import { getUserDocument } from '../../core/membership';
 
@@ -13,15 +13,19 @@ export class PaymentsService {
     if (!userId) throw new BadRequestException('Missing userId');
     if (!plan || !duration) throw new BadRequestException('Missing plan or duration');
     // Validate against the canonical constant maps before any Firestore or gateway call.
-    const validPlans = new Set(Object.keys(PLAN_LISTING_LIMITS) as SubscriptionPlan[]);
+    // Free is present in the listing-limit map for legacy data only; it is not
+    // a purchasable subscription tier.
+    const validPlans = new Set<SubscriptionPlan>(['Basic', 'Standard', 'Pro', 'Business']);
     const validDurations = new Set(Object.keys(DURATION_IN_MONTHS));
     if (!validPlans.has(plan as SubscriptionPlan)) throw new BadRequestException('Invalid plan');
     if (!validDurations.has(duration)) throw new BadRequestException('Invalid duration');
+    const normalizedCurrency = String(currency || 'EGP').toUpperCase();
+    if (!['EGP', 'SAR'].includes(normalizedCurrency)) throw new BadRequestException('Invalid currency');
     const userSnap = await getUserDocument(userId);
     this.ensureKycVerified(userSnap);
     const planKey = plan as SubscriptionPlan;
     const durationKey = duration as keyof typeof DURATION_IN_MONTHS;
-    const { paymentUrl, sessionId } = await createGeideaSession(userId, planKey, durationKey, currency);
+    const { paymentUrl, sessionId, amount } = await createGeideaSession(userId, planKey, durationKey, normalizedCurrency);
 
     const createdAtVal =
       (admin.firestore.FieldValue && (admin.firestore.FieldValue as any).serverTimestamp)
@@ -45,6 +49,8 @@ export class PaymentsService {
         userId,
         plan: planKey,
         duration: durationKey,
+        currency: normalizedCurrency,
+        amount,
         geideaSessionId: sessionId,
         status: 'PENDING',
         createdAt: createdAtVal,

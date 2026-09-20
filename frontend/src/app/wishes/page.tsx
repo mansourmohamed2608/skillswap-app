@@ -103,9 +103,10 @@ export default function WishesListPage() {
                   Your wish
                 </Button>
               ) : (
-                <Link href={`/wishes/donate?wish=${encodeURIComponent(w.publicId || w.id)}`} className="w-full">
-                  <Button className="w-full">{t('wishes.list.donate')}</Button>
-                </Link>
+                <div className="grid w-full gap-2">
+                  <Link href={`/wallet?wish=${encodeURIComponent(w.id)}`} className="w-full"><Button className="w-full">{t('wallet.contributeAction')}</Button></Link>
+                  <Link href={`/wishes/donate?wish=${encodeURIComponent(w.publicId || w.id)}`} className="w-full"><Button variant="secondary" className="w-full">{t('wishes.list.donate')}</Button></Link>
+                </div>
               )}
             </CardFooter>
           </Card>

@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import { isLatinName } from '@/lib/validation';
 import { findBannedKeywordInFields } from '@/lib/moderation';
 import { getErrorMessage } from '@/lib/errors';
+import { safeReturnPath } from '@/lib/safe-return-path';
 
 type LocalFormState = { message: string | null; success: boolean };
 const initialState: LocalFormState = { message: null, success: false };
@@ -39,6 +40,7 @@ function normalizePhoneNumber(value: string) {
 
 export function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t } = useTranslation();
   const requireLatinName = process.env.NEXT_PUBLIC_REQUIRE_LATIN_NAME === 'true';
@@ -184,7 +186,7 @@ export function SignUpForm() {
       // Apply guest-selected plan if present in localStorage
       try {
         const guestPlan = localStorage.getItem('guestSelectedPlan');
-        if (guestPlan && ['free', 'basic', 'pro', 'business'].includes(guestPlan)) {
+        if (guestPlan && ['free', 'basic', 'standard', 'pro', 'business'].includes(guestPlan)) {
           // Plan will be automatically picked up by AuthContext on next render via localStorage
           // (AuthContext reads selectedPlan from localStorage on mount)
         }
@@ -196,7 +198,9 @@ export function SignUpForm() {
         title: t('auth.signUp.success', { defaultValue: 'Account created!' }),
         description: t('auth.signUp.verifyPrompt', { defaultValue: 'Please verify your identity to continue.' }),
       });
-      router.push('/profile/verify');
+      const next = safeReturnPath(searchParams.get('next'), '/profile');
+      try { localStorage.setItem('kyc:returnTo', next); } catch {}
+      router.push(`/profile/verify?next=${encodeURIComponent(next)}`);
     } catch (err: any) {
       const msg = getErrorMessage(err, t('auth.signUp.errors.signupFailed'));
       setState({ message: msg, success: false });
@@ -309,7 +313,7 @@ export function SignUpForm() {
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             {t('auth.signUp.prompt')}{' '}
-            <Link href="/auth/signin" className="underline hover:text-primary">
+            <Link href={`/auth/signin${searchParams.get('next') ? `?next=${encodeURIComponent(safeReturnPath(searchParams.get('next'), '/profile'))}` : ''}`} className="underline hover:text-primary">
               {t('auth.signUp.signInLink')}
             </Link>
           </p>

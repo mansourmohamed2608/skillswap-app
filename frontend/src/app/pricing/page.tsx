@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { ToastAction } from '@/components/ui/toast';
 import { getErrorMessage } from '@/lib/errors';
+import { safeReturnPath } from '@/lib/safe-return-path';
 
 type Currency = 'egp' | 'sar';
 type Duration = '3mo' | '6mo' | '12mo';
@@ -36,7 +37,6 @@ const durationToBackend = {
   '12mo': '12_months',
 } as const;
 
-type PriceMap = Record<Currency, Record<'3mo' | '6mo' | '12mo', number | null>>;
 type PlanDef = {
   egp: { '3mo': number | null; '6mo': number | null; '12mo': number | null };
   sar: { '3mo': number | null; '6mo': number | null; '12mo': number | null };
@@ -166,19 +166,24 @@ function PlanCard({
 }
 
 function PricingPageInner() {
-  const [currency, setCurrency] = useState<Currency>('egp');
-  const [duration, setDuration] = useState<Duration>('3mo');
   const useMockPayments = process.env.NEXT_PUBLIC_USE_MOCK_PAYMENTS === 'true';
 
   // ✅ read auth state from context
   const { user, loading } = useAuth();
   const searchParams = useSearchParams();
+  const requestedCurrency = searchParams.get('currency');
+  const requestedDuration = searchParams.get('duration');
+  const [currency, setCurrency] = useState<Currency>(() => requestedCurrency === 'sar' ? 'sar' : 'egp');
+  const [duration, setDuration] = useState<Duration>(() =>
+    requestedDuration === '6mo' || requestedDuration === '12mo' ? requestedDuration : '3mo'
+  );
   const { toast } = useToast();
   const { t } = useTranslation();
   const router = useRouter();
   const autoLaunchRef = useRef(false);
   const selectedPlanParam = searchParams.get('plan') || '';
   const shouldAutostart = searchParams.get('autostart') === '1';
+  const intendedDestination = safeReturnPath(searchParams.get('next'), '/profile');
 
   // Show a toast if redirected here due to missing subscription
   useEffect(() => {
@@ -208,7 +213,14 @@ function PricingPageInner() {
         localStorage.setItem('guestSelectedDuration', finalDuration);
       } catch {}
 
-      const signupNext = `/pricing?plan=${encodeURIComponent(planKey)}&autostart=1`;
+      const checkoutParams = new URLSearchParams({
+        plan: planKey,
+        currency,
+        duration: finalDuration,
+        autostart: '1',
+        next: intendedDestination,
+      });
+      const signupNext = `/pricing?${checkoutParams.toString()}`;
       toast({
         title: t('pricing.mustSignIn'),
         action: (
@@ -255,6 +267,7 @@ function PricingPageInner() {
       if ((useMockPayments || isMockUrl) && m?.[1]) {
         await mockCompletePayment(m[1]);
         toast({ title: t('pricing.mockActivated') });
+        router.push(intendedDestination);
       } else {
         window.location.href = res.paymentUrl; // real processor path
       }

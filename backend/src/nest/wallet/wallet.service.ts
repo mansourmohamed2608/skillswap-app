@@ -4,6 +4,7 @@ import { createGeideaTokenPurchaseSession } from '../../core/payments';
 import { saveTokenTransactionRecord, saveWishContributionRecord } from '../../core/postgres';
 import { sendInAppNotification } from '../../core/notifications';
 import { logger } from '../../core/logger';
+import { createHash } from 'crypto';
 
 /**
  * Token/Wallet Service
@@ -32,7 +33,7 @@ export class WalletService {
     if (!userId) throw new UnauthorizedException('Unauthenticated request');
     const { tokenAmount, currency } = body || {};
     const tokens = Number(tokenAmount || 0);
-    if (!(tokens > 0)) throw new BadRequestException('Invalid token amount');
+    if (!Number.isSafeInteger(tokens) || !(tokens > 0)) throw new BadRequestException('Invalid token amount');
     if (tokens > 100000) throw new BadRequestException('Token amount exceeds maximum (100,000)');
 
     const userRef = admin.firestore().collection('users').doc(userId);
@@ -42,6 +43,7 @@ export class WalletService {
     const userEmail = String(userSnap.get('email') || '').trim();
     const userName = String(userSnap.get('name') || '').trim();
     const curr = String(currency || 'EGP').toUpperCase();
+    if (!['EGP', 'SAR'].includes(curr)) throw new BadRequestException('Unsupported token purchase currency');
 
     // Call payment gateway to initiate token purchase
     // 1 token = 1 currency unit (e.g., 100 tokens = EGP 100)
@@ -170,74 +172,95 @@ export class WalletService {
    */
   async contributeToWish(userId: string, body: any) {
     if (!userId) throw new UnauthorizedException('Unauthenticated request');
-    const { wishId, tokenAmount } = body || {};
+    const { wishId, tokenAmount, idempotencyKey } = body || {};
     const tokens = Number(tokenAmount || 0);
+    const requestKey = String(idempotencyKey || '').trim();
 
     if (!wishId) throw new BadRequestException('Missing wishId');
-    if (!(tokens > 0)) throw new BadRequestException('Invalid token amount');
+    if (!Number.isSafeInteger(tokens) || !(tokens > 0)) throw new BadRequestException('Invalid token amount');
     if (tokens > 100000) throw new BadRequestException('Token amount exceeds maximum (100,000)');
-
-    // Check user balance
-    const userRef = admin.firestore().collection('users').doc(userId);
-    const userSnap = await userRef.get();
-    if (!userSnap.exists) throw new NotFoundException('User not found');
-
-    const userBalance = Number(userSnap.get('tokenBalance') || 0);
-    if (userBalance < tokens) throw new BadRequestException('Insufficient token balance');
-
-    // Check wish exists and is open
-    const wishRef = admin.firestore().collection('wishes').doc(wishId);
-    const wishSnap = await wishRef.get();
-    if (!wishSnap.exists) throw new NotFoundException('Wish not found');
-
-    const wish = wishSnap.data() as any;
-    if (String(wish?.status || '').toLowerCase() !== 'open') {
-      throw new BadRequestException('Wish is not open for contributions');
+    if (!/^[A-Za-z0-9_-]{8,128}$/.test(requestKey)) {
+      throw new BadRequestException({ code: 'IDEMPOTENCY_KEY_REQUIRED', message: 'A valid idempotency key is required' });
     }
 
-    const wishOwnerId = String(wish?.userId || '').trim();
-    if (userId === wishOwnerId) {
-      throw new ForbiddenException('Cannot contribute to your own wish');
-    }
-
-    // Calculate commission
     const platformFee = Math.floor(tokens * 0.1); // 10% commission
     const contributionAmount = tokens - platformFee; // 90% to wish
-
-    // Deduct from user balance
-    await userRef.update({
-      tokenBalance: admin.firestore.FieldValue.increment(-tokens),
-    });
-
-    // Create contribution record
+    const db = admin.firestore();
+    const userRef = db.collection('users').doc(userId);
+    const wishRef = db.collection('wishes').doc(String(wishId));
+    const contributionId = createHash('sha256').update(`${userId}:${requestKey}`).digest('hex');
+    const contributionRef = db.collection('wishContributions').doc(contributionId);
     const now = new Date();
-    const contributionRef = admin.firestore().collection('wishContributions').doc();
-    await contributionRef.set({
-      wishId,
-      wishTitle: wish.title || null,
-      contributorId: userId,
-      tokenAmount: tokens,
-      platformFee,
-      contributionAmount,
-      status: 'COMPLETED',
-      createdAt: now,
+
+    const result = await db.runTransaction(async (transaction) => {
+      const existing = await transaction.get(contributionRef);
+      if (existing.exists) {
+        const previous = existing.data() as any;
+        if (previous.wishId !== wishId || Number(previous.tokenAmount) !== tokens) {
+          throw new BadRequestException({ code: 'IDEMPOTENCY_CONFLICT', message: 'Idempotency key was already used for another contribution' });
+        }
+        return { duplicate: true, wish: { title: previous.wishTitle }, wishOwnerId: previous.wishOwnerId };
+      }
+
+      const [userSnap, wishSnap] = await Promise.all([
+        transaction.get(userRef),
+        transaction.get(wishRef),
+      ]);
+      if (!userSnap.exists) throw new NotFoundException('User not found');
+      if (!wishSnap.exists) throw new NotFoundException('Wish not found');
+      const wish = wishSnap.data() as any;
+      if (String(wish?.status || '').toLowerCase() !== 'open') throw new BadRequestException('Wish is not open for contributions');
+      const wishOwnerId = String(wish?.userId || '').trim();
+      if (!wishOwnerId) throw new BadRequestException('Wish owner is unavailable');
+      if (userId === wishOwnerId) throw new ForbiddenException('Cannot contribute to your own wish');
+      const wishOwnerRef = db.collection('users').doc(wishOwnerId);
+      const wishOwnerSnap = await transaction.get(wishOwnerRef);
+      if (!wishOwnerSnap.exists) throw new BadRequestException('Wish owner is unavailable');
+      const userBalance = Number(userSnap.get('tokenBalance') || 0);
+      if (userBalance < tokens) throw new BadRequestException({ code: 'INSUFFICIENT_BALANCE', message: 'Insufficient token balance' });
+
+      transaction.update(userRef, {
+        tokenBalance: userBalance - tokens,
+        totalTokensContributed: admin.firestore.FieldValue.increment(contributionAmount),
+        contributionCount: admin.firestore.FieldValue.increment(1),
+      });
+      transaction.update(wishOwnerRef, { tokenBalance: admin.firestore.FieldValue.increment(contributionAmount) });
+      transaction.update(wishRef, {
+        totalDonated: admin.firestore.FieldValue.increment(contributionAmount),
+        donationCount: admin.firestore.FieldValue.increment(1),
+      });
+      transaction.create(contributionRef, {
+        wishId,
+        wishTitle: wish.title || null,
+        wishOwnerId,
+        contributorId: userId,
+        tokenAmount: tokens,
+        platformFee,
+        contributionAmount,
+        status: 'COMPLETED',
+        idempotencyKeyHash: createHash('sha256').update(requestKey).digest('hex'),
+        createdAt: now,
+      });
+      return { duplicate: false, wish, wishOwnerId };
     });
 
-    // Update wish totalDonated and donationCount
-    await wishRef.update({
-      totalDonated: admin.firestore.FieldValue.increment(contributionAmount),
-      donationCount: admin.firestore.FieldValue.increment(1),
-    });
+    if (result.duplicate) {
+      return {
+        contributionId,
+        tokenAmount: tokens,
+        platformFee,
+        contributionAmount,
+        wishTitle: result.wish?.title,
+        duplicate: true,
+      };
+    }
 
-    // Add contribution tokens to wish owner
-    const wishOwnerRef = admin.firestore().collection('users').doc(wishOwnerId);
-    await wishOwnerRef.update({
-      tokenBalance: admin.firestore.FieldValue.increment(contributionAmount),
-    });
+    const wish = result.wish as any;
+    const wishOwnerId = result.wishOwnerId;
 
     // Save to PostgreSQL audit
     await saveWishContributionRecord({
-      contributionId: contributionRef.id,
+      contributionId,
       wishId,
       contributorId: userId,
       tokenAmount: tokens,
@@ -268,11 +291,12 @@ export class WalletService {
     );
 
     return {
-      contributionId: contributionRef.id,
+      contributionId,
       tokenAmount: tokens,
       platformFee,
       contributionAmount,
       wishTitle: wish.title,
+      duplicate: false,
     };
   }
 

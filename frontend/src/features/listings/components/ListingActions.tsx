@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { MessageCircleIcon, PencilIcon, Trash2Icon } from "lucide-react";
+import { PencilIcon, Trash2Icon } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,14 +15,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RequestExchangeButton } from "@/features/listings/components/RequestExchangeButton";
-import { useMembership } from "@/hooks/useMembership";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { getUserById } from "@/services/data";
-import { getProfileIdentifier } from "@/lib/profile";
 import { deleteListing } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { MessageListingButton } from "@/features/listings/components/MessageListingButton";
 
 type Props = {
   listingId: string;
@@ -38,9 +36,6 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
   const [deleting, setDeleting] = useState(false);
   const isOwner = user?.uid && ownerId && user.uid === ownerId;
   const safeOwnerName = ownerName || t('listings.actions.ownerFallback');
-  // Show only the first name in the button to avoid overflow on mobile
-  const chatDisplayName = safeOwnerName.split(' ')[0] || safeOwnerName;
-  const { active, canCreateBooking, loading } = useMembership();
   const router = useRouter();
 
   async function handleDeleteListing() {
@@ -103,29 +98,7 @@ export function ListingActions({ listingId, ownerId, ownerName }: Props) {
   return (
     <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-stretch">
       {ownerId && (
-        <Button
-          size="lg"
-          className="h-12 w-full rounded-lg bg-accent text-accent-foreground hover:bg-accent/90 sm:flex-1"
-          onClick={async (e) => {
-            e.preventDefault();
-            if (loading) return;
-            if (!user || !active || !canCreateBooking) {
-              router.push("/pricing?alert=sub-required");
-              return;
-            }
-            let chatTarget = String(ownerId || '').trim();
-            try {
-              const owner = ownerId ? await getUserById(ownerId) : null;
-              if (owner) {
-                chatTarget = getProfileIdentifier(owner);
-              }
-            } catch {}
-            router.push(`/chat/${encodeURIComponent(chatTarget)}?name=${encodeURIComponent(safeOwnerName)}`);
-          }}
-        >
-          <MessageCircleIcon className="mr-2 h-5 w-5 shrink-0" />
-          <span className="truncate text-sm font-semibold leading-none sm:text-base">{t('listings.actions.chatWith', { name: chatDisplayName })}</span>
-        </Button>
+        <MessageListingButton listingId={listingId} ownerId={ownerId} ownerName={safeOwnerName} />
       )}
       <RequestExchangeButton listingId={listingId} />
     </div>

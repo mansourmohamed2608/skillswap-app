@@ -1,10 +1,10 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,31 +20,26 @@ import {
   MessageCircle,
   MessagesSquareIcon,
   CalendarDays,
-  BellIcon,
   Heart,
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
   ChevronDown,
   Layers3,
-  CheckCheck as CheckCheckIcon,
-  Trash2 as Trash2Icon,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/services/firebase';
 import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
-import { db } from '@/services/firebase';
-import { markNotificationsRead, clearReadNotifications } from '@/services/api';
 import { GlobalSearchBar } from '@/features/home/components/GlobalSearchBar';
 import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { usePathname } from 'next/navigation';
-import { marketplaceCategories } from '@/features/home/constants/categoryLinks';
 import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
+import { useServiceCategories } from '@/hooks/useServiceCategories';
+import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { NotificationBell } from '@/components/layout/NotificationBell';
 
 // Primary nav items (visible on desktop)
 const primaryNavItems = [
@@ -120,70 +115,17 @@ export function AppHeader() {
   const { user } = useAuth();
   const { t, i18n } = useTranslation();
   const pathname = usePathname();
-  const router = useRouter();
   const isAuthenticated = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
-  const mobileNotificationsHref = isAuthenticated ? '/profile?tab=notifications' : '/auth/signin';
-  const [notifications, setNotifications] = useState([] as any[]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const unreadNotifications = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
   const conversations = useConversationsRTDB();
+  const { categories: serviceCategories, loading: categoriesLoading, error: categoriesError } = useServiceCategories();
   const unreadChats = getUnreadConversationCount(conversations, user?.uid);
-  const previewNotifications = useMemo(() => notifications.slice(0, 6), [notifications]);
-
-  const openNotifications = () => {
-    setMobileMenuOpen(false);
-    setNotificationsOpen(true);
-  };
-
-  const handleNotificationsOpenChange = (open: boolean) => {
-    setNotificationsOpen(open);
-    if (open) setMobileMenuOpen(false);
-  };
 
   const handleMobileMenuOpenChange = (open: boolean) => {
     setMobileMenuOpen(open);
-    if (open) setNotificationsOpen(false);
   };
-
-  // Subscribe to notifications for mobile popover
-  useEffect(() => {
-    if (!db || !user?.uid) return;
-    const qy = query(
-      collection(db, 'notifications'),
-      where('userId', '==', user.uid),
-      orderBy('date', 'desc'),
-      limit(20)
-    );
-    const unsub = onSnapshot(qy, (snap) => {
-      const items = snap.docs.map((d) => {
-        const data: any = d.data();
-        let dateIso: string;
-        const dt = data.date;
-        try {
-          if (dt && typeof dt.toDate === 'function') dateIso = dt.toDate().toISOString();
-          else if (typeof dt === 'string') dateIso = new Date(dt).toISOString();
-          else if (dt instanceof Date) dateIso = dt.toISOString();
-          else dateIso = new Date().toISOString();
-        } catch {
-          dateIso = new Date().toISOString();
-        }
-        return {
-          id: d.id,
-          type: data.type || 'system',
-          content: data.content || '',
-          date: dateIso,
-          isRead: !!data.isRead,
-          link: data.link,
-          userId: data.userId,
-        };
-      });
-      setNotifications(items as any[]);
-    }, () => setNotifications([]));
-    return () => unsub();
-  }, [user?.uid]);
 
   useEffect(() => {
     const onScroll = () => setHeaderScrolled(window.scrollY > 6);
@@ -261,20 +203,7 @@ export function AppHeader() {
                   </Button>
 
                   {/* Notifications */}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={t('header.notifications', 'Notifications')}
-                    className="relative"
-                    onClick={() => router.push('/profile?tab=notifications')}
-                  >
-                    <BellIcon className="h-4 w-4" aria-hidden="true" />
-                    {unreadNotifications > 0 ? (
-                      <span className="absolute -top-0.5 -end-0.5 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground">
-                        {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                      </span>
-                    ) : null}
-                  </Button>
+                  <NotificationBell />
 
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -285,13 +214,19 @@ export function AppHeader() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="z-[100] w-56">
-                      {marketplaceCategories.map((category) => (
+                      {serviceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
-                            {category.name}
+                          <Link href={`/listings?category=${encodeURIComponent(category.label)}`}>
+                            {getServiceCategoryLabel(category.label, t)}
                           </Link>
                         </DropdownMenuItem>
                       ))}
+                      {categoriesLoading ? <DropdownMenuItem disabled>{t('common.loading')}</DropdownMenuItem> : null}
+                      {categoriesError ? <DropdownMenuItem disabled>{t('home.categories.loadFailed')}</DropdownMenuItem> : null}
+                      {!categoriesLoading && !categoriesError && serviceCategories.length === 0 ? <DropdownMenuItem disabled>{t('home.categories.empty')}</DropdownMenuItem> : null}
+                      <DropdownMenuItem asChild>
+                        <Link href="/categories" className="font-medium">{t('home.categories.viewAll')}</Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
 
@@ -314,13 +249,19 @@ export function AppHeader() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="z-[100] w-56">
-                      {marketplaceCategories.map((category) => (
+                      {serviceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
-                            {category.name}
+                          <Link href={`/listings?category=${encodeURIComponent(category.label)}`}>
+                            {getServiceCategoryLabel(category.label, t)}
                           </Link>
                         </DropdownMenuItem>
                       ))}
+                      {categoriesLoading ? <DropdownMenuItem disabled>{t('common.loading')}</DropdownMenuItem> : null}
+                      {categoriesError ? <DropdownMenuItem disabled>{t('home.categories.loadFailed')}</DropdownMenuItem> : null}
+                      {!categoriesLoading && !categoriesError && serviceCategories.length === 0 ? <DropdownMenuItem disabled>{t('home.categories.empty')}</DropdownMenuItem> : null}
+                      <DropdownMenuItem asChild>
+                        <Link href="/categories" className="font-medium">{t('home.categories.viewAll')}</Link>
+                      </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                   <div className="border-l border-border/40 ml-1 pl-1">
@@ -356,14 +297,7 @@ export function AppHeader() {
                 <LanguageSwitcher compact />
                 {isAuthenticated ? (
                   <>
-                    <Button variant="ghost" size="icon" className="relative" aria-label={t('header.notifications')} onClick={() => router.push('/profile?tab=notifications')}>
-                      <BellIcon className="h-4 w-4" />
-                      {unreadNotifications > 0 ? (
-                        <span className="absolute -top-0.5 -end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground">
-                          {unreadNotifications > 99 ? '99+' : unreadNotifications}
-                        </span>
-                      ) : null}
-                    </Button>
+                    <NotificationBell />
                     <Button variant="ghost" size="icon" asChild className="relative" aria-label={t('chat.list.title', { defaultValue: 'Messages' })}>
                       <Link href="/chat" title={t('chat.list.title', { defaultValue: 'Messages' })}>
                         <MessagesSquareIcon className="h-4 w-4" aria-hidden="true" />
@@ -401,6 +335,12 @@ export function AppHeader() {
                           </Link>
                         </Button>
                       ))}
+                      <Button variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
+                        <Link href="/categories" onClick={() => setMobileMenuOpen(false)}>
+                          <Layers3 className="h-5 w-5" />
+                          {t('header.categories', 'Categories')}
+                        </Link>
+                      </Button>
                       {isAuthenticated ? (
                         <>
                           {privateNavItems.map((item) => (

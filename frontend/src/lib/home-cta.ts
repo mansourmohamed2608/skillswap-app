@@ -5,5 +5,5 @@ export function getJoinPrimaryAction(authenticated: boolean) {
 }
 
 export function getCategoryBrowseAction() {
-  return { href: '/listings', translationKey: 'home.categories.viewAll' } as const;
+  return { href: '/categories', translationKey: 'home.categories.viewAll' } as const;
 }
