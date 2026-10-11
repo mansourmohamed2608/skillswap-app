@@ -5,31 +5,30 @@ import { useTranslation } from "react-i18next";
 import { SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
-import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
 import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
 import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
+import { CommunityHighlights } from "@/features/home/components/CommunityHighlights";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
-import type { ServiceListing, User, WishSummary } from "@/types";
+import type { CommunityHighlights as CommunityHighlightsData, ServiceListing, User } from "@/types";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
 export function HomePageContent({
   featuredListingsData,
-  featuredWishes = [],
+  communityHighlights,
 }: {
   featuredListingsData: FeaturedListing[];
-  featuredWishes?: WishSummary[];
+  communityHighlights: CommunityHighlightsData;
   topContributors?: unknown[];
 }) {
   const { t } = useTranslation();
   const displayListings = normalizeFeaturedListingsForDisplay(featuredListingsData);
   const listingCount = displayListings.length;
-  const displayWishes = featuredWishes;
 
   return (
     <div className="home-page mx-auto w-full max-w-[1280px] space-y-16 pb-8 sm:space-y-20 md:pb-10">
@@ -87,32 +86,7 @@ export function HomePageContent({
       </Reveal>
 
       <Reveal>
-        <section aria-labelledby="wishes-title" className="pb-2">
-          <SectionHeader
-            id="wishes-title"
-            title={t('home.wishes.title')}
-            subtitle={t('home.wishes.subtitle')}
-          />
-
-          {displayWishes.length > 0 ? (
-            <>
-              <WishesCarousel wishes={displayWishes} />
-              <div className="mt-4 flex justify-center">
-                <Button asChild variant="outline" className="h-11 min-w-[200px] rounded-xl border-[#3f7752] text-[#3f7752]" data-fab-collision>
-                  <Link href="/wishes">{t('home.wishes.exploreMore')}</Link>
-                </Button>
-              </div>
-            </>
-          ) : (
-            <EmptyState
-              icon={<SearchIcon className="size-6" aria-hidden="true" />}
-              title={t('home.wishes.emptyTitle')}
-              description={t('home.wishes.emptyBody')}
-              actionLabel={t('home.tahadu.shareCta')}
-              actionHref="/wishes/request"
-            />
-          )}
-        </section>
+        <CommunityHighlights highlights={communityHighlights} />
       </Reveal>
 
     </div>
