@@ -34,11 +34,12 @@ const CATEGORY_COVER_SLUGS: Record<string, string> = {
 // These are the approved, people-free R&O category illustrations. They are
 // used only when a listing owner has not supplied their own cover image.
 const RO_CATEGORY_COVERS: Record<string, string> = {
-  'graphic design': 'category-graphic-design.webp',
+  // Keep the initial homepage category row and listing fallbacks visually in sync.
+  'graphic design': 'category-design.webp',
   design: 'category-design.webp',
-  'web development': 'category-web-development.webp',
+  'web development': 'category-programming.webp',
   programming: 'category-programming.webp',
-  tutoring: 'category-tutoring.webp',
+  tutoring: 'category-education.webp',
   education: 'category-education.webp',
   'music lessons': 'category-music-audio.webp',
   'music & audio': 'category-music-audio.webp',
@@ -49,7 +50,7 @@ const RO_CATEGORY_COVERS: Record<string, string> = {
   photography: 'category-photography-video.webp',
   videography: 'category-photography-video.webp',
   'photography & video': 'category-photography-video.webp',
-  'home repair': 'category-home-repair.webp',
+  'home repair': 'category-home-living.webp',
   'home & living': 'category-home-living.webp',
   'tech support': 'category-tech-support.webp',
   gardening: 'category-gardening.webp',

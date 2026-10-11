@@ -25,7 +25,7 @@ async function loadHomePageData() {
 }
 
 export default async function HomePage() {
-  const { featuredListingsData, featuredWishes } = await loadHomePageData();
+  const { featuredListingsData, communityHighlights } = await loadHomePageData();
 
   return (
     <HomePageContent
