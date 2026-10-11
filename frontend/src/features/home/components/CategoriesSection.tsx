@@ -33,9 +33,8 @@ export function CategoriesSection() {
     <section aria-labelledby="home-categories-title" className="scroll-mt-24">
       <SectionHeader
         id="home-categories-title"
-        title={arabic ? 'استكشف الفئات' : 'Explore Categories'}
-        subtitle={arabic ? 'اعثر على المهارة أو المساعدة المناسبة لطلبك التالي.' : 'Find the right skill or practical help for your next request.'}
-        centered
+        title={arabic ? 'استكشف ما يشاركه الناس' : 'Explore what people share'}
+        subtitle={arabic ? 'ابدأ بمجال مهارة، ثم اكتشف الإعلانات المناسبة.' : 'Start with a skill area, then discover relevant listings.'}
       />
 
       <div className="mb-6 flex justify-center">
@@ -48,12 +47,12 @@ export function CategoriesSection() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7">
+      <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-4 xl:grid-cols-8">
         {categories.map((category, index) => (
           <Link
             key={category.id}
             href={`/listings?category=${encodeURIComponent(category.value)}`}
-            className={`${!expanded && index >= 6 ? 'hidden md:flex' : 'flex'} group min-w-0 flex-col items-center text-center focus-visible:outline-none`}
+            className={`${expanded || index < 6 ? 'flex' : index < 8 ? 'hidden md:flex' : 'hidden'} group min-w-0 flex-col items-center text-center focus-visible:outline-none`}
             aria-label={arabic ? category.ar : category.en}
           >
             <span className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] bg-white shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_3px_7px_rgb(14_43_40/0.06),0_12px_24px_rgb(14_43_40/0.11)] transition group-hover:-translate-y-1 group-hover:border-[var(--ro-mint)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)] group-focus-visible:ring-offset-3">
@@ -74,7 +73,7 @@ export function CategoriesSection() {
 
       <button
         type="button"
-        className="mx-auto mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--ro-mint)] bg-white px-5 text-sm font-extrabold text-[var(--ro-deep-teal)] transition hover:bg-[var(--ro-light-surface)] active:scale-[0.98] md:hidden"
+        className="mx-auto mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--ro-mint)] bg-white px-5 text-sm font-extrabold text-[var(--ro-deep-teal)] transition hover:bg-[var(--ro-light-surface)] active:scale-[0.98]"
         aria-expanded={expanded}
         onClick={() => setExpanded((value) => !value)}
       >

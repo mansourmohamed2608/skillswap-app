@@ -20,15 +20,15 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
 
   return (
     <section
-      className="relative overflow-hidden rounded-[26px] bg-[radial-gradient(ellipse_at_78%_40%,rgb(39_138_120/0.66)_0%,transparent_58%),linear-gradient(115deg,#0e2b28_0%,#164b46_62%,#246f62_100%)] px-5 py-7 text-white shadow-[0_28px_64px_rgb(14_43_40/0.18)] sm:px-8 sm:py-10 lg:px-10"
+      className="relative overflow-hidden rounded-[26px] bg-[radial-gradient(ellipse_at_78%_40%,rgb(39_138_120/0.66)_0%,transparent_58%),linear-gradient(115deg,#0e2b28_0%,#164b46_62%,#246f62_100%)] px-5 py-5 text-white shadow-[0_28px_64px_rgb(14_43_40/0.18)] sm:px-8 sm:py-8 lg:min-h-[580px] lg:px-10 lg:py-10"
       aria-labelledby="home-hero-title"
     >
-      <div className="grid items-center gap-7 md:grid-cols-[0.9fr_1.35fr] lg:gap-12">
+      <div className="grid items-center gap-7 md:grid-cols-[0.9fr_1.1fr] lg:min-h-[500px] lg:gap-14">
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
-          className="min-w-0"
+          className="order-2 min-w-0 md:order-1"
         >
           <h1 id="home-hero-title" className="text-5xl font-black leading-none tracking-[-0.065em] sm:text-6xl lg:text-7xl">
             R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O
@@ -63,7 +63,7 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
           initial={false}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.08 }}
-          className="relative aspect-[4/3] min-h-[245px] overflow-hidden rounded-[22px] border border-white/25 bg-white/10 md:min-h-[360px]"
+          className="relative order-1 h-[245px] overflow-hidden rounded-[22px] border border-white/25 bg-white/10 md:order-2 md:h-auto md:min-h-[440px]"
         >
           <Image
             src="/ro/home/hero-flat-lay.png"

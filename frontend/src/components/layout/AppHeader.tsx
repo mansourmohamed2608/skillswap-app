@@ -51,7 +51,7 @@ const primaryNavItems = [
   { href: '/listings', label: 'listings', icon: ListIcon },
   { href: '/matchmaking', label: 'matchmaking', icon: SparklesIcon },
   { href: '/pricing', label: 'pricing', icon: Gem },
-  { href: '/#get-app', label: 'getApp', icon: Smartphone },
+  { href: '/support', label: 'getApp', icon: Smartphone },
 ];
 
 // Authenticated user items
@@ -134,7 +134,7 @@ export function AppHeader() {
           <div className="mx-auto flex max-w-lg items-center gap-3">
             <Smartphone className="size-5 shrink-0 text-[var(--ro-lime)]" aria-hidden="true" />
             <p className="min-w-0 flex-1 text-xs font-semibold">{arabic ? 'احصل على تطبيق R&O' : 'Get the R&O app'}</p>
-            <Link href="/#get-app" className="rounded-lg bg-[var(--ro-lime)] px-3 py-1.5 text-xs font-black text-[var(--ro-deep-teal)]">
+            <Link href="/support" className="rounded-lg bg-[var(--ro-lime)] px-3 py-1.5 text-xs font-black text-[var(--ro-deep-teal)]">
               {arabic ? 'التطبيق' : 'Get App'}
             </Link>
             <button type="button" onClick={dismissAppBanner} className="grid size-9 shrink-0 place-items-center rounded-lg text-white/80 hover:bg-white/10 hover:text-white" aria-label={t('common.close', { defaultValue: 'Close' })}>

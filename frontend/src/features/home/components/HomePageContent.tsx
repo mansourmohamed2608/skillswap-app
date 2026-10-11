@@ -8,7 +8,6 @@ import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
 import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
-import { TahaduSection } from "@/features/home/components/TahaduSection";
 import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -59,7 +58,7 @@ export function HomePageContent({
             <>
               <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
                 {displayListings.map(({ listing, user }) => (
-                  <ServiceCard key={listing.id} listing={listing} user={user} variant="compact" />
+                  <ServiceCard key={listing.id} listing={listing} user={user} />
                 ))}
               </div>
               <div className="md:hidden">
@@ -69,7 +68,7 @@ export function HomePageContent({
                 >
                   {displayListings.map(({ listing, user }, index) => (
                     <CarouselSlide key={listing.id} index={index} count={listingCount}>
-                      <ServiceCard listing={listing} user={user} variant="compact" />
+                      <ServiceCard listing={listing} user={user} />
                     </CarouselSlide>
                   ))}
                 </HorizontalSnapCarousel>
@@ -86,8 +85,6 @@ export function HomePageContent({
           )}
         </section>
       </Reveal>
-
-      <TahaduSection />
 
       <Reveal>
         <section aria-labelledby="wishes-title" className="pb-2">
@@ -118,25 +115,6 @@ export function HomePageContent({
         </section>
       </Reveal>
 
-      <Reveal>
-        <section
-          id="get-app"
-          aria-labelledby="get-app-title"
-          className="grid scroll-mt-28 gap-5 rounded-[22px] border border-[var(--ro-mint)] bg-[linear-gradient(135deg,#edf7f1,#f7fce9)] px-6 py-8 shadow-[0_14px_34px_rgb(14_43_40/0.07)] sm:grid-cols-[1fr_auto] sm:items-center"
-        >
-          <div>
-            <h2 id="get-app-title" className="text-2xl font-black tracking-[-0.025em] text-[var(--ro-deep-teal)]">
-              {t('home.app.title', { defaultValue: 'R&O wherever you are' })}
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              {t('home.app.body', { defaultValue: 'Browse requests and offers from any device. Contact support for mobile app access.' })}
-            </p>
-          </div>
-          <Button asChild variant="outline" className="h-12 bg-white sm:min-w-[170px]">
-            <Link href="/support">{t('footer.support', { defaultValue: 'Support' })}</Link>
-          </Button>
-        </section>
-      </Reveal>
     </div>
   );
 }
