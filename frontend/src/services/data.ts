@@ -577,5 +577,3 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
         return [];
     }
 }
-
-
