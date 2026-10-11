@@ -4,7 +4,7 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 import { getFunctionsBase } from './api';
 
 import { collection, getDocs, doc, getDoc, query, where, DocumentData, Timestamp, limit, orderBy } from 'firebase/firestore';
-import type { CommunityHighlights, ServiceListing, User, WishSummary } from '@/types';
+import type { ServiceListing, User, WishSummary } from '@/types';
 
 export type { WishSummary };
 
@@ -62,7 +62,6 @@ function toNameSlug(value: string): string {
         .slice(0, 2)
         .join('-');
 }
-
 function getCandidateProfileNames(data: any): string[] {
     const values = [
         data?.name,
@@ -579,22 +578,3 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
     }
 }
 
-export async function getCommunityHighlights(): Promise<CommunityHighlights> {
-    const empty: CommunityHighlights = { memberHighlights: [], completedSwaps: [] };
-    try {
-        const base = getFunctionsBase();
-        if (!base) return empty;
-        const response = await fetch(`${base}/api/community/highlights`, {
-            cache: 'no-store',
-            headers: { Accept: 'application/json' },
-        });
-        if (!response.ok) return empty;
-        const data: any = await response.json().catch(() => null);
-        return {
-            memberHighlights: Array.isArray(data?.memberHighlights) ? data.memberHighlights : [],
-            completedSwaps: Array.isArray(data?.completedSwaps) ? data.completedSwaps : [],
-        };
-    } catch {
-        return empty;
-    }
-}

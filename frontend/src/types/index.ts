@@ -125,29 +125,6 @@ export type WishSummary = {
   videoUrl?: string | null;
 };
 
-export type CommunityMemberHighlight = {
-  id: string;
-  name: string;
-  rating: number;
-  reviewsCount: number;
-  location?: string;
-};
-
-export type CompletedSwapHighlight = {
-  id: string;
-  ownerId: string;
-  ownerName?: string;
-  title: string;
-  category: string;
-  description: string;
-  imageUrl?: string;
-};
-
-export type CommunityHighlights = {
-  memberHighlights: CommunityMemberHighlight[];
-  completedSwaps: CompletedSwapHighlight[];
-};
-
 export interface Contributor {
   id: string;
   name: string;

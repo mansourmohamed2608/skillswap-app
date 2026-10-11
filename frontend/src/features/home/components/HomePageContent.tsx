@@ -8,22 +8,19 @@ import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
 import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
-import { CommunityHighlights } from "@/features/home/components/CommunityHighlights";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
-import type { CommunityHighlights as CommunityHighlightsData, ServiceListing, User } from "@/types";
+import type { ServiceListing, User } from "@/types";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
 export function HomePageContent({
   featuredListingsData,
-  communityHighlights,
 }: {
   featuredListingsData: FeaturedListing[];
-  communityHighlights: CommunityHighlightsData;
   topContributors?: unknown[];
 }) {
   const { t } = useTranslation();
@@ -83,10 +80,6 @@ export function HomePageContent({
             />
           )}
         </section>
-      </Reveal>
-
-      <Reveal>
-        <CommunityHighlights highlights={communityHighlights} />
       </Reveal>
 
     </div>
