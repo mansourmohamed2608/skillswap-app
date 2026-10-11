@@ -35,21 +35,21 @@ export class CommunityService {
 
     const memberHighlights: MemberHighlight[] = profilesResult.status === 'fulfilled'
       ? profilesResult.value.docs
-          .map((doc) => {
+          .flatMap((doc): MemberHighlight[] => {
             const data = doc.data() || {};
             const rating = this.number(data.rating);
             const reviewsCount = this.number(data.reviewsCount);
             const name = String(data.name || data.fullName || data.displayName || '').trim();
-            if (!name || rating <= 0 || reviewsCount <= 0) return null;
-            return {
+            if (!name || rating <= 0 || reviewsCount <= 0) return [];
+            const location = String(data.location || data.city || '').trim();
+            return [{
               id: doc.id,
               name,
               rating,
               reviewsCount,
-              location: String(data.location || data.city || '').trim() || undefined,
-            };
+              ...(location ? { location } : {}),
+            }];
           })
-          .filter((item): item is MemberHighlight => item !== null)
           .slice(0, 2)
       : [];
 
@@ -66,26 +66,27 @@ export class CommunityService {
     ]));
 
     const completedSwaps = completedDocs
-      .map((doc) => {
+      .flatMap((doc): CompletedSwap[] => {
         const data = doc.data() || {};
-        if (data.flagged === true || String(data.status || '').toLowerCase() !== 'completed') return null;
+        if (data.flagged === true || String(data.status || '').toLowerCase() !== 'completed') return [];
         const ownerId = String(data.userId || data.offeredByUserId || '').trim();
         const offered = data.offeredService || {};
         const title = String(offered.title || data.title || '').trim();
         const category = String(offered.category || data.category || '').trim();
         const description = String(offered.description || data.description || '').trim();
-        if (!ownerId || !title || !category || !description) return null;
-        return {
+        if (!ownerId || !title || !category || !description) return [];
+        const ownerName = ownerNames.get(ownerId);
+        const imageUrl = String(offered.imageUrl || data.imageUrl || '').trim();
+        return [{
           id: doc.id,
           ownerId,
-          ownerName: ownerNames.get(ownerId) || undefined,
+          ...(ownerName ? { ownerName } : {}),
           title,
           category,
           description,
-          imageUrl: String(offered.imageUrl || data.imageUrl || '').trim() || undefined,
-        };
+          ...(imageUrl ? { imageUrl } : {}),
+        }];
       })
-      .filter((item): item is CompletedSwap => item !== null)
       .slice(0, 2);
 
     return { memberHighlights, completedSwaps };
