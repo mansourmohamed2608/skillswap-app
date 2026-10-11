@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { SearchIcon } from "lucide-react";
+import { ArrowRightIcon, SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
@@ -13,17 +13,15 @@ import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
-import type { CommunityHighlights as CommunityHighlightsData, ServiceListing, User } from "@/types";
+import type { ServiceListing, User } from "@/types";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
 export function HomePageContent({
   featuredListingsData,
-  communityHighlights,
 }: {
   featuredListingsData: FeaturedListing[];
-  communityHighlights: CommunityHighlightsData;
   topContributors?: unknown[];
 }) {
   const { t, i18n } = useTranslation();
@@ -68,7 +66,7 @@ export function HomePageContent({
               </div>
               <div className="mt-7 flex justify-center">
                 <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
-                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'}</Link>
+                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'} <ArrowRightIcon className="ms-2 size-4" /></Link>
                 </Button>
               </div>
             </>
@@ -85,7 +83,7 @@ export function HomePageContent({
       </Reveal>
 
       <Reveal>
-        <CommunityHighlights highlights={communityHighlights} />
+        <CommunityHighlights />
       </Reveal>
 
     </div>

@@ -4,7 +4,7 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 import { getFunctionsBase } from './api';
 
 import { collection, getDocs, doc, getDoc, query, where, DocumentData, Timestamp, limit, orderBy } from 'firebase/firestore';
-import type { CommunityHighlights, ServiceListing, User, WishSummary } from '@/types';
+import type { ServiceListing, User, WishSummary } from '@/types';
 
 export type { WishSummary };
 
@@ -578,20 +578,4 @@ export async function getFeaturedWishes(options?: { count?: number }): Promise<W
     }
 }
 
-export async function getCommunityHighlights(): Promise<CommunityHighlights> {
-    const empty: CommunityHighlights = { memberHighlights: [], completedSwaps: [] };
-    try {
-        const base = getFunctionsBase();
-        if (!base) return empty;
-        const response = await fetch(`${base}/api/community/highlights`, { cache: 'no-store', headers: { Accept: 'application/json' } });
-        if (!response.ok) return empty;
-        const payload = await response.json().catch(() => null) as Partial<CommunityHighlights> | null;
-        return {
-            memberHighlights: Array.isArray(payload?.memberHighlights) ? payload.memberHighlights : [],
-            completedSwaps: Array.isArray(payload?.completedSwaps) ? payload.completedSwaps : [],
-        };
-    } catch {
-        return empty;
-    }
-}
 

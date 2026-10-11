@@ -78,7 +78,7 @@ export function FeaturedListingCard({ listing, user }: Props) {
           compact
           className="bg-[#278a78] text-white hover:bg-[#1d735f]"
         />
-        <Button asChild size="sm" className="h-10 rounded-xl bg-[var(--ro-deep-teal)] text-xs text-white hover:bg-[#174943]">
+        <Button asChild size="sm" variant="outline" className="h-10 rounded-xl border-[#b9decc] bg-white text-xs text-[var(--ro-deep-teal)] hover:bg-[#f3f9f6]">
           <Link href={getListingPath(listing)}>
             {t('listings.card.viewDetails', { defaultValue: 'View details' })}<ArrowRightIcon className="ms-1 size-3.5" />
           </Link>
