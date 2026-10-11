@@ -13,18 +13,21 @@ import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
-import type { ServiceListing, User } from "@/types";
+import type { CommunityHighlights as CommunityHighlightsData, ServiceListing, User } from "@/types";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
 
 export function HomePageContent({
   featuredListingsData,
+  communityHighlights,
 }: {
   featuredListingsData: FeaturedListing[];
+  communityHighlights: CommunityHighlightsData;
   topContributors?: unknown[];
 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const arabic = i18n.language?.startsWith('ar');
   const displayListings = normalizeFeaturedListingsForDisplay(featuredListingsData);
   const listingCount = displayListings.length;
 
@@ -40,8 +43,8 @@ export function HomePageContent({
         <section aria-labelledby="featured-listings-title">
           <SectionHeader
             id="featured-listings-title"
-            title={t('home.featured.title')}
-            subtitle={t('home.featured.subtitle')}
+            title={arabic ? 'إعلانات مميزة' : 'Featured listings'}
+            subtitle={arabic ? 'عروض عملية مع تبادل واضح في الاعتبار.' : 'Practical offers with a clear exchange in mind.'}
           />
 
           {displayListings.length > 0 ? (
@@ -53,7 +56,7 @@ export function HomePageContent({
               </div>
               <div className="md:hidden">
                 <HorizontalSnapCarousel
-                  ariaLabel={t('home.featured.title')}
+                  ariaLabel={arabic ? 'إعلانات مميزة' : 'Featured listings'}
                   showDots
                 >
                   {displayListings.map(({ listing, user }, index) => (
@@ -65,7 +68,7 @@ export function HomePageContent({
               </div>
               <div className="mt-7 flex justify-center">
                 <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
-                  <Link href="/listings">{t('home.featured.viewAll')}</Link>
+                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'}</Link>
                 </Button>
               </div>
             </>
@@ -82,7 +85,7 @@ export function HomePageContent({
       </Reveal>
 
       <Reveal>
-        <CommunityHighlights />
+        <CommunityHighlights highlights={communityHighlights} />
       </Reveal>
 
     </div>
