@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
 import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
+import { CommunityHighlights } from "@/features/home/components/CommunityHighlights";
+import { FeaturedListingCard } from "@/features/home/components/FeaturedListingCard";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -41,20 +42,13 @@ export function HomePageContent({
             id="featured-listings-title"
             title={t('home.featured.title')}
             subtitle={t('home.featured.subtitle')}
-            action={
-              displayListings.length > 0 ? (
-                <Button variant="outline" size="sm" asChild className="hidden rounded-xl border-[#3f7752] text-[#3f7752] sm:inline-flex">
-                  <Link href="/listings">{t('home.featured.viewAll')}</Link>
-                </Button>
-              ) : undefined
-            }
           />
 
           {displayListings.length > 0 ? (
             <>
               <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
                 {displayListings.map(({ listing, user }) => (
-                  <ServiceCard key={listing.id} listing={listing} user={user} />
+                  <FeaturedListingCard key={listing.id} listing={listing} user={user} />
                 ))}
               </div>
               <div className="md:hidden">
@@ -64,10 +58,15 @@ export function HomePageContent({
                 >
                   {displayListings.map(({ listing, user }, index) => (
                     <CarouselSlide key={listing.id} index={index} count={listingCount}>
-                      <ServiceCard listing={listing} user={user} />
+                      <FeaturedListingCard listing={listing} user={user} />
                     </CarouselSlide>
                   ))}
                 </HorizontalSnapCarousel>
+              </div>
+              <div className="mt-7 flex justify-center">
+                <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
+                  <Link href="/listings">{t('home.featured.viewAll')}</Link>
+                </Button>
               </div>
             </>
           ) : (
@@ -80,6 +79,10 @@ export function HomePageContent({
             />
           )}
         </section>
+      </Reveal>
+
+      <Reveal>
+        <CommunityHighlights />
       </Reveal>
 
     </div>
