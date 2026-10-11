@@ -23,7 +23,6 @@ import { deleteListing } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { DEFAULT_LISTING_COVER, getListingCoverImage } from '@/lib/listingImages';
-import { ServiceVisual } from '@/components/listings/ServiceVisual';
 import { MessageListingButton } from './MessageListingButton';
 import {
   AlertDialog,
@@ -168,18 +167,14 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
     return (
       <Card data-fab-collision className="flex h-full flex-col overflow-hidden rounded-2xl border-[var(--ro-mint)] bg-white shadow-[0_12px_28px_rgb(14_43_40/0.08)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_18px_34px_rgb(14_43_40/0.12)]">
         <div className="relative aspect-[16/9] overflow-hidden bg-[var(--ro-light-surface)]">
-          {hasCustomImage ? (
-            <Image
-              src={coverSrc}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 88vw, 320px"
-              onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
-            />
-          ) : (
-            <ServiceVisual category={listing.offeredService?.category} compact className="h-full" />
-          )}
+          <Image
+            src={coverSrc}
+            alt={hasCustomImage ? '' : `${offeredCategory} category illustration`}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 88vw, 320px"
+            onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
+          />
           <span className="absolute start-3 top-3 rounded-lg bg-white/92 px-2 py-1 text-[10px] font-bold text-[var(--ro-emerald)] shadow-sm">
             {offeredCategory}
           </span>
@@ -261,19 +256,15 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
     <Card className="flex h-full flex-col overflow-hidden rounded-2xl border-border/70 shadow-none transition-colors duration-300 hover:border-primary/40 hover:shadow-none">
       <CardHeader className="p-0">
         <div className="relative h-36 w-full overflow-hidden bg-[#f7f6df]">
-          {hasCustomImage ? (
-            <Image
-              src={coverSrc}
-              alt={listing.offeredService?.title ?? t('listings.card.serviceAlt')}
-              fill
-              style={{ objectFit: 'cover' }}
-              sizes="(max-width: 768px) 85vw, 320px"
-              onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
-              data-ai-hint="service item"
-            />
-          ) : (
-            <ServiceVisual category={listing.offeredService?.category} className="h-full" />
-          )}
+          <Image
+            src={coverSrc}
+            alt={hasCustomImage ? (listing.offeredService?.title ?? t('listings.card.serviceAlt')) : `${offeredCategory} category illustration`}
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 85vw, 320px"
+            onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
+            data-ai-hint="service item"
+          />
         </div>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 p-4">
