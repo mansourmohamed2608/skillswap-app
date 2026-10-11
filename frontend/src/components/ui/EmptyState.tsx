@@ -27,22 +27,22 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        'flex flex-col items-center rounded-2xl border border-dashed border-[#c8d5b9] bg-[#fffdf0]/80 px-5 py-10 text-center',
+        'flex flex-col items-center rounded-2xl border border-dashed border-[var(--ro-mint)] bg-[var(--ro-light-surface)] px-5 py-10 text-center',
         className
       )}
     >
-      <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-[#3f7752]/10 text-[#3f7752]">
+      <div className="mb-3 flex size-14 items-center justify-center rounded-2xl bg-[var(--ro-mint)]/45 text-[var(--ro-deep-teal)]">
         {icon}
       </div>
-      <p className="font-semibold text-[#2d4a38]">{title}</p>
+      <p className="font-semibold text-[var(--ro-deep-teal)]">{title}</p>
       {description ? <p className="mt-2 max-w-sm text-sm text-muted-foreground">{description}</p> : null}
       {actionLabel && actionHref ? (
-        <Button asChild className="mt-5 h-11 rounded-xl bg-[#d4642f] hover:bg-[#d4642f]/90">
+        <Button asChild className="mt-5 h-11 rounded-xl">
           <Link href={actionHref}>{actionLabel}</Link>
         </Button>
       ) : null}
       {actionLabel && onAction && !actionHref ? (
-        <Button type="button" onClick={onAction} className="mt-5 h-11 rounded-xl bg-[#d4642f] hover:bg-[#d4642f]/90">
+        <Button type="button" onClick={onAction} className="mt-5 h-11 rounded-xl">
           {actionLabel}
         </Button>
       ) : null}
@@ -52,7 +52,7 @@ export function EmptyState({
 
 export function ListingCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#c8d5b9]/60 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-[var(--ro-mint)] bg-white">
       <div className="skeleton-shimmer h-24 w-full" />
       <div className="space-y-2 p-4">
         <div className="skeleton-shimmer h-4 w-20 rounded-full" />
@@ -66,7 +66,7 @@ export function ListingCardSkeleton() {
 
 export function WishCardSkeleton() {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#c8d5b9]/60 bg-white p-4">
+    <div className="overflow-hidden rounded-2xl border border-[var(--ro-mint)] bg-white p-4">
       <div className="flex gap-3">
         <div className="skeleton-shimmer size-14 shrink-0 rounded-xl" />
         <div className="flex-1 space-y-2">

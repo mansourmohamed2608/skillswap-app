@@ -16,9 +16,10 @@ const QUICK_SUGGESTION_KEYS = ['webDev', 'photography', 'logoDesign', 'homeRepai
 type HeroSearchBarProps = {
   featuredListings?: Array<{ listing: ServiceListing }>;
   variant?: 'hero' | 'section';
+  showQuickSuggestions?: boolean;
 };
 
-export function HeroSearchBar({ featuredListings = [], variant = 'section' }: HeroSearchBarProps) {
+export function HeroSearchBar({ featuredListings = [], variant = 'section', showQuickSuggestions = true }: HeroSearchBarProps) {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -128,7 +129,7 @@ export function HeroSearchBar({ featuredListings = [], variant = 'section' }: He
         {loading ? <Loader2 className="absolute end-4 h-4 w-4 animate-spin text-muted-foreground" /> : null}
       </div>
 
-      {!query && isHero ? (
+      {!query && isHero && showQuickSuggestions ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {QUICK_SUGGESTION_KEYS.map((key) => {
             const label = t(`home.search.quick.${key}`);

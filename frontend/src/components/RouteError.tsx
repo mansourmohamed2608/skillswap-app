@@ -24,7 +24,7 @@ export function RouteError({
   const safeMessage = getErrorMessage(error, '');
 
   return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-10rem-5rem)] text-center px-4">
+      <div className="flex min-h-[50vh] flex-col items-center justify-center rounded-2xl border border-border bg-card px-4 py-12 text-center shadow-[0_12px_30px_rgb(14_43_40/0.07)]">
       <AlertTriangle className="w-16 h-16 text-destructive mb-4" />
       <h2 className="text-2xl font-semibold mb-2 text-primary">{resolvedTitle}</h2>
       <p className="text-muted-foreground mb-6 max-w-md">{description}</p>

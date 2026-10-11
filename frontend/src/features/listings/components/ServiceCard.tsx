@@ -166,8 +166,8 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
       t('listings.card.openToOffers');
 
     return (
-      <Card data-fab-collision className="flex h-full flex-col overflow-hidden rounded-2xl border-[#c8d5b9]/80 bg-white shadow-sm transition-shadow hover:shadow-md">
-        <div className="relative h-24 overflow-hidden">
+      <Card data-fab-collision className="flex h-full flex-col overflow-hidden rounded-2xl border-[var(--ro-mint)] bg-white shadow-[0_12px_28px_rgb(14_43_40/0.08)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_18px_34px_rgb(14_43_40/0.12)]">
+        <div className="relative aspect-[16/9] overflow-hidden bg-[var(--ro-light-surface)]">
           {hasCustomImage ? (
             <Image
               src={coverSrc}
@@ -180,23 +180,23 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
           ) : (
             <ServiceVisual category={listing.offeredService?.category} compact className="h-full" />
           )}
-          <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-semibold text-[#3f7752]">
+          <span className="absolute start-3 top-3 rounded-lg bg-white/92 px-2 py-1 text-[10px] font-bold text-[var(--ro-emerald)] shadow-sm">
             {offeredCategory}
           </span>
         </div>
 
         <CardContent className="flex flex-1 flex-col space-y-2 p-3.5">
-          <CardTitle className="line-clamp-2 text-sm font-semibold leading-snug text-[#2d4a38]">
+          <CardTitle className="line-clamp-2 text-base font-bold leading-snug text-[var(--ro-deep-teal)]">
             {listing.offeredService?.title || t('listings.card.untitled')}
           </CardTitle>
 
           <div className="space-y-1 text-xs">
             <p>
-              <span className="font-semibold text-[#739b7a]">{t('listings.card.offerLabel', 'I offer')}:</span>{' '}
-              <span className="text-muted-foreground">{listing.offeredService?.description || listing.offeredService?.title || '—'}</span>
+              <span className="font-semibold text-[var(--ro-emerald)]">{t('listings.card.offerLabel', 'I offer')}:</span>{' '}
+              <span className="text-muted-foreground">{listing.offeredService?.description || listing.offeredService?.title || '-'}</span>
             </p>
             <p>
-              <span className="font-semibold text-[#739b7a]">{t('listings.card.lookingForLabel', 'Looking for')}:</span>{' '}
+              <span className="font-semibold text-[var(--ro-emerald)]">{t('listings.card.lookingForLabel', 'Looking for')}:</span>{' '}
               <span className="text-muted-foreground">{lookingForText}</span>
             </p>
           </div>
@@ -227,9 +227,10 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
                 ownerId={listing.offeredByUserId}
                 ownerName={ownerName}
                 compact
+                className="bg-[linear-gradient(120deg,#0e2b28,#278a78)] text-white hover:brightness-110"
               />
             ) : null}
-            <Button asChild size="sm" className="h-10 w-full rounded-xl bg-[#3f7752] text-xs hover:bg-[#3f7752]/90">
+            <Button asChild size="sm" variant="outline" className="h-10 w-full rounded-xl text-xs">
               <Link href={getListingPath(listing)}>{t('listings.card.viewDetails')}</Link>
             </Button>
           </div>

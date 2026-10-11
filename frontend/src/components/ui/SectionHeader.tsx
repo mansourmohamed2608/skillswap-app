@@ -16,18 +16,18 @@ export function SectionHeader({ id, title, subtitle, action, className, centered
   return (
     <div
       className={cn(
-        'mb-4 flex items-end justify-between gap-3',
+        'mb-6 flex items-end justify-between gap-3',
         centered && 'flex-col items-center text-center',
         className
       )}
     >
       <div className={cn(centered && 'max-w-xl')}>
         {id ? (
-          <h2 id={id} className="text-xl font-bold text-[#3f7752] sm:text-2xl">
+          <h2 id={id} className="text-2xl font-black tracking-[-0.035em] text-[var(--ro-deep-teal)] sm:text-3xl lg:text-4xl">
             {title}
           </h2>
         ) : (
-          <h2 className="text-xl font-bold text-[#3f7752] sm:text-2xl">{title}</h2>
+          <h2 className="text-2xl font-black tracking-[-0.035em] text-[var(--ro-deep-teal)] sm:text-3xl lg:text-4xl">{title}</h2>
         )}
         {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
       </div>

@@ -1,74 +1,67 @@
 'use client';
 
+import Image from 'next/image';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { motion, useReducedMotion } from 'framer-motion';
-import { FilePlus, Search, Users } from 'lucide-react';
-import { Reveal } from '@/components/motion/Reveal';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { HorizontalSnapCarousel, CarouselSlide } from '@/components/ui/HorizontalSnapCarousel';
-import { cn } from '@/lib/utils';
 
-const STEP_ICONS = [FilePlus, Search, Users];
+const illustrations = [
+  '/ro/home/step-request-offer.webp',
+  '/ro/home/step-find-match.webp',
+  '/ro/home/step-connect-exchange.webp',
+];
 
 export function HowItWorksScroll() {
-  const { t } = useTranslation();
-  const reduced = useReducedMotion();
-
+  const { t, i18n } = useTranslation();
+  const arabic = i18n.language?.startsWith('ar');
   const steps = [
-    { title: t('home.howItWorksV2.step1.title'), body: t('home.howItWorksV2.step1.body') },
-    { title: t('home.howItWorksV2.step2.title'), body: t('home.howItWorksV2.step2.body') },
-    { title: t('home.howItWorksV2.step3.title'), body: t('home.howItWorksV2.step3.body') },
+    {
+      title: arabic ? 'اطلب وقدّم' : 'Request & Offer',
+      body: t('home.howItWorksV2.step1.body'),
+    },
+    {
+      title: arabic ? 'اعثر على تطابق' : 'Find a Match',
+      body: t('home.howItWorksV2.step2.body'),
+    },
+    {
+      title: arabic ? 'تواصل وتبادل' : 'Connect & Swap',
+      body: t('home.howItWorksV2.step3.body'),
+    },
   ];
 
-  const StepCard = ({ index, className }: { index: number; className?: string }) => {
-    const Icon = STEP_ICONS[index];
-    const step = steps[index];
-    return (
-      <motion.article
-        initial={reduced ? false : { opacity: 0, y: 16 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ delay: index * 0.08 }}
-        className={cn(
-          'flex h-full flex-col rounded-2xl border border-[#c8d5b9] bg-white p-4 shadow-sm',
-          className
-        )}
-      >
-        <span className="text-xs font-bold text-[#d4642f]">0{index + 1}</span>
-        <span className="mt-2 inline-flex size-11 items-center justify-center rounded-xl bg-[#3f7752]/10 text-[#3f7752]">
-          <Icon className="size-5" aria-hidden="true" />
-        </span>
-        <h3 className="mt-3 text-base font-semibold text-[#2d4a38]">{step.title}</h3>
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{step.body}</p>
-      </motion.article>
-    );
-  };
-
   return (
-    <Reveal>
-      <section aria-labelledby="how-it-works-title" className="space-y-4">
-        <SectionHeader id="how-it-works-title" title={t('home.howItWorks.title')} centered />
+    <section aria-labelledby="how-it-works-title" className="scroll-mt-24">
+      <SectionHeader
+        id="how-it-works-title"
+        title={arabic ? 'كيف يعمل R&O' : 'How R&O Works'}
+        centered
+      />
 
-        <div className="md:hidden">
-          <HorizontalSnapCarousel
-            ariaLabel={t('home.howItWorks.title')}
-            showHint
-            hintLabel={t('home.carousel.swipeHint')}
+      <div className="grid gap-4 md:grid-cols-3">
+        {steps.map((step, index) => (
+          <motion.article
+            key={step.title}
+            initial={false}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.25 }}
+            transition={{ duration: 0.4, delay: index * 0.07 }}
+            className="flex min-h-[320px] flex-col items-center rounded-2xl border border-[var(--ro-mint)] bg-[linear-gradient(155deg,#fff_0%,#f3f9f6_72%,#f7fce9_100%)] px-6 py-6 text-center shadow-[0_12px_28px_rgb(14_43_40/0.08)]"
           >
-            {steps.map((_, index) => (
-              <CarouselSlide key={index} index={index} count={steps.length} slideClassName="w-[calc(100%-1.5rem)] max-w-[340px]">
-                <StepCard index={index} />
-              </CarouselSlide>
-            ))}
-          </HorizontalSnapCarousel>
-        </div>
-
-        <div className="hidden gap-4 md:grid md:grid-cols-3">
-          {steps.map((_, index) => (
-            <StepCard key={index} index={index} />
-          ))}
-        </div>
-      </section>
-    </Reveal>
+            <span className="grid size-10 place-items-center rounded-full bg-[var(--ro-lime-gradient)] text-base font-black text-[var(--ro-deep-teal)] shadow-[0_7px_15px_rgb(14_43_40/0.12)]">
+              {index + 1}
+            </span>
+            <Image
+              src={illustrations[index]}
+              alt=""
+              width={180}
+              height={180}
+              className="my-3 h-[150px] w-[150px] object-contain"
+            />
+            <h3 className="text-lg font-black text-[var(--ro-deep-teal)]">{step.title}</h3>
+            <p className="mt-2 max-w-[30ch] text-sm leading-relaxed text-muted-foreground">{step.body}</p>
+          </motion.article>
+        ))}
+      </div>
+    </section>
   );
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { GemIcon, SearchIcon } from "lucide-react";
+import { SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ServiceCard } from "@/features/listings/components/ServiceCard";
 import { WishesCarousel } from "@/features/wishes/components/WishesCarousel";
@@ -10,13 +10,11 @@ import { HomeHero } from "@/features/home/components/HomeHero";
 import { CategoriesSection } from "@/features/home/components/CategoriesSection";
 import { TahaduSection } from "@/features/home/components/TahaduSection";
 import { HowItWorksScroll } from "@/features/home/components/HowItWorksScroll";
-import { JoinNowBanner } from "@/features/home/components/JoinNowBanner";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
 import type { ServiceListing, User, WishSummary } from "@/types";
-import { normalizeWishesForDisplay } from "@/lib/wish-display";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
 type FeaturedListing = { listing: ServiceListing; user: User | null };
@@ -32,29 +30,15 @@ export function HomePageContent({
   const { t } = useTranslation();
   const displayListings = normalizeFeaturedListingsForDisplay(featuredListingsData);
   const listingCount = displayListings.length;
-  const displayWishes = normalizeWishesForDisplay(featuredWishes);
+  const displayWishes = featuredWishes;
 
   return (
-    <div className="home-page mx-auto w-full max-w-6xl space-y-11 pb-6 sm:space-y-12 md:pb-6">
+    <div className="home-page mx-auto w-full max-w-[1280px] space-y-16 pb-8 sm:space-y-20 md:pb-10">
       <HomeHero featuredListings={displayListings} />
-
-      <CategoriesSection />
 
       <HowItWorksScroll />
 
-      <JoinNowBanner />
-
-      <Reveal>
-        <section className="flex flex-col gap-3 rounded-2xl border border-[#c8d5b9] bg-white p-5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="subscription-plans-entry">
-          <div>
-            <h2 id="subscription-plans-entry" className="text-lg font-semibold text-[#2d4a38]">{t('header.pricing', 'Subscription Plans')}</h2>
-            <p className="text-sm text-muted-foreground">{t('pricing.subRequiredBody')}</p>
-          </div>
-          <Button asChild className="h-11 shrink-0 rounded-xl">
-            <Link href="/pricing"><GemIcon className="mr-2 h-4 w-4" />{t('payments.subscribeNow', { defaultValue: 'Subscribe Now' })}</Link>
-          </Button>
-        </section>
-      </Reveal>
+      <CategoriesSection />
 
       <Reveal>
         <section aria-labelledby="featured-listings-title">
@@ -73,7 +57,7 @@ export function HomePageContent({
 
           {displayListings.length > 0 ? (
             <>
-              <div className="hidden gap-4 md:grid md:grid-cols-2 lg:grid-cols-3">
+              <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
                 {displayListings.map(({ listing, user }) => (
                   <ServiceCard key={listing.id} listing={listing} user={user} variant="compact" />
                 ))}
@@ -81,8 +65,7 @@ export function HomePageContent({
               <div className="md:hidden">
                 <HorizontalSnapCarousel
                   ariaLabel={t('home.featured.title')}
-                  showHint
-                  hintLabel={t('home.carousel.swipeHint')}
+                  showDots
                 >
                   {displayListings.map(({ listing, user }, index) => (
                     <CarouselSlide key={listing.id} index={index} count={listingCount}>
@@ -132,6 +115,26 @@ export function HomePageContent({
               actionHref="/wishes/request"
             />
           )}
+        </section>
+      </Reveal>
+
+      <Reveal>
+        <section
+          id="get-app"
+          aria-labelledby="get-app-title"
+          className="grid scroll-mt-28 gap-5 rounded-[22px] border border-[var(--ro-mint)] bg-[linear-gradient(135deg,#edf7f1,#f7fce9)] px-6 py-8 shadow-[0_14px_34px_rgb(14_43_40/0.07)] sm:grid-cols-[1fr_auto] sm:items-center"
+        >
+          <div>
+            <h2 id="get-app-title" className="text-2xl font-black tracking-[-0.025em] text-[var(--ro-deep-teal)]">
+              {t('home.app.title', { defaultValue: 'R&O wherever you are' })}
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              {t('home.app.body', { defaultValue: 'Browse requests and offers from any device. Contact support for mobile app access.' })}
+            </p>
+          </div>
+          <Button asChild variant="outline" className="h-12 bg-white sm:min-w-[170px]">
+            <Link href="/support">{t('footer.support', { defaultValue: 'Support' })}</Link>
+          </Button>
         </section>
       </Reveal>
     </div>

@@ -8,7 +8,7 @@ const resources = {
   en: {
     translation: {
       common: {
-        appName: "SkillSwap",
+        appName: "R&O",
         english: "English",
         arabic: "العربية",
         close: "Close",
@@ -16,6 +16,7 @@ const resources = {
         unset: "Unset",
         menu: "Menu",
         language: "Language",
+        loading: "Loading",
       },
       errors: {
         network: "Network error. Check your connection and try again.",
@@ -86,6 +87,8 @@ const resources = {
         notifications: "Notifications",
         profile: "Profile",
         categories: "Categories",
+        settings: "Settings",
+        wallet: "Wallet",
         burger: "Menu",
         signIn: "Sign In",
         signUp: "Sign Up",
@@ -94,6 +97,7 @@ const resources = {
         more: "More",
         menu: "Menu",
         subscribe: "Subscribe",
+        getApp: "Get the App",
       },
       nav: {
         mobile: {
@@ -132,6 +136,7 @@ const resources = {
         refund: "Refund Policy",
         support: "Support",
         openChats: "Open Chats",
+        navigation: "Footer navigation",
       },
       home: {
         tagline: "Exchange Skills • Connect Communities • Grow Together",
@@ -150,6 +155,7 @@ const resources = {
           previewLocation: "Cairo, Egypt",
         },
         search: {
+          label: "Search R&O",
           placeholder: "Search skills, services, or listings",
           sectionLabel: "Search listings",
           categoryLabel: "Category",
@@ -241,6 +247,17 @@ const resources = {
             photography: "Photography",
             marketing: "Marketing",
             "home-repair": "Home Repair",
+            programming: "Programming",
+            "music-audio": "Music & Audio",
+            "fitness-wellness": "Fitness & Wellness",
+            "business-career": "Business & Career",
+            "photography-video": "Photography & Video",
+            "home-living": "Home & Living",
+            "graphic-design": "Graphic Design",
+            "web-development": "Web Development",
+            "tech-support": "Tech Support",
+            tutoring: "Tutoring",
+            gardening: "Gardening",
           },
           meta: {
             programming: "Web, app, and software development",
@@ -259,6 +276,10 @@ const resources = {
         },
         carousel: {
           swipeHint: "Swipe to explore",
+        },
+        app: {
+          title: "R&O wherever you are",
+          body: "Browse requests and offers from any device. Contact support for mobile app access.",
         },
       },
       search: {
@@ -348,7 +369,7 @@ const resources = {
         backgroundAlt: "Abstract background",
         signIn: {
           title: "Welcome Back!",
-          subtitle: "Sign in to access your SkillSwap account.",
+          subtitle: "Sign in to access your R&O account.",
           emailLabel: "Email",
           emailPlaceholder: "you@example.com",
           passwordLabel: "Password",
@@ -367,7 +388,7 @@ const resources = {
         },
         signUp: {
           title: "Create an Account",
-          subtitle: "Join SkillSwap to start exchanging services.",
+          subtitle: "Join R&O to start exchanging services.",
           errorTitle: "Error",
           fullNameLabel: "Full Name",
           fullNamePlaceholder: "Your full name",
@@ -930,7 +951,7 @@ const resources = {
       },
       support: {
         title: "Support",
-        subtitle: "We're here to help with your SkillSwap account.",
+        subtitle: "We're here to help with your R&O account.",
         chatCta: "Open support chat",
         sections: {
           contact: {
@@ -1510,7 +1531,7 @@ const resources = {
   ar: {
     translation: {
       common: {
-        appName: "سكيل سواپ",
+        appName: "R&O",
         english: "English",
         arabic: "العربية",
         close: "اغلاق",
@@ -1518,6 +1539,7 @@ const resources = {
         unset: "غير محدد",
         menu: "القائمة",
         language: "اللغة",
+        loading: "جارٍ التحميل",
       },
       errors: {
         network: "خطأ في الشبكة. تحقق من الاتصال وحاول مرة أخرى.",
@@ -1588,6 +1610,8 @@ const resources = {
         notifications: "الإشعارات",
         profile: "الملف الشخصي",
         categories: "الفئات",
+        settings: "الإعدادات",
+        wallet: "المحفظة",
         burger: "القائمة",
         signIn: "تسجيل الدخول",
         signUp: "إنشاء حساب",
@@ -1596,6 +1620,7 @@ const resources = {
         more: "المزيد",
         menu: "القائمة",
         subscribe: "اشترك",
+        getApp: "احصل على التطبيق",
       },
       nav: {
         mobile: {
@@ -1634,6 +1659,7 @@ const resources = {
         refund: "سياسة الاسترداد",
         support: "الدعم",
         openChats: "المحادثات المفتوحة",
+        navigation: "تنقّل التذييل",
       },
       home: {
         tagline: "تبادل المهارات • تواصل مع المجتمع • نمّ معًا",
@@ -1652,6 +1678,7 @@ const resources = {
           previewLocation: "Cairo, Egypt",
         },
         search: {
+          label: "ابحث في R&O",
           placeholder: "ابحث عن مهارات أو خدمات أو عروض",
           sectionLabel: "البحث في العروض",
           categoryLabel: "الفئة",
@@ -1738,6 +1765,17 @@ const resources = {
             photography: "التصوير",
             marketing: "التسويق",
             "home-repair": "إصلاح المنزل",
+            programming: "البرمجة",
+            "music-audio": "الموسيقى والصوت",
+            "fitness-wellness": "اللياقة والعافية",
+            "business-career": "الأعمال والمسار المهني",
+            "photography-video": "التصوير والفيديو",
+            "home-living": "المنزل والمعيشة",
+            "graphic-design": "التصميم الجرافيكي",
+            "web-development": "تطوير الويب",
+            "tech-support": "الدعم التقني",
+            tutoring: "الدروس الخصوصية",
+            gardening: "البستنة",
           },
           meta: {
             programming: "تطوير الويب والتطبيقات والبرامج",
@@ -1756,6 +1794,10 @@ const resources = {
         },
         carousel: {
           swipeHint: "اسحب للاستكشاف",
+        },
+        app: {
+          title: "R&O أينما كنت",
+          body: "تصفّح الطلبات والعروض من أي جهاز. تواصل مع الدعم للوصول إلى تطبيق الهاتف.",
         },
       },
       search: {
@@ -1845,7 +1887,7 @@ const resources = {
         backgroundAlt: "خلفية تجريدية",
         signIn: {
           title: "مرحبًا بعودتك!",
-          subtitle: "سجّل الدخول للوصول إلى حساب سكيل سواپ.",
+          subtitle: "سجّل الدخول للوصول إلى حساب R&O.",
           emailLabel: "البريد الإلكتروني",
           emailPlaceholder: "you@example.com",
           passwordLabel: "كلمة المرور",
@@ -1864,7 +1906,7 @@ const resources = {
         },
         signUp: {
           title: "إنشاء حساب",
-          subtitle: "انضم إلى سكيل سواپ لبدء تبادل الخدمات.",
+          subtitle: "انضم إلى R&O لبدء تبادل الخدمات.",
           errorTitle: "خطأ",
           fullNameLabel: "الاسم الكامل",
           fullNamePlaceholder: "اسمك الكامل",
@@ -2427,7 +2469,7 @@ const resources = {
       },
       support: {
         title: "الدعم",
-        subtitle: "نحن هنا لمساعدتك في حساب SkillSwap.",
+        subtitle: "نحن هنا لمساعدتك في حساب R&O.",
         chatCta: "فتح دردشة الدعم",
         sections: {
           contact: {

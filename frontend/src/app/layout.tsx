@@ -35,14 +35,14 @@ export const viewport: Viewport = {
   userScalable: true,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f0e0' },
-    { media: '(prefers-color-scheme: dark)',  color: '#1a1a1a' },
+    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
+    { media: '(prefers-color-scheme: dark)',  color: '#0e2b28' },
   ],
 };
 
 export const metadata: Metadata = {
-  title: 'SkillSwap - Exchange Services',
-  description: 'A platform to offer and request services in exchange for other services.',
+  title: 'R&O - Request and Offer',
+  description: 'Request what you need. Offer what you know.',
 };
 
 export default function RootLayout({
@@ -66,7 +66,7 @@ export default function RootLayout({
               Skip to content
             </a>
             <AppHeader />
-            <main id="main-content" className="relative flex-grow container mx-auto px-4 sm:px-6 pt-3 sm:pt-5 md:pt-8 pb-nav-mobile max-w-screen-2xl">
+            <main id="main-content" className="relative mx-auto w-full max-w-[1440px] flex-grow px-4 pb-nav-mobile pt-4 sm:px-6 sm:pt-6 lg:px-8">
               {children}
             </main>
             <MobileBottomNav />
