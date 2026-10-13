@@ -13,7 +13,7 @@ type HomeHeroProps = {
 };
 
 export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const postHref = user ? '/listings/new' : '/auth/signup';
   const arabic = i18n.language?.startsWith('ar');
@@ -34,8 +34,10 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
             R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O
           </h1>
           <p className="mt-5 max-w-[19ch] text-2xl font-extrabold leading-[1.28] tracking-[-0.025em] sm:text-3xl">
-            {arabic ? 'اطلب ما تحتاجه. قدّم ما تعرفه.' : 'Request what you need. Offer what you know.'}
+            {t('home.hero.approvedTitle')}
           </p>
+          <p className="mt-3 max-w-[52ch] text-sm font-semibold leading-relaxed text-white/90 sm:text-base">{t('home.hero.approvedOffer')}</p>
+          <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-white/80 sm:text-base">{t('home.hero.approvedConnection')}</p>
 
           <div className="mt-6 max-w-[500px] text-[var(--ro-deep-teal)]">
             <HeroSearchBar featuredListings={featuredListings} variant="hero" showQuickSuggestions={false} />
@@ -47,7 +49,7 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
               className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[var(--ro-deep-teal)] shadow-[0_12px_24px_rgb(14_43_40/0.2)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-teal)]"
               style={{ background: 'var(--ro-lime-gradient)' }}
             >
-              {user ? (arabic ? 'ابدأ التبادل' : 'Start Swapping') : (arabic ? 'انضم إلى R&O' : 'Join R&O')}
+              {user ? t('home.hero.ctaPost') : (arabic ? 'انضم إلى R&O' : 'Join R&O')}
             </Link>
             <Link
               href="/listings"
