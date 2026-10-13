@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getListingById } from '@/services/data';
-import { updateListingMobile } from '@/services/api';
+import { getServiceCategories, type ServiceCategoryDefinition, updateListingMobile } from '@/services/api';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/cn';
 import Input from '@/components/ui/Input';
@@ -41,6 +41,7 @@ export default function EditListingScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageMimeType, setImageMimeType] = useState('image/jpeg');
   const [pickedImage, setPickedImage] = useState(false);
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategoryDefinition[]>([]);
   const autoLocationRequestedRef = useRef(false);
 
   async function formatLocationFromGeo(lat: number, lng: number): Promise<string | undefined> {
@@ -97,6 +98,12 @@ export default function EditListingScreen() {
       }
     })();
   }, [id]);
+
+  useEffect(() => {
+    let active = true;
+    getServiceCategories().then((categories) => { if (active) setServiceCategories(categories); }).catch(() => { if (active) setServiceCategories([]); });
+    return () => { active = false; };
+  }, []);
 
   async function pickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -296,7 +303,9 @@ export default function EditListingScreen() {
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.offer_title')}</Text>
         <Input value={title} onChangeText={setTitle} />
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.offer_category') || 'Offer category'}</Text>
-        <Input value={offeredCategory} onChangeText={setOfferedCategory} placeholder={t('listings.categoryPlaceholder')} />
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+          {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setOfferedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${offeredCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${offeredCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+        </ScrollView>
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.description')}</Text>
         <Textarea value={description} onChangeText={setDescription} />
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_title')}</Text>
@@ -318,7 +327,9 @@ export default function EditListingScreen() {
           <>
             <Input value={requestedTitle} onChangeText={setRequestedTitle} />
             <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
-            <Input value={requestedCategory} onChangeText={setRequestedCategory} placeholder={t('listings.categoryPlaceholder')} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+              {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setRequestedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${requestedCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${requestedCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+            </ScrollView>
             <Text style={cn('text-sm text-muted-foreground')}>{t('listings.request_description') || 'Request description'}</Text>
             <Textarea value={requestedDescription} onChangeText={setRequestedDescription} />
           </>

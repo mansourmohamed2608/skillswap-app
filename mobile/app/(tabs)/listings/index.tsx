@@ -1,11 +1,12 @@
-import { View, Text, FlatList, ActivityIndicator, TextInput, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TextInput, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent, ScrollView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getListingsWithUsers } from '@/services/data';
+import { getServiceCategories, type ServiceCategoryDefinition } from '@/services/api';
 import type { ServiceListing, User } from '@/types';
 import { ServiceCard } from '@/components/ui/ServiceCard';
 import Button from '@/components/ui/Button';
-import { Link } from 'expo-router';
+import { Link, useLocalSearchParams } from 'expo-router';
 import { Search, PlusCircle } from 'lucide-react-native';
 import { cn } from '@/lib/cn';
 import { useHeaderFade } from '@/context/HeaderFadeContext';
@@ -22,19 +23,27 @@ export default function ListingsScreen() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'completed'>('all');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [serviceCategories, setServiceCategories] = useState<ServiceCategoryDefinition[]>([]);
+  const { category: categoryParam } = useLocalSearchParams<{ category?: string }>();
   const { setFade } = useHeaderFade();
 
   useEffect(() => {
     setFade(0);
     (async () => {
       try {
-        const res = await getListingsWithUsers();
+        const [res, categories] = await Promise.all([getListingsWithUsers(), getServiceCategories().catch(() => [])]);
         setItems(res);
+        setServiceCategories(categories);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
+
+  useEffect(() => {
+    setCategoryFilter(typeof categoryParam === 'string' ? categoryParam : '');
+  }, [categoryParam]);
 
   const filteredItems = items.filter((item) => {
     const query = searchQuery.toLowerCase();
@@ -44,7 +53,8 @@ export default function ListingsScreen() {
       item.user?.name?.toLowerCase().includes(query)
     );
     const matchesStatus = statusFilter === 'all' || item.listing.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesCategory = !categoryFilter || item.listing.offeredService?.category === categoryFilter || item.listing.requestedService?.category === categoryFilter;
+    return matchesSearch && matchesStatus && matchesCategory;
   });
 
   return (
@@ -93,6 +103,10 @@ export default function ListingsScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mt-3')} contentContainerStyle={{ gap: 8, paddingRight: 12 }}>
+                <TouchableOpacity onPress={() => setCategoryFilter('')} style={cn(`rounded-full border px-3 py-1 ${!categoryFilter ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${!categoryFilter ? 'text-primary font-medium' : 'text-foreground'}`)}>{t('listings.all_categories') || 'All categories'}</Text></TouchableOpacity>
+                {serviceCategories.map(({ id, label }) => <TouchableOpacity key={id} onPress={() => setCategoryFilter(label)} style={cn(`rounded-full border px-3 py-1 ${categoryFilter === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${categoryFilter === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+              </ScrollView>
             </View>
           </View>
         }

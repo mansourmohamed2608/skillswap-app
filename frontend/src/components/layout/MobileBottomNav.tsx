@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +34,15 @@ export function MobileBottomNav() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const reduced = useReducedMotion();
+  const isHomePreview = pathname === '/design-preview/home';
+  const previewShellStyle = isHomePreview ? ({
+    '--background': '80 25% 98%',
+    '--foreground': '145 43% 16%',
+    '--muted': '130 20% 94%',
+    '--muted-foreground': '145 10% 34%',
+    '--border': '135 18% 80%',
+    colorScheme: 'light',
+  } as CSSProperties) : undefined;
 
   const resolveHref = (href: string, guestOk: boolean) => {
     if (user || guestOk) return href;
@@ -41,14 +51,19 @@ export function MobileBottomNav() {
 
   return (
     <nav
-      className="app-bottom-nav fixed inset-x-0 bottom-0 z-[60] md:hidden"
+      className={cn(
+        'app-bottom-nav fixed inset-x-0 bottom-0 z-[60] md:hidden',
+        isHomePreview && '!border-[#c9d8cd] !bg-[rgba(255,255,252,0.97)] !text-[#173b2c]'
+      )}
       data-fab-collision
+      data-home-preview-shell={isHomePreview ? 'true' : undefined}
       aria-label={t('nav.mobile.label', 'Mobile navigation')}
+      style={previewShellStyle}
     >
       <ul className="mx-auto flex h-[var(--mobile-bottom-nav-height)] max-w-lg items-stretch justify-around px-1">
         {items.map((item) => {
           const href = resolveHref(item.href, item.guestOk);
-          const active = isMobileNavTabActive(item.tab, pathname);
+          const active = isHomePreview && item.tab === 'home' ? true : isMobileNavTabActive(item.tab, pathname);
           const Icon = item.icon;
           const label = t(item.labelKey, item.fallback);
 
@@ -56,6 +71,7 @@ export function MobileBottomNav() {
             <li key={item.tab} className="relative min-w-0 flex-1">
               <Link
                 href={href}
+                prefetch={isHomePreview ? false : undefined}
                 className={cn(
                   'relative flex h-full min-h-[44px] flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f7752]/40 focus-visible:ring-offset-2',
