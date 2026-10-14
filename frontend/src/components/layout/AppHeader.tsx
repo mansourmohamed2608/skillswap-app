@@ -51,7 +51,6 @@ const primaryNavItems = [
   { href: '/listings', label: 'listings', icon: ListIcon },
   { href: '/matchmaking', label: 'matchmaking', icon: SparklesIcon },
   { href: '/pricing', label: 'pricing', icon: Gem },
-  { href: '/support', label: 'getApp', icon: Smartphone },
 ];
 
 // Authenticated user items
@@ -133,7 +132,7 @@ export function AppHeader() {
         <div className="border-b border-[var(--ro-mint)] bg-[var(--ro-deep-teal)] px-3 py-2 text-white lg:hidden">
           <div className="mx-auto flex max-w-lg items-center gap-3">
             <Smartphone className="size-5 shrink-0 text-[var(--ro-lime)]" aria-hidden="true" />
-            <p className="min-w-0 flex-1 text-xs font-semibold">{arabic ? 'احصل على تطبيق R&O' : 'Get the R&O app'}</p>
+            <p className="min-w-0 flex-1 text-xs font-semibold">{arabic ? 'R&O في جيبك' : 'R&O in your pocket'}</p>
             <Link href="/support" className="rounded-lg bg-[var(--ro-lime)] px-3 py-1.5 text-xs font-black text-[var(--ro-deep-teal)]">
               {arabic ? 'التطبيق' : 'Get App'}
             </Link>
@@ -146,14 +145,14 @@ export function AppHeader() {
       <header className="sticky top-0 z-[70] w-full app-header-bar is-scrolled">
         <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           {/* Desktop Header Layout */}
-          <div className="hidden h-16 items-center gap-2 lg:flex">
+          <div className="hidden h-16 items-center gap-3 lg:flex">
             {/* Logo */}
             <Link href="/" className="shrink-0 transition-opacity hover:opacity-80" aria-label="R&O home">
               <BrandMark />
             </Link>
 
             {/* Primary Navigation */}
-            <nav className="ml-2 flex items-center gap-0.5">
+            <nav className="ml-3 flex items-center gap-1">
               {primaryNavItems.map((item) => (
                 <Button
                   key={item.href}
@@ -172,11 +171,11 @@ export function AppHeader() {
 
             {/* Search Bar - Desktop (centered flex-1) */}
             {!isSearchPage ? (
-              <div className="mx-2 min-w-[180px] max-w-[280px] flex-1">
+              <div className="mx-3 min-w-[180px] max-w-[340px] flex-1">
                 <GlobalSearchBar />
               </div>
             ) : (
-              <div className="mx-2 flex-1" aria-hidden="true" />
+              <div className="mx-3 flex-1" aria-hidden="true" />
             )}
 
             {/* Right Actions */}
