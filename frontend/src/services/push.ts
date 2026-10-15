@@ -54,7 +54,7 @@ export function setupForegroundMessageHandler(messaging: Messaging): void {
     // Show notification if we have permission and the browser supports it
     if (Notification.permission === 'granted' && payload.notification) {
       const { title, body } = payload.notification;
-      new Notification(title || 'SkillSwap', {
+      new Notification(title || 'R&O', {
         body: body || '',
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-72x72.png',

@@ -58,7 +58,7 @@ const staticPageIndex: PageResult[] = [
   {
     id: 'home',
     title: 'Home',
-    description: 'Explore the SkillSwap homepage and featured opportunities.',
+    description: 'Explore the R&O homepage and featured opportunities.',
     href: '/',
     icon: House,
     keywords: ['home', 'homepage', 'start', 'services', 'marketplace'],
@@ -103,7 +103,7 @@ const staticPageIndex: PageResult[] = [
   {
     id: 'profile',
     title: 'Profile',
-    description: 'View and update your SkillSwap profile.',
+    description: 'View and update your R&O profile.',
     href: '/profile',
     icon: User,
     keywords: ['profile', 'account', 'user'],
@@ -479,7 +479,7 @@ export function SearchPageContent() {
           </div>
         ) : (
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold sm:text-3xl">{t('search.title', 'Search SkillSwap')}</h1>
+            <h1 className="text-2xl font-bold sm:text-3xl">{t('search.title', 'Search R&O')}</h1>
             <p className="text-sm text-muted-foreground sm:text-base">
               {t('search.subtitle', 'Find pages, categories, listings, wishes, bookings, and more.')}
             </p>

@@ -40,8 +40,7 @@ import { MoreDropdown } from '@/components/layout/MoreDropdown';
 import { LanguageSwitcher } from '@/components/i18n/LanguageSwitcher';
 import { usePathname } from 'next/navigation';
 import { getUnreadConversationCount, useConversationsRTDB } from '@/services/chatRTDB';
-import { useServiceCategories } from '@/hooks/useServiceCategories';
-import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getCategoryDisplayName, getHomeCategoryRow } from '@/features/home/constants/homeCategoryRow';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { BrandMark } from '@/components/brand/BrandMark';
 
@@ -105,7 +104,7 @@ export function AppHeader() {
   const [showAppBanner, setShowAppBanner] = useState(false);
   const isSearchPage = pathname?.startsWith('/search');
   const conversations = useConversationsRTDB();
-  const { categories: serviceCategories, loading: categoriesLoading, error: categoriesError } = useServiceCategories();
+  const serviceCategories = getHomeCategoryRow();
   const unreadChats = getUnreadConversationCount(conversations, user?.uid);
   const arabic = i18n.language?.startsWith('ar');
 
@@ -220,14 +219,11 @@ export function AppHeader() {
                     <DropdownMenuContent align="end" className="z-[100] w-56">
                       {serviceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.label)}`}>
-                            {getServiceCategoryLabel(category.label, t)}
+                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                            {getCategoryDisplayName(category, t)}
                           </Link>
                         </DropdownMenuItem>
                       ))}
-                      {categoriesLoading ? <DropdownMenuItem disabled>{t('common.loading')}</DropdownMenuItem> : null}
-                      {categoriesError ? <DropdownMenuItem disabled>{t('home.categories.loadFailed')}</DropdownMenuItem> : null}
-                      {!categoriesLoading && !categoriesError && serviceCategories.length === 0 ? <DropdownMenuItem disabled>{t('home.categories.empty')}</DropdownMenuItem> : null}
                       <DropdownMenuItem asChild>
                         <Link href="/categories" className="font-medium">{t('home.categories.viewAll')}</Link>
                       </DropdownMenuItem>
@@ -255,14 +251,11 @@ export function AppHeader() {
                     <DropdownMenuContent align="end" className="z-[100] w-56">
                       {serviceCategories.map((category) => (
                         <DropdownMenuItem key={category.id} asChild>
-                          <Link href={`/listings?category=${encodeURIComponent(category.label)}`}>
-                            {getServiceCategoryLabel(category.label, t)}
+                          <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`}>
+                            {getCategoryDisplayName(category, t)}
                           </Link>
                         </DropdownMenuItem>
                       ))}
-                      {categoriesLoading ? <DropdownMenuItem disabled>{t('common.loading')}</DropdownMenuItem> : null}
-                      {categoriesError ? <DropdownMenuItem disabled>{t('home.categories.loadFailed')}</DropdownMenuItem> : null}
-                      {!categoriesLoading && !categoriesError && serviceCategories.length === 0 ? <DropdownMenuItem disabled>{t('home.categories.empty')}</DropdownMenuItem> : null}
                       <DropdownMenuItem asChild>
                         <Link href="/categories" className="font-medium">{t('home.categories.viewAll')}</Link>
                       </DropdownMenuItem>

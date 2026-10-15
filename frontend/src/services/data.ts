@@ -32,7 +32,7 @@ const mapUserFromDoc = (id: string, data: any): User => {
         name: data?.name || data?.fullName || data?.displayName || 'Anonymous User',
         avatarUrl: String(data?.avatarUrl || '').trim(),
         coverUrl: (data?.profile && data.profile.coverUrl) || data?.coverUrl || undefined,
-        bio: data?.bio || `A member of the SkillSwap community.`,
+        bio: data?.bio || `A member of the R&O community.`,
         servicesOffered: data?.servicesOffered || [],
         servicesRequested: data?.servicesRequested || [],
         rating: data?.rating || 0,

@@ -10,6 +10,7 @@ import { MessageListingButton } from '@/features/listings/components/MessageList
 import { getListingCoverImage } from '@/lib/listingImages';
 import { getPublicLocationLabel } from '@/lib/location';
 import { getListingPath } from '@/lib/public-ids';
+import { getProfilePath } from '@/lib/profile';
 import { getServiceCategoryLabel } from '@/services/serviceCategories';
 import type { ServiceListing, User } from '@/types';
 
@@ -25,6 +26,8 @@ export function FeaturedListingCard({ listing, user }: Props) {
   const coverSrc = listing.offeredService?.imageUrl || getListingCoverImage(listing.offeredService?.category);
   const requestText = listing.requestedService?.title || t('listings.card.openToOffers', { defaultValue: 'Open to offers' });
   const offerText = listing.offeredService?.title || t('listings.card.untitled', { defaultValue: 'Untitled listing' });
+  const ownerProfile = user || { id: listing.offeredByUserId, name: ownerName };
+  const ownerProfileHref = `${getProfilePath(ownerProfile)}?uid=${encodeURIComponent(listing.offeredByUserId)}`;
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-[#c8e4d5] bg-white shadow-[0_10px_28px_rgb(14_43_40/0.07)] transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-[0_16px_34px_rgb(14_43_40/0.12)]">
@@ -58,7 +61,7 @@ export function FeaturedListingCard({ listing, user }: Props) {
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2 border-t border-[#d9ebdf] pt-3">
+        <Link href={ownerProfileHref} className="mt-4 flex items-center gap-2 rounded-lg border-t border-[#d9ebdf] pt-3 transition-colors hover:bg-[#f5fbf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-orange)]">
           <Avatar className="size-8 shrink-0">
             <AvatarImage src={user?.avatarUrl} alt="" />
             <AvatarFallback className="bg-[#e8f6ee] text-xs text-[#27735e]">{ownerName.slice(0, 1)}</AvatarFallback>
@@ -67,7 +70,7 @@ export function FeaturedListingCard({ listing, user }: Props) {
             <p className="truncate text-xs font-bold text-[var(--ro-deep-teal)]">{ownerName}</p>
             {location ? <p className="flex items-center gap-1 truncate text-[10px] text-muted-foreground"><MapPinIcon className="size-3 shrink-0" />{location}</p> : null}
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-2 px-4 pb-4">

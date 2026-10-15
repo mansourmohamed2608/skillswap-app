@@ -136,6 +136,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
   const isOwner = Boolean(authUser?.uid && listing.offeredByUserId === authUser.uid);
   const ownerName = resolvedUser?.name || t('listings.actions.ownerFallback');
   const displayName = isOwner ? t('listings.card.you') : ownerName;
+  const ownerProfileHref = `${getProfilePath(resolvedUser || { id: listing.offeredByUserId, name: ownerName })}?uid=${encodeURIComponent(listing.offeredByUserId)}`;
 
   async function handleDeleteListing() {
     try {
@@ -196,7 +197,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
             </p>
           </div>
 
-          <div className="flex items-center gap-2 border-t border-[#c8d5b9]/50 pt-2.5">
+          <Link href={ownerProfileHref} className="flex items-center gap-2 rounded-lg border-t border-[#c8d5b9]/50 pt-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <Avatar className="size-7 shrink-0">
               <AvatarImage src={resolvedUser?.avatarUrl} alt="" />
               <AvatarFallback className="text-[10px]">{displayName.slice(0, 1)}</AvatarFallback>
@@ -207,7 +208,7 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
                 {publicListingLocation || publicOwnerLocation || t('listings.card.locationApprox')}
               </p>
             </div>
-          </div>
+          </Link>
 
           <Badge variant={getStatusBadgeVariant(listing.status)} className="w-fit text-[10px]">
             {getStatusText(listing.status)}

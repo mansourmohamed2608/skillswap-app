@@ -11,38 +11,7 @@ import {
 } from "@/features/home/constants/homeCategoryRow";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-
-const CATEGORY_ART: Record<string, string> = {
-  "study-buddy": "category-study-buddy.jpg",
-  modeling: "category-modeling.jpg",
-  "pets-zone": "category-pets-zone.jpg",
-  "ladies-hangout": "category-ladies-hangout.jpg",
-  "delicious-food": "category-delicious-food.jpg",
-  "medical-consultation": "category-medical-consultation.jpg",
-  "dental-care": "category-dental-care.jpg",
-  sporty: "category-sporty.jpg",
-  "hear-me-out-im-all-ears": "category-hear-me-out-im-all-ears.jpg",
-  babysitting: "category-babysitting.jpg",
-  "diet-guide": "category-diet-guide.jpg",
-  "share-a-ride-carpooling": "category-share-a-ride-carpooling.jpg",
-  "beauty-and-makeup": "category-beauty-and-makeup.jpg",
-  "hobby-and-happy": "category-hobby-and-happy.jpg",
-  "business-consulting": "category-business-consulting.jpg",
-  "graphic-design": "category-graphic-design.webp",
-  "content-creation": "category-content-creation.jpg",
-  "copy-writing": "category-copy-writing.jpg",
-  photography: "category-photography.jpg",
-  videography: "category-videography.jpg",
-  "reels-making": "category-reels-making.jpg",
-  "video-editing": "category-video-editing.jpg",
-  "social-media-management": "category-social-media-management.jpg",
-  "media-buying": "category-media-buying.jpg",
-  "web-development-programming": "category-web-development-programming.jpg",
-  "home-office-repair": "category-home-repair.webp",
-  "ai-services": "category-ai-services.jpg",
-  teaching: "category-teaching.jpg",
-  other: "category-other.jpg",
-};
+import { categoryArtwork } from "@/features/home/constants/categoryArtwork";
 
 export function CategoriesSection() {
   const { t } = useTranslation();
@@ -69,7 +38,7 @@ export function CategoriesSection() {
         <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-4 xl:grid-cols-8">
           {categories.map((category, index) => {
             const label = getCategoryDisplayName(category, t);
-            const art = CATEGORY_ART[category.id];
+            const art = categoryArtwork[category.id];
             return (
               <Link
                 key={category.id}

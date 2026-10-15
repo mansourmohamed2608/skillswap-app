@@ -1,16 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { Layers3, Loader2 } from 'lucide-react';
+import Image from 'next/image';
+import { Layers3 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { useServiceCategories } from '@/hooks/useServiceCategories';
-import { getServiceCategoryLabel } from '@/services/serviceCategories';
+import { getCategoryDisplayName, getHomeCategoryRow } from '@/features/home/constants/homeCategoryRow';
+import { categoryArtwork } from '@/features/home/constants/categoryArtwork';
 
 export default function CategoriesPage() {
   const { t } = useTranslation();
-  const { categories, loading, error } = useServiceCategories();
+  const categories = getHomeCategoryRow();
 
   return (
     <main className="mx-auto w-full max-w-5xl space-y-6">
@@ -22,35 +21,18 @@ export default function CategoriesPage() {
         <p className="text-muted-foreground">{t('home.categories.subtitle')}</p>
       </header>
 
-      {loading ? (
-        <div className="flex min-h-48 items-center justify-center" role="status">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
-          <span className="sr-only">{t('common.loading', 'Loading')}</span>
-        </div>
-      ) : error ? (
-        <Card role="alert">
-          <CardContent className="space-y-3 p-8 text-center">
-            <p>{t('home.categories.loadFailed', { defaultValue: 'Categories could not be loaded. Please try again.' })}</p>
-            <Button type="button" variant="outline" onClick={() => window.location.reload()}>
-              {t('common.retry', 'Retry')}
-            </Button>
-          </CardContent>
-        </Card>
-      ) : categories.length === 0 ? (
-        <Card><CardContent className="p-8 text-center text-muted-foreground">{t('home.categories.empty', { defaultValue: 'No categories are available yet.' })}</CardContent></Card>
-      ) : (
-        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {categories.map((category) => (
             <li key={category.id}>
-              <Button asChild variant="outline" className="h-auto min-h-14 w-full justify-start rounded-xl px-4 py-3 text-start">
-                <Link href={`/listings?category=${encodeURIComponent(category.label)}`}>
-                  {getServiceCategoryLabel(category.label, t)}
-                </Link>
-              </Button>
+              <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`} className="group flex flex-col items-center text-center focus-visible:outline-none">
+                <span className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] bg-white shadow-[0_8px_20px_rgb(14_43_40/0.09)] transition group-hover:-translate-y-1 group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)]">
+                  <Image src={`/ro/home/${categoryArtwork[category.id]}`} alt="" fill sizes="(max-width: 639px) 42vw, (max-width: 1023px) 27vw, 220px" className="object-cover" />
+                </span>
+                <span className="mt-2 text-sm font-extrabold text-[var(--ro-deep-teal)]">{getCategoryDisplayName(category, t)}</span>
+              </Link>
             </li>
           ))}
-        </ul>
-      )}
+      </ul>
     </main>
   );
 }

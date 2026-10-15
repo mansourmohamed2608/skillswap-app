@@ -141,9 +141,9 @@ const resources = {
       home: {
         tagline: "Exchange Skills • Connect Communities • Grow Together",
         hero: {
-          title: "Welcome to SkillSwap!",
+          title: "Welcome to R&O!",
           bodyShort: "Offer what you do best, discover what you need, and connect with people in your community through meaningful exchanges.",
-          body: "SkillSwap is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, SkillSwap helps you get the most out of what you’re great at.",
+          body: "R&O is your vibrant hub to share your skills and services with your community, unlock your potential, offer what you do best, and discover what you need in return. Whether you're trading for a service, a product, or turning your talent into income, R&O helps you get the most out of what you’re great at.",
           ctaBrowse: "Browse Listings",
           ctaPost: "Post a Listing",
           approvedTitle: "Request the service you need",
@@ -173,7 +173,7 @@ const resources = {
           },
         },
         whatIs: {
-          title: "What is SkillSwap?",
+          title: "What is R&O?",
           body: "Offer what you do well. Find what you need. Build useful exchanges with your community.",
         },
         howItWorksV2: {
@@ -199,12 +199,12 @@ const resources = {
           shareCta: "Share a Wish",
         },
         subscribe: {
-          title: "Unlock more with SkillSwap",
+          title: "Unlock more with R&O",
           body: "Get more visibility, better matches, and premium features.",
           cta: "Subscribe Now"
         },
         howItWorks: {
-          title: "How SkillSwap Works",
+          title: "How R&O Works",
           step1: {
             title: "1. Offer & Request",
             body: "List the skills you can offer and the services you're looking for in return. Be specific to attract the right swaps!",
@@ -290,7 +290,7 @@ const resources = {
       search: {
         input: "Search",
         searching: "Searching...",
-        title: "Search SkillSwap",
+        title: "Search R&O",
         subtitle: "Find pages, categories, listings, wishes, bookings, and more.",
         resultsFor: "Search results for",
         loading: "Loading...",
@@ -306,12 +306,12 @@ const resources = {
         bookingsTitle: "Bookings",
         searchFor: "Search for {{chip}}",
         pages: {
-          home: { title: "Home", description: "Explore the SkillSwap homepage and featured opportunities." },
+          home: { title: "Home", description: "Explore the R&O homepage and featured opportunities." },
           listings: { title: "Listings", description: "Browse all service listings and category filters." },
           matchmaking: { title: "AI Matchmaking", description: "Find smart matches for your service requests." },
           bookings: { title: "Bookings", description: "Manage your booking requests and schedules." },
           chat: { title: "Chat", description: "Open conversations with service providers and requesters." },
-          profile: { title: "Profile", description: "View and update your SkillSwap profile." },
+          profile: { title: "Profile", description: "View and update your R&O profile." },
           pricing: { title: "Subscription Plans", description: "Compare subscription tiers and premium features." },
           categories: { title: "Categories", description: "View all service categories and browse by skill area." },
           "new-listing": { title: "Post a Listing", description: "Create a new service listing and request exchange." },
@@ -345,7 +345,7 @@ const resources = {
           kycRequiredTitle: "KYC verification required",
           kycRequiredBody: "Verify your identity to publish events.",
           titleLabel: "Event title",
-          titlePlaceholder: "e.g., SkillSwap design workshop",
+          titlePlaceholder: "e.g., R&O design workshop",
           descriptionLabel: "Description",
           descriptionPlaceholder: "What will attendees learn or do?",
           locationLabel: "Location",
@@ -367,7 +367,7 @@ const resources = {
       cta: {
         getStarted: "Get Started",
         joinTitle: "Join Our Growing Community!",
-        joinBody: "Become a part of SkillSwap today and unlock a world of possibilities through skill exchange.",
+        joinBody: "Become a part of R&O today and unlock a world of possibilities through skill exchange.",
         signUpNow: "Sign Up Now",
       },
       auth: {
@@ -1860,7 +1860,7 @@ const resources = {
         full: "مكتملة",
         create: {
           title: "إنشاء فعالية",
-          subtitle: "أنشئ ورش عمل أو لقاءات مجتمعية لأعضاء SkillSwap.",
+          subtitle: "أنشئ ورش عمل أو لقاءات مجتمعية لأعضاء R&O.",
           signInRequiredTitle: "تسجيل الدخول مطلوب",
           signInRequiredBody: "الرجاء تسجيل الدخول لإنشاء فعالية.",
           businessRequiredTitle: "خطة الأعمال مطلوبة",
