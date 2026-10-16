@@ -20,7 +20,6 @@ import {
   MessageCircle,
   MessagesSquareIcon,
   CalendarDays,
-  Heart,
   LogInIcon,
   UserPlusIcon,
   LogOutIcon,
@@ -50,11 +49,6 @@ const primaryNavItems = [
   { href: '/listings', label: 'listings', icon: ListIcon },
   { href: '/matchmaking', label: 'matchmaking', icon: SparklesIcon },
   { href: '/pricing', label: 'pricing', icon: Gem },
-];
-
-// Authenticated user items
-const privateNavItems = [
-  { href: '/bookings', label: 'bookings', icon: CalendarDays },
 ];
 
 // Unauthenticated user items
@@ -323,7 +317,7 @@ export function AppHeader() {
                   </SheetTrigger>
                   <SheetContent side={i18n.dir() === 'rtl' ? 'left' : 'right'} className="z-[90] w-[82vw] max-w-[360px] p-0">
                     <div className="flex h-full flex-col overflow-y-auto px-4 pb-6 pt-4">
-                      {[...primaryNavItems, { href: '/wishes', label: 'wishes', icon: Heart }].map((item) => (
+                      {primaryNavItems.map((item) => (
                         <Button key={item.href} variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
                           <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
                             <item.icon className="h-5 w-5" />
@@ -339,14 +333,6 @@ export function AppHeader() {
                       </Button>
                       {isAuthenticated ? (
                         <>
-                          {privateNavItems.map((item) => (
-                            <Button key={item.href} variant="ghost" asChild className="h-11 justify-start gap-2 text-base">
-                              <Link href={item.href} onClick={() => setMobileMenuOpen(false)}>
-                                <item.icon className="h-5 w-5" />
-                                {t(`header.${item.label}`)}
-                              </Link>
-                            </Button>
-                          ))}
                           <div className="my-3 h-px bg-border" />
                           <SignOutButton isMobile onDone={() => setMobileMenuOpen(false)} />
                         </>

@@ -221,6 +221,8 @@ const resources = {
         featured: {
           title: "Featured Listings",
           subtitle: "Explore services people are ready to exchange.",
+          request: "Request",
+          offer: "Offer",
           emptyTitle: "No Listings to Display",
           emptyBody: "There are no service listings available at the moment. This might be due to a connection issue.",
           viewAll: "View All Listings",
@@ -1744,6 +1746,8 @@ const resources = {
         featured: {
           title: "عروض مميزة",
           subtitle: "استكشف خدمات جاهزة للتبادل.",
+          request: "الطلب",
+          offer: "العرض",
           emptyTitle: "لا توجد عروض للعرض",
           emptyBody: "لا توجد عروض خدمات متاحة حاليًا. قد يكون السبب مشكلة في الاتصال.",
           viewAll: "عرض كل العروض",

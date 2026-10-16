@@ -42,23 +42,19 @@ export function FeaturedListingCard({ listing, user }: Props) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <p className="text-xs font-extrabold text-[#218f73]">{offeredCategory}</p>
-        <h3 className="mt-1 line-clamp-2 text-lg font-black leading-snug tracking-[-0.02em] text-[var(--ro-deep-teal)]">{offerText}</h3>
-        {listing.offeredService?.description ? (
-          <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{listing.offeredService.description}</p>
-        ) : null}
-
-        <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-xl bg-[#f4f9df] p-2.5">
+        <div className="space-y-2.5 text-xs">
+          <section className="rounded-xl border border-[#dce9ba] bg-[#f4f9df] p-3">
             <p className="font-bold uppercase tracking-[0.08em] text-[#55703d]">{t('home.featured.request', { defaultValue: 'Request' })}</p>
-            <p className="mt-1 line-clamp-2 font-semibold leading-4 text-[var(--ro-deep-teal)]">{requestText}</p>
-            <p className="mt-1 truncate text-[10px] text-[#55703d]">{requestedCategory}</p>
-          </div>
-          <div className="rounded-xl bg-[#e8f6ee] p-2.5">
+            <h3 className="mt-1 line-clamp-2 text-base font-black leading-snug tracking-[-0.02em] text-[var(--ro-deep-teal)]">{requestText}</h3>
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#55703d]">{requestedCategory}</p>
+            {listing.requestedService?.description ? <p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">{listing.requestedService.description}</p> : null}
+          </section>
+          <section className="rounded-xl border border-[#c8e4d5] bg-[#e8f6ee] p-3">
             <p className="font-bold uppercase tracking-[0.08em] text-[#27735e]">{t('home.featured.offer', { defaultValue: 'Offer' })}</p>
-            <p className="mt-1 line-clamp-2 font-semibold leading-4 text-[var(--ro-deep-teal)]">{offerText}</p>
-            <p className="mt-1 truncate text-[10px] text-[#27735e]">{offeredCategory}</p>
-          </div>
+            <h3 className="mt-1 line-clamp-2 text-base font-black leading-snug tracking-[-0.02em] text-[var(--ro-deep-teal)]">{offerText}</h3>
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#27735e]">{offeredCategory}</p>
+            {listing.offeredService?.description ? <p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">{listing.offeredService.description}</p> : null}
+          </section>
         </div>
 
         <Link href={ownerProfileHref} className="mt-4 flex items-center gap-2 rounded-lg border-t border-[#d9ebdf] pt-3 transition-colors hover:bg-[#f5fbf7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-orange)]">

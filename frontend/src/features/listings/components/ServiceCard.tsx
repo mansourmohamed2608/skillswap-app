@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowRightIcon, RepeatIcon, CalendarIcon, MapPinIcon, PencilIcon, Trash2Icon } from 'lucide-react';
+import { ArrowRightIcon, CalendarIcon, MapPinIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import type { ServiceListing, User } from '@/types';
 import { CategoryPill } from './CategoryPill';
 import { Badge } from '@/components/ui/badge';
@@ -116,11 +116,6 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
   const postedLabel = postedAt
     ? t('listings.card.posted', { time: postedAt })
     : t('listings.card.postedRecently');
-  const exchangeLabel = listing.requestedKind === 'money'
-    ? t('listings.card.paymentRequested')
-    : listing.requestedKind === 'product'
-      ? t('listings.card.productRequested')
-      : t('listings.card.exchangeFor');
   const offeredCategory = listing.offeredService?.category
     ? getServiceCategoryLabel(listing.offeredService.category, t)
     : t('listings.card.generalCategory');
@@ -157,14 +152,12 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
 
   const isCompact = variant === 'compact';
   const hasCustomImage = Boolean(listing.offeredService?.imageUrl);
+  const requestTitle = listing.requestedService?.title || t('listings.card.openToOffers');
+  const requestDescription = listing.requestedService?.description;
+  const offerTitle = listing.offeredService?.title || t('listings.card.untitled');
+  const offerDescription = listing.offeredService?.description;
 
   if (isCompact) {
-    const lookingForText =
-      listing.requestedService?.title ||
-      listing.requestedService?.description ||
-      requestedCategory ||
-      t('listings.card.openToOffers');
-
     return (
       <Card data-fab-collision className="flex h-full flex-col overflow-hidden rounded-2xl border-[var(--ro-mint)] bg-white shadow-[0_12px_28px_rgb(14_43_40/0.08)] transition-[transform,box-shadow] hover:-translate-y-1 hover:shadow-[0_18px_34px_rgb(14_43_40/0.12)]">
         <div className="relative aspect-[16/9] overflow-hidden bg-[var(--ro-light-surface)]">
@@ -176,26 +169,21 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
             sizes="(max-width: 768px) 88vw, 320px"
             onError={() => setCoverSrc(DEFAULT_LISTING_COVER)}
           />
-          <span className="absolute start-3 top-3 rounded-lg bg-white/92 px-2 py-1 text-[10px] font-bold text-[var(--ro-emerald)] shadow-sm">
-            {offeredCategory}
-          </span>
         </div>
 
-        <CardContent className="flex flex-1 flex-col space-y-2 p-3.5">
-          <CardTitle className="line-clamp-2 text-base font-bold leading-snug text-[var(--ro-deep-teal)]">
-            {listing.offeredService?.title || t('listings.card.untitled')}
-          </CardTitle>
-
-          <div className="space-y-1 text-xs">
-            <p>
-              <span className="font-semibold text-[var(--ro-emerald)]">{t('listings.card.offerLabel', 'I offer')}:</span>{' '}
-              <span className="text-muted-foreground">{listing.offeredService?.description || listing.offeredService?.title || '-'}</span>
-            </p>
-            <p>
-              <span className="font-semibold text-[var(--ro-emerald)]">{t('listings.card.lookingForLabel', 'Looking for')}:</span>{' '}
-              <span className="text-muted-foreground">{lookingForText}</span>
-            </p>
-          </div>
+        <CardContent className="flex flex-1 flex-col space-y-2.5 p-3.5">
+          <section className="rounded-xl border border-[#dce9ba] bg-[#f4f9df] p-3 text-xs">
+            <p className="font-bold uppercase tracking-[0.08em] text-[#55703d]">{t('home.featured.request', 'Request')}</p>
+            <CardTitle className="mt-1 line-clamp-2 text-base font-bold leading-snug text-[var(--ro-deep-teal)]">{requestTitle}</CardTitle>
+            <p className="mt-1 truncate text-[10px] font-semibold text-[#55703d]">{requestedCategory}</p>
+            {requestDescription ? <p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">{requestDescription}</p> : null}
+          </section>
+          <section className="rounded-xl border border-[var(--ro-mint)] bg-[var(--ro-light-surface)] p-3 text-xs">
+            <p className="font-bold uppercase tracking-[0.08em] text-[var(--ro-emerald)]">{t('home.featured.offer', 'Offer')}</p>
+            <CardTitle className="mt-1 line-clamp-2 text-base font-bold leading-snug text-[var(--ro-deep-teal)]">{offerTitle}</CardTitle>
+            <p className="mt-1 truncate text-[10px] font-semibold text-[var(--ro-emerald)]">{offeredCategory}</p>
+            {offerDescription ? <p className="mt-1 line-clamp-2 leading-5 text-muted-foreground">{offerDescription}</p> : null}
+          </section>
 
           <Link href={ownerProfileHref} className="flex items-center gap-2 rounded-lg border-t border-[#c8d5b9]/50 pt-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
             <Avatar className="size-7 shrink-0">
@@ -268,27 +256,19 @@ export function ServiceCard({ listing, user, variant = 'default' }: ServiceCardP
           />
         </div>
       </CardHeader>
-      <CardContent className="flex-1 space-y-2 p-4">
-        <div>
-          <CategoryPill category={offeredCategory} />
-        </div>
-        <CardTitle className="line-clamp-2 text-base leading-snug break-words">
-          {listing.offeredService?.title || t('listings.card.untitled')}
-        </CardTitle>
-        <CardDescription className="line-clamp-2 text-xs text-muted-foreground break-words">
-          {listing.offeredService?.description ?? ''}
-        </CardDescription>
-        
-        <div className="py-1 text-center">
-          <RepeatIcon className="h-5 w-5 text-primary inline-block" />
-        </div>
-
-        <h4 className="text-sm font-semibold">{exchangeLabel}</h4>
-        <p className="line-clamp-1 text-xs font-medium break-words text-primary">{listing.requestedService?.title || t('listings.card.openToOffers')}</p>
-        <CategoryPill category={requestedCategory} />
-        <CardDescription className="line-clamp-1 text-xs text-muted-foreground break-words">
-          {listing.requestedService?.description ?? ''}
-        </CardDescription>
+      <CardContent className="flex-1 space-y-2.5 p-4">
+        <section className="rounded-xl border border-[#dce9ba] bg-[#f4f9df] p-3">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[#55703d]">{t('home.featured.request', 'Request')}</p>
+          <CardTitle className="mt-1 line-clamp-2 text-base leading-snug break-words">{requestTitle}</CardTitle>
+          <div className="mt-1"><CategoryPill category={requestedCategory} /></div>
+          {requestDescription ? <CardDescription className="mt-1 line-clamp-2 text-xs text-muted-foreground break-words">{requestDescription}</CardDescription> : null}
+        </section>
+        <section className="rounded-xl border border-[var(--ro-mint)] bg-[var(--ro-light-surface)] p-3">
+          <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--ro-emerald)]">{t('home.featured.offer', 'Offer')}</p>
+          <CardTitle className="mt-1 line-clamp-2 text-base leading-snug break-words">{offerTitle}</CardTitle>
+          <div className="mt-1"><CategoryPill category={offeredCategory} /></div>
+          {offerDescription ? <CardDescription className="mt-1 line-clamp-2 text-xs text-muted-foreground break-words">{offerDescription}</CardDescription> : null}
+        </section>
       </CardContent>
       <CardFooter className="border-t p-4">
         <div className="flex w-full flex-col gap-3">

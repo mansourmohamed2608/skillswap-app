@@ -15,7 +15,6 @@ export function AppFooter() {
         { href: '/listings', label: t('header.listings', 'Listings') },
         { href: '/categories', label: t('header.categories', 'Categories') },
         { href: '/matchmaking', label: t('header.matchmaking', 'AI Matching') },
-        { href: '/wishes', label: t('header.wishes', 'Wishes') },
       ],
     },
     {
@@ -24,7 +23,6 @@ export function AppFooter() {
         { href: '/profile', label: t('header.profile', 'Profile') },
         { href: '/settings', label: t('header.settings', 'Settings') },
         { href: '/pricing', label: t('header.pricing', 'Subscriptions') },
-        { href: '/wallet', label: t('header.wallet', 'Wallet') },
       ],
     },
     {
@@ -34,7 +32,6 @@ export function AppFooter() {
         { href: '/legal/terms', label: t('footer.terms') },
         { href: '/legal/privacy', label: t('footer.privacy') },
         { href: '/legal/community', label: t('footer.community') },
-        { href: '/legal/refund', label: t('footer.refund') },
       ],
     },
   ];
