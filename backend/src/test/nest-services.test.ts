@@ -170,8 +170,8 @@ describe('ListingsService', () => {
       await expect(service.createListing('user-123', {
         listing: {
           requestedKind: 'service',
-          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
-          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web development / programming' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic design' },
           location: 'Cairo, Egypt',
         },
       })).rejects.toThrow(ForbiddenException);
@@ -183,8 +183,8 @@ describe('ListingsService', () => {
           title: 'Web Development',
           description: 'Professional web development services',
           requestedKind: 'service',
-          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
-          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web development / programming' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic design' },
           location: 'Cairo, Egypt',
         },
       });
@@ -201,8 +201,8 @@ describe('ListingsService', () => {
       await expect(service.createListing('user-123', {
         listing: {
           requestedKind: 'service',
-          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web Development' },
-          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic Design' },
+          offeredService: { title: 'Web Dev', description: 'Professional web development services', category: 'Web development / programming' },
+          requestedService: { title: 'Design', description: 'Looking for graphic design help', category: 'Graphic design' },
           location: 'Cairo, Egypt',
         },
       })).rejects.toMatchObject({ response: expect.objectContaining({ code: 'LISTING_LIMIT_REACHED' }) });
@@ -219,12 +219,12 @@ describe('ListingsService', () => {
           offeredService: {
             title: 'Web Development',
             description: 'Professional web development services',
-            category: 'Web Development',
+            category: 'Web development / programming',
           },
           requestedService: {
             title: 'Graphic Design',
             description: 'Looking for graphic design help',
-            category: 'Graphic Design',
+            category: 'Graphic design',
           },
         },
       });
