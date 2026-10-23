@@ -20,62 +20,61 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
 
   return (
     <section
-      className="relative overflow-hidden rounded-[26px] bg-[radial-gradient(ellipse_at_78%_40%,rgb(39_138_120/0.66)_0%,transparent_58%),linear-gradient(115deg,#0e2b28_0%,#164b46_62%,#246f62_100%)] px-5 py-5 text-white shadow-[0_28px_64px_rgb(14_43_40/0.18)] sm:px-8 sm:py-8 lg:min-h-[580px] lg:px-10 lg:py-10"
+      className="relative overflow-hidden rounded-[28px] border border-[rgb(39_138_120/0.16)] bg-[radial-gradient(circle_at_8%_10%,rgb(215_245_139/0.6),transparent_30%),linear-gradient(135deg,#edf8f2_0%,#fffaf0_54%,#f7ead8_100%)] p-4 shadow-[0_28px_64px_rgb(14_43_40/0.14)] sm:p-6 lg:p-8"
       aria-labelledby="home-hero-title"
     >
-      <div className="grid items-center gap-7 md:grid-cols-[0.9fr_1.1fr] lg:min-h-[500px] lg:gap-14">
+      <div className="grid items-center gap-6 lg:grid-cols-[1.28fr_0.72fr] lg:gap-9">
+        <motion.div
+          initial={false}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative aspect-[3/2] min-w-0 overflow-hidden rounded-[22px] bg-[#f9f5e8] shadow-[0_18px_40px_rgb(14_43_40/0.14)]"
+        >
+          <Image
+            src="/ro/home/hero-approved.jpg"
+            alt={arabic ? 'طبيبة أسنان وصانعة محتوى تتبادلان الخدمات عبر R&O' : 'A dentist and a reel creator exchanging services through R&O'}
+            fill
+            priority
+            sizes="(max-width: 1023px) calc(100vw - 3rem), 760px"
+            className="object-contain"
+          />
+        </motion.div>
+
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45 }}
-          className="order-2 min-w-0 md:order-1"
+          transition={{ duration: 0.45, delay: 0.08 }}
+          className="min-w-0 rounded-[22px] bg-white/80 p-5 shadow-[0_14px_34px_rgb(14_43_40/0.08)] backdrop-blur-sm sm:p-7"
         >
-          <h1 id="home-hero-title" className="text-5xl font-black leading-none tracking-[-0.065em] sm:text-6xl lg:text-7xl">
-            R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O
-          </h1>
-          <p className="mt-5 max-w-[19ch] text-2xl font-extrabold leading-[1.28] tracking-[-0.025em] sm:text-3xl">
-            {t('home.hero.approvedTitle')}
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[var(--ro-jade)]">
+            {arabic ? 'اطلب • قدّم • اتفق' : 'Request • Offer • Connect'}
           </p>
-          <p className="mt-3 max-w-[52ch] text-sm font-semibold leading-relaxed text-white/90 sm:text-base">{t('home.hero.approvedOffer')}</p>
-          <p className="mt-2 max-w-[52ch] text-sm leading-relaxed text-white/80 sm:text-base">{t('home.hero.approvedConnection')}</p>
+          <h1 id="home-hero-title" className="mt-3 text-3xl font-black leading-[1.08] tracking-[-0.045em] text-[var(--ro-deep-teal)] sm:text-4xl">
+            {t('home.hero.approvedTitle')}
+          </h1>
+          <p className="mt-3 text-sm font-medium leading-relaxed text-[var(--ro-deep-teal)]/75 sm:text-base">
+            {t('home.hero.approvedOffer')}
+          </p>
 
-          <div className="mt-6 max-w-[500px] text-[var(--ro-deep-teal)]">
+          <div className="mt-6 text-[var(--ro-deep-teal)]">
             <HeroSearchBar featuredListings={featuredListings} variant="hero" showQuickSuggestions={false} />
           </div>
 
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
             <Link
               href={postHref}
-              className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[var(--ro-deep-teal)] shadow-[0_12px_24px_rgb(14_43_40/0.2)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-teal)]"
-              style={{ background: 'var(--ro-lime-gradient)' }}
+              className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl bg-[var(--ro-deep-teal)] px-5 text-sm font-black text-white shadow-[0_12px_24px_rgb(14_43_40/0.18)] transition hover:-translate-y-0.5 hover:bg-[var(--ro-teal)] active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-orange)] focus-visible:ring-offset-2"
             >
               {user ? t('home.hero.ctaPost') : (arabic ? 'انضم إلى R&O' : 'Join R&O')}
             </Link>
             <Link
               href="/listings"
-              className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[#321b00] shadow-[0_12px_24px_rgb(255_122_24/0.24)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-teal)]"
+              className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[#321b00] shadow-[0_12px_24px_rgb(255_122_24/0.2)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ro-orange)] focus-visible:ring-offset-2"
               style={{ background: 'var(--ro-orange-gradient)' }}
             >
-              {arabic ? 'تصفّح الإعلانات' : 'Browse Listings'}
+              {t('home.hero.ctaBrowse')}
             </Link>
           </div>
-        </motion.div>
-
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.08 }}
-          className="relative order-1 h-[245px] overflow-hidden rounded-[22px] border border-white/25 bg-white/10 md:order-2 md:h-auto md:min-h-[440px]"
-        >
-          <Image
-            src="/ro/home/hero-flat-lay.png"
-            alt={arabic ? 'تكوين علوي يضم غيتارًا ودفترًا وكاميرا وأدوات على مكتب' : 'Flat-lay composition of a guitar, notebook, camera, and tools on a desk'}
-            fill
-            priority
-            unoptimized
-            sizes="(max-width: 767px) calc(100vw - 3rem), 58vw"
-            className="object-cover"
-          />
         </motion.div>
       </div>
     </section>

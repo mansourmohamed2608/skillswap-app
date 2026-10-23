@@ -16,24 +16,30 @@ export function HowItWorksScroll() {
   const arabic = i18n.language?.startsWith('ar');
   const steps = [
     {
-      title: arabic ? 'اطلب وقدّم' : 'Request & Offer',
+      title: t('home.howItWorksV2.step1.title'),
       body: t('home.howItWorksV2.step1.body'),
     },
     {
-      title: arabic ? 'اعثر على تطابق' : 'Find a Match',
+      title: t('home.howItWorksV2.step2.title'),
       body: t('home.howItWorksV2.step2.body'),
     },
     {
-      title: arabic ? 'تواصل وتبادل' : 'Connect & Swap',
+      title: t('home.howItWorksV2.step3.title'),
       body: t('home.howItWorksV2.step3.body'),
     },
   ];
+  const cardSurfaces = [
+    'bg-[linear-gradient(150deg,#ffffff_0%,#eaf7f0_100%)]',
+    'bg-[linear-gradient(150deg,#ffffff_0%,#fff4df_100%)]',
+    'bg-[linear-gradient(150deg,#ffffff_0%,#eff6df_100%)]',
+  ];
 
   return (
-    <section aria-labelledby="how-it-works-title" className="scroll-mt-24">
+    <section aria-labelledby="how-it-works-title" className="scroll-mt-24 rounded-[28px] bg-[#eaf5ef] px-4 py-8 sm:px-7 sm:py-10 lg:px-10">
       <SectionHeader
         id="how-it-works-title"
-        title={arabic ? 'كيف يعمل R&O' : 'How R&O Works'}
+        title={arabic ? 'ثلاث خطوات وتبدأ الحكاية' : 'Three moves. One great swap.'}
+        subtitle={arabic ? 'بسيطة، قريبة منك، ومبنية على ما يمكنك تقديمه.' : 'Simple, local, and built around what you can give.'}
         centered
       />
 
@@ -45,7 +51,7 @@ export function HowItWorksScroll() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.25 }}
             transition={{ duration: 0.4, delay: index * 0.07 }}
-            className="flex min-h-[320px] flex-col items-center rounded-2xl border border-[var(--ro-mint)] bg-[linear-gradient(155deg,#fff_0%,#f3f9f6_72%,#f7fce9_100%)] px-6 py-6 text-center shadow-[0_12px_28px_rgb(14_43_40/0.08)]"
+            className={`flex min-h-[320px] flex-col items-center rounded-2xl border border-[rgb(39_138_120/0.2)] ${cardSurfaces[index]} px-6 py-6 text-center shadow-[0_12px_28px_rgb(14_43_40/0.08)]`}
           >
             <span className="grid size-10 place-items-center rounded-full bg-[var(--ro-lime-gradient)] text-base font-black text-[var(--ro-deep-teal)] shadow-[0_7px_15px_rgb(14_43_40/0.12)]">
               {index + 1}
