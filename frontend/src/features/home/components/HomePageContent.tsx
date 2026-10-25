@@ -30,7 +30,7 @@ export function HomePageContent({
   const listingCount = displayListings.length;
 
   return (
-    <div className="home-page mx-auto w-full max-w-[1280px] space-y-10 pb-8 sm:space-y-14 md:pb-10">
+    <div className="home-page mx-auto w-full max-w-[1280px] space-y-16 pb-8 sm:space-y-20 md:pb-10">
       <HomeHero featuredListings={displayListings} />
 
       <HowItWorksScroll />
@@ -38,11 +38,11 @@ export function HomePageContent({
       <CategoriesSection />
 
       <Reveal>
-        <section aria-labelledby="featured-listings-title" className="rounded-[28px] bg-[#fff7e9] px-4 py-8 sm:px-7 sm:py-10 lg:px-10">
+        <section aria-labelledby="featured-listings-title">
           <SectionHeader
             id="featured-listings-title"
-            title={t('home.featured.title')}
-            subtitle={t('home.featured.subtitle')}
+            title={arabic ? 'إعلانات مميزة' : 'Featured listings'}
+            subtitle={arabic ? 'عروض عملية مع تبادل واضح في الاعتبار.' : 'Practical offers with a clear exchange in mind.'}
           />
 
           {displayListings.length > 0 ? (
@@ -65,8 +65,8 @@ export function HomePageContent({
                 </HorizontalSnapCarousel>
               </div>
               <div className="mt-7 flex justify-center">
-                <Button variant="outline" asChild className="rounded-xl border-[#3f7752] bg-white px-6 text-[#285f51] hover:bg-[#edf8f1]">
-                  <Link href="/listings">{t('home.featured.viewAll')} <ArrowRightIcon className="ms-2 size-4 rtl:rotate-180" /></Link>
+                <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
+                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'} <ArrowRightIcon className="ms-2 size-4" /></Link>
                 </Button>
               </div>
             </>

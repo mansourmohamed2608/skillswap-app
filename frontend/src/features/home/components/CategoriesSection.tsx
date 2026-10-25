@@ -17,11 +17,10 @@ export function CategoriesSection() {
   const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const categories = useMemo(() => getHomeCategoryRow(), []);
-  const tileSurfaces = ["#e8f5ee", "#fff1dc", "#eef5dd", "#e5f4f1"];
 
   return (
     <Reveal>
-      <section aria-labelledby="home-categories-title" className="scroll-mt-24 rounded-[28px] bg-[linear-gradient(135deg,#fffaf1_0%,#f2f8ee_100%)] px-4 py-8 sm:px-7 sm:py-10 lg:px-10">
+      <section aria-labelledby="home-categories-title" className="scroll-mt-24">
         <SectionHeader
           id="home-categories-title"
           title={t("home.categories.title")}
@@ -47,17 +46,14 @@ export function CategoriesSection() {
                 className={`${expanded || index < 6 ? "flex" : index < 8 ? "hidden md:flex" : "hidden"} group min-w-0 flex-col items-center text-center focus-visible:outline-none`}
                 aria-label={label}
               >
-                <span
-                  className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_3px_7px_rgb(14_43_40/0.06),0_12px_24px_rgb(14_43_40/0.11)] transition group-hover:-translate-y-1 group-hover:border-[var(--ro-mint)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)] group-focus-visible:ring-offset-3"
-                  style={{ backgroundColor: tileSurfaces[index % tileSurfaces.length] }}
-                >
+                <span className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] bg-white shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_3px_7px_rgb(14_43_40/0.06),0_12px_24px_rgb(14_43_40/0.11)] transition group-hover:-translate-y-1 group-hover:border-[var(--ro-mint)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)] group-focus-visible:ring-offset-3">
                   <Image
                     src={art}
                     alt=""
                     fill
-                    priority={index < 6}
+                    priority={index < 8}
                     sizes="(max-width: 767px) 29vw, (max-width: 1023px) 19vw, 150px"
-                    className="object-contain p-2 transition duration-300 group-hover:scale-[1.04] sm:p-3"
+                    className="object-contain p-2 transition duration-300 group-hover:scale-[1.03] sm:p-3"
                   />
                 </span>
                 <strong className="mt-2.5 line-clamp-2 text-xs font-extrabold leading-tight text-[var(--ro-deep-teal)] sm:text-sm">
@@ -70,7 +66,7 @@ export function CategoriesSection() {
         {categories.length > 6 ? (
           <button
             type="button"
-            className="mx-auto mt-7 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--ro-teal)] bg-white px-5 text-sm font-extrabold text-[var(--ro-deep-teal)] shadow-sm transition hover:-translate-y-0.5 hover:bg-[var(--ro-light-surface)] active:scale-[0.98]"
+            className="mx-auto mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-[var(--ro-mint)] bg-white px-5 text-sm font-extrabold text-[var(--ro-deep-teal)] transition hover:bg-[var(--ro-light-surface)] active:scale-[0.98]"
             aria-expanded={expanded}
             onClick={() => setExpanded((value) => !value)}
           >
