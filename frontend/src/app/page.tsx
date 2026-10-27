@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 async function loadHomePageData() {
   try {
-    const featuredListingsData = await getListingsWithUsers({ count: 4 });
+    const featuredListingsData = await getListingsWithUsers({ count: 5 });
 
     return {
       featuredListingsData,

@@ -12,7 +12,6 @@ import { FeaturedListingCard } from "@/features/home/components/FeaturedListingC
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { HorizontalSnapCarousel, CarouselSlide } from "@/components/ui/HorizontalSnapCarousel";
 import type { ServiceListing, User } from "@/types";
 import { normalizeFeaturedListingsForDisplay } from "@/lib/listing-display";
 
@@ -27,7 +26,6 @@ export function HomePageContent({
   const { t, i18n } = useTranslation();
   const arabic = i18n.language?.startsWith('ar');
   const displayListings = normalizeFeaturedListingsForDisplay(featuredListingsData);
-  const listingCount = displayListings.length;
 
   return (
     <div className="home-page mx-auto w-full max-w-[1280px] space-y-16 pb-8 sm:space-y-20 md:pb-10">
@@ -47,26 +45,14 @@ export function HomePageContent({
 
           {displayListings.length > 0 ? (
             <>
-              <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {displayListings.map(({ listing, user }) => (
                   <FeaturedListingCard key={listing.id} listing={listing} user={user} />
                 ))}
               </div>
-              <div className="md:hidden">
-                <HorizontalSnapCarousel
-                  ariaLabel={arabic ? 'إعلانات مميزة' : 'Featured listings'}
-                  showDots
-                >
-                  {displayListings.map(({ listing, user }, index) => (
-                    <CarouselSlide key={listing.id} index={index} count={listingCount}>
-                      <FeaturedListingCard listing={listing} user={user} />
-                    </CarouselSlide>
-                  ))}
-                </HorizontalSnapCarousel>
-              </div>
               <div className="mt-7 flex justify-center">
                 <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
-                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'} <ArrowRightIcon className="ms-2 size-4" /></Link>
+                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'} <ArrowRightIcon className={`ms-2 size-4 ${arabic ? 'rotate-180' : ''}`} /></Link>
                 </Button>
               </div>
             </>

@@ -3,6 +3,7 @@ import { getStatusMessage } from '@/lib/errors';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { doc, setDoc } from 'firebase/firestore';
+import { sortCategoriesByPresentationOrder } from '../constants/categoryOrder';
 
 const extra = (Constants.expoConfig?.extra || {}) as Record<string, any>;
 const env: Record<string, any> =
@@ -39,10 +40,11 @@ export async function getServiceCategories(): Promise<ServiceCategoryDefinition[
   if (!response.ok) throw await toApiError(response);
   const payload = await response.json();
   if (!Array.isArray(payload?.categories)) throw new Error('Invalid category response');
-  return payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
+  const categories = payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
     const category = item as ServiceCategoryDefinition;
     return Boolean(category && typeof category.id === 'string' && typeof category.label === 'string');
   });
+  return sortCategoriesByPresentationOrder(categories);
 }
 
 export async function fetchPublicListingsMobile(pageSize = 50): Promise<Record<string, unknown>[]> {

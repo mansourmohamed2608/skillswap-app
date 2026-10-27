@@ -39,6 +39,11 @@ export function CategoriesSection() {
           {categories.map((category, index) => {
             const label = getCategoryDisplayName(category, t);
             const art = categoryArtwork[category.id];
+            const tileTone = index % 3 === 1
+              ? "bg-[radial-gradient(circle_at_78%_18%,rgb(255_145_54/0.22),transparent_34%),linear-gradient(145deg,#fff_0%,#f3faf5_58%,#e0f3e8_100%)]"
+              : index % 3 === 2
+                ? "bg-[radial-gradient(circle_at_24%_18%,rgb(40_167_139/0.20),transparent_36%),linear-gradient(145deg,#fff_0%,#fff8ef_100%)]"
+                : "bg-[radial-gradient(circle_at_78%_18%,rgb(255_139_36/0.18),transparent_34%),linear-gradient(145deg,#fff_0%,#e9f7ef_100%)]";
             return (
               <Link
                 key={category.id}
@@ -46,14 +51,14 @@ export function CategoriesSection() {
                 className={`${expanded || index < 6 ? "flex" : index < 8 ? "hidden md:flex" : "hidden"} group min-w-0 flex-col items-center text-center focus-visible:outline-none`}
                 aria-label={label}
               >
-                <span className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] bg-white shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_3px_7px_rgb(14_43_40/0.06),0_12px_24px_rgb(14_43_40/0.11)] transition group-hover:-translate-y-1 group-hover:border-[var(--ro-mint)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)] group-focus-visible:ring-offset-3">
+                <span className={`${tileTone} relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] shadow-[inset_0_1px_0_rgb(255_255_255/0.9),0_3px_7px_rgb(14_43_40/0.06),0_12px_24px_rgb(14_43_40/0.11)] transition group-hover:-translate-y-1 group-hover:border-[var(--ro-mint)] group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)] group-focus-visible:ring-offset-3`}>
                   <Image
                     src={art}
                     alt=""
                     fill
                     priority={index < 8}
                     sizes="(max-width: 767px) 29vw, (max-width: 1023px) 19vw, 150px"
-                    className="object-contain p-2 transition duration-300 group-hover:scale-[1.03] sm:p-3"
+                    className="scale-[1.06] object-contain p-0.5 saturate-[1.08] drop-shadow-[0_9px_8px_rgb(14_43_40/0.13)] transition duration-300 group-hover:scale-[1.11] sm:p-1"
                   />
                 </span>
                 <strong className="mt-2.5 line-clamp-2 text-xs font-extrabold leading-tight text-[var(--ro-deep-teal)] sm:text-sm">

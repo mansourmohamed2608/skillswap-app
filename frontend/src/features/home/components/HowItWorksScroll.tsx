@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 
 const illustrations = [
-  '/ro/home/step-request-offer.webp',
-  '/ro/home/step-find-match.webp',
-  '/ro/home/step-connect-exchange.webp',
+  '/ro/home/step-request-offer-ro-v2.webp',
+  '/ro/home/step-find-match-ro-v2.webp',
+  '/ro/home/step-connect-exchange-ro-v2.webp',
 ];
 
 export function HowItWorksScroll() {
@@ -45,7 +45,7 @@ export function HowItWorksScroll() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.25 }}
             transition={{ duration: 0.4, delay: index * 0.07 }}
-            className="flex min-h-[320px] flex-col items-center rounded-2xl border border-[var(--ro-mint)] bg-[linear-gradient(155deg,#fff_0%,#f3f9f6_72%,#f7fce9_100%)] px-6 py-6 text-center shadow-[0_12px_28px_rgb(14_43_40/0.08)]"
+            className="flex min-h-[340px] flex-col items-center rounded-2xl border border-[var(--ro-mint)] bg-[radial-gradient(circle_at_82%_14%,rgb(255_137_35/0.14),transparent_30%),linear-gradient(155deg,#fff_0%,#f3f9f6_72%,#edf8f1_100%)] px-6 py-6 text-center shadow-[0_12px_28px_rgb(14_43_40/0.08)]"
           >
             <span className="grid size-10 place-items-center rounded-full bg-[var(--ro-lime-gradient)] text-base font-black text-[var(--ro-deep-teal)] shadow-[0_7px_15px_rgb(14_43_40/0.12)]">
               {index + 1}
@@ -53,9 +53,9 @@ export function HowItWorksScroll() {
             <Image
               src={illustrations[index]}
               alt=""
-              width={180}
-              height={180}
-              className="my-3 h-[150px] w-[150px] object-contain"
+              width={220}
+              height={220}
+              className="my-2 h-[168px] w-[168px] object-contain drop-shadow-[0_12px_10px_rgb(14_43_40/0.13)]"
             />
             <h3 className="text-lg font-black text-[var(--ro-deep-teal)]">{step.title}</h3>
             <p className="mt-2 max-w-[30ch] text-sm leading-relaxed text-muted-foreground">{step.body}</p>

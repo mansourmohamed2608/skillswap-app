@@ -26,7 +26,7 @@ export default function CategoriesPage() {
             <li key={category.id}>
               <Link href={`/listings?category=${encodeURIComponent(category.listingCategory)}`} className="group flex flex-col items-center text-center focus-visible:outline-none">
                 <span className="relative aspect-square w-full overflow-hidden rounded-2xl border border-[rgb(14_43_40/0.08)] bg-white shadow-[0_8px_20px_rgb(14_43_40/0.09)] transition group-hover:-translate-y-1 group-focus-visible:ring-2 group-focus-visible:ring-[var(--ro-orange)]">
-                  <Image src={categoryArtwork[category.id]} alt="" fill sizes="(max-width: 639px) 42vw, (max-width: 1023px) 27vw, 220px" className="object-contain p-3" />
+                  <Image src={categoryArtwork[category.id]} alt="" fill sizes="(max-width: 639px) 42vw, (max-width: 1023px) 27vw, 220px" className="scale-[1.06] object-contain p-1 saturate-[1.08] drop-shadow-[0_9px_8px_rgb(14_43_40/0.13)]" />
                 </span>
                 <span className="mt-2 text-sm font-extrabold text-[var(--ro-deep-teal)]">{getCategoryDisplayName(category, t)}</span>
               </Link>

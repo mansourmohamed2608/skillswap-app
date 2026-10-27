@@ -20,4 +20,23 @@ describe('service category contract', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ categories: null }) }));
     await expect(fetchServiceCategories()).rejects.toThrow('Invalid category response');
   });
+
+  it('applies the client presentation order while preserving canonical IDs and labels', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        categories: [
+          { id: 'babysitting', label: 'Babysitting' },
+          { id: 'content-creation', label: 'Content creation' },
+          { id: 'graphic-design', label: 'Graphic design' },
+          { id: 'reels-making', label: 'Reels making' },
+        ],
+      }),
+    }));
+
+    const categories = await fetchServiceCategories();
+    expect(categories.map(({ id }) => id)).toEqual([
+      'content-creation', 'reels-making', 'graphic-design', 'babysitting',
+    ]);
+  });
 });

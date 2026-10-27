@@ -10,11 +10,8 @@ export function getCategoryDisplayName(category: CategoryLink, t: TFunction): st
   return translated;
 }
 
-export function getSortedMarketplaceCategories(t: TFunction, lang: string): CategoryLink[] {
-  const locale = lang.startsWith('ar') ? 'ar' : 'en';
-  return [...marketplaceCategories].sort((a, b) =>
-    getCategoryDisplayName(a, t).localeCompare(getCategoryDisplayName(b, t), locale, { sensitivity: 'base' })
-  );
+export function getSortedMarketplaceCategories(_t: TFunction, _lang: string): CategoryLink[] {
+  return [...marketplaceCategories];
 }
 
 export { marketplaceCategories, type CategoryLink };

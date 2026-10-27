@@ -4,25 +4,29 @@ import { normalizeWishForDisplay } from '@/lib/wish-display';
 import { getListingCoverSlug } from '@/lib/listingImages';
 
 describe('listing-display', () => {
-  it('replaces occupation-only featured listing with Home Repair Support demo', () => {
-    const result = normalizeFeaturedListingsForDisplay([
-      {
-        listing: {
-          id: '1',
-          offeredByUserId: 'u1',
-          offeredService: { title: 'Engineer', category: 'Consulting', description: '' },
-          requestedService: { title: 'Design', category: 'Graphic Design', description: '' },
-          postedDate: new Date().toISOString(),
-          status: 'open',
-        },
-        user: { id: 'u1', name: 'Test User', avatarUrl: '', bio: '', servicesOffered: [], servicesRequested: [], rating: 0, reviewsCount: 0 },
-      },
-    ]);
+  const entry = (id: string) => ({
+    listing: {
+      id,
+      offeredByUserId: `user-${id}`,
+      offeredService: { title: `Offer ${id}`, category: 'Consulting', description: 'Useful offer' },
+      requestedService: { title: `Request ${id}`, category: 'Graphic design', description: 'Useful request' },
+      postedDate: '2026-01-01T00:00:00.000Z',
+      status: 'open' as const,
+    },
+    user: null,
+  });
 
-    expect(result[0].listing.offeredService.title).toBe('Home Repair Support');
-    expect(result[0].listing.offeredService.category).toBe('Home Repair');
-    expect(result[0].listing.requestedService.title).toBe('Product photography');
-    expect(result[0].user?.location).toBe('New Cairo, Cairo');
+  it('preserves real listing content and does not create demo records', () => {
+    const result = normalizeFeaturedListingsForDisplay([entry('1')]);
+    expect(result).toEqual([entry('1')]);
+    expect(normalizeFeaturedListingsForDisplay([])).toEqual([]);
+  });
+
+  it('deduplicates real records and caps the section at five', () => {
+    const entries = ['1', '2', '2', '3', '4', '5', '6'].map(entry);
+    expect(normalizeFeaturedListingsForDisplay(entries).map(({ listing }) => listing.id)).toEqual([
+      '1', '2', '3', '4', '5',
+    ]);
   });
 });
 

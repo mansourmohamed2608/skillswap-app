@@ -8,7 +8,7 @@ describe('home preview V3 content contract', () => {
   it('uses unique canonical category IDs with localized labels', () => {
     expect(new Set(categories.map((item) => item.id)).size).toBe(categories.length);
     expect(categories.map((item) => item.label.en)).toEqual([
-      'Study buddy', 'Modeling', 'Pets zone', 'Ladies hangout', 'Delicious food', 'Medical consultation', 'Dental care', 'Sporty', 'Hear me out / I’m all ears', 'Babysitting', 'Diet guide', 'Share a ride / Carpooling', 'Beauty and makeup', 'Hobby and happy', 'Business consulting', 'Graphic design', 'Content creation', 'Copy writing', 'Photography', 'Videography', 'Reels making', 'Video editing', 'Social media management', 'Media buying', 'Web development / programming', 'Home / Office repair', 'AI services', 'Teaching', 'Other',
+      'Content creation', 'Reels making', 'Graphic design', 'Copy writing', 'Beauty and makeup', 'Modeling', 'Web development / programming', 'Media buying', 'Social media management', 'Dental care', 'Medical consultation', 'Babysitting', 'Study buddy', 'Pets zone', 'Ladies hangout', 'Delicious food', 'Sporty', 'Hear me out / I’m all ears', 'Diet guide', 'Share a ride / Carpooling', 'Hobby and happy', 'Business consulting', 'Photography', 'Videography', 'Video editing', 'Home / Office repair', 'AI services', 'Teaching', 'Other',
     ]);
     for (const locale of ['en', 'ar'] as const) categories.forEach((item) => expect(item.label[locale]).not.toBe(''));
   });

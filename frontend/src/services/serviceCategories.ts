@@ -1,4 +1,5 @@
 import type { TFunction } from 'i18next';
+import { sortCategoriesByPresentationOrder } from '@/features/home/constants/categoryLinks';
 
 export type ServiceCategoryDefinition = { id: string; label: string };
 
@@ -7,10 +8,11 @@ export async function fetchServiceCategories(url = '/api/categories'): Promise<S
   if (!response.ok) throw new Error('Unable to load service categories');
   const payload = await response.json();
   if (!Array.isArray(payload?.categories)) throw new Error('Invalid category response');
-  return payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
+  const categories = payload.categories.filter((item: unknown): item is ServiceCategoryDefinition => {
     const value = item as ServiceCategoryDefinition;
     return Boolean(value && typeof value.id === 'string' && typeof value.label === 'string');
   });
+  return sortCategoriesByPresentationOrder(categories);
 }
 
 function normalizeCategory(category: string): string {

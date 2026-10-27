@@ -111,7 +111,7 @@ export default function HomeScreen() {
               return (
                 <Link href={`/listings?category=${encodeURIComponent(label)}`} key={id} style={{ width: '31%', marginBottom: 14 }}>
                   <View style={cn('min-h-[104px] rounded-xl border border-border bg-card items-center justify-center px-2 py-2')}>
-                    {artwork ? <Image source={artwork} style={{ width: 64, height: 64 }} resizeMode="contain" /> : <Sparkles size={24} color="#d4642f" />}
+                    {artwork ? <Image source={artwork} style={{ width: 72, height: 72 }} resizeMode="contain" /> : <Sparkles size={24} color="#d4642f" />}
                     <Text numberOfLines={2} style={cn('mt-1 text-xs text-center font-semibold text-foreground')}>{label}</Text>
                   </View>
                 </Link>
