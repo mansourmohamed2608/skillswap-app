@@ -1,6 +1,4 @@
 /** Production artwork paired with the canonical R&O category IDs. */
-const categoryArtworkRevision = 'ro-icons-20261102';
-
 export const categoryArtwork: Record<string, string> = {
   'study-buddy': '/ro/categories/ro-category-study-buddy.png',
   modeling: '/ro/categories/ro-category-modeling.png',
@@ -32,11 +30,3 @@ export const categoryArtwork: Record<string, string> = {
   teaching: '/ro/categories/ro-category-teaching.png',
   other: '/ro/categories/ro-category-other.png',
 };
-
-/**
- * Keep the approved icon refresh distinct from the prior CDN-cached artwork.
- * The canonical category IDs and source paths remain unchanged.
- */
-export function getCategoryArtworkUrl(categoryId: string) {
-  return `${categoryArtwork[categoryId]}?v=${categoryArtworkRevision}`;
-}

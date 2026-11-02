@@ -11,7 +11,7 @@ import {
 } from "@/features/home/constants/homeCategoryRow";
 import { Reveal } from "@/components/motion/Reveal";
 import { SectionHeader } from "@/components/ui/SectionHeader";
-import { getCategoryArtworkUrl } from "@/features/home/constants/categoryArtwork";
+import { categoryArtwork } from "@/features/home/constants/categoryArtwork";
 
 export function CategoriesSection() {
   const { t } = useTranslation();
@@ -38,7 +38,7 @@ export function CategoriesSection() {
         <div className="grid grid-cols-3 gap-x-3 gap-y-5 sm:grid-cols-4 md:grid-cols-4 xl:grid-cols-8">
           {categories.map((category, index) => {
             const label = getCategoryDisplayName(category, t);
-            const art = getCategoryArtworkUrl(category.id);
+            const art = categoryArtwork[category.id];
             return (
               <Link
                 key={category.id}
@@ -53,7 +53,7 @@ export function CategoriesSection() {
                     fill
                     priority={index < 8}
                     sizes="(max-width: 767px) 29vw, (max-width: 1023px) 19vw, 150px"
-                    className="object-contain p-2 transition-transform duration-200 group-hover:scale-[1.03] sm:p-3"
+                    className="object-contain p-4 transition-transform duration-200 group-hover:scale-[1.02] sm:p-5"
                   />
                 </span>
                 <strong className="mt-2.5 line-clamp-2 text-xs font-extrabold leading-tight text-[var(--ro-deep-teal)] sm:text-sm">
