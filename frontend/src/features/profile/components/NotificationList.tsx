@@ -23,13 +23,14 @@ const iconMap = {
 
 export function NotificationList({ notifications }: NotificationListProps) {
   const { t, i18n } = useTranslation();
+  const language = i18n.language;
   const notificationTimes = useMemo<Record<string, string>>(() => {
     const times: Record<string, string> = {};
     notifications.forEach(n => {
-      times[n.id] = formatNotificationTime(n.date, t('profile.notifications.recent'), i18n.language);
+      times[n.id] = formatNotificationTime(n.date, t('profile.notifications.recent'), language);
     });
     return times;
-  }, [notifications, t]);
+  }, [notifications, t, language]);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (notifications.length === 0) {
