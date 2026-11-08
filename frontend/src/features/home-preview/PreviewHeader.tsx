@@ -8,15 +8,15 @@ import { categories, copy, type Locale } from './preview-content';
 import { PreviewSearchBox } from './HomePreview';
 import styles from './home-preview.module.css';
 
-function PreviewLogo() {
-  return <Link href="/design-preview/home" className="flex shrink-0 items-center gap-1.5 text-[var(--ss-deep-teal)]" aria-label="R&O home" data-preview-logo>
+function PreviewLogo({ locale }: { locale: Locale }) {
+  return <Link href="/design-preview/home" className="flex shrink-0 items-center gap-1.5 text-[var(--ss-deep-teal)]" aria-label={locale === 'ar' ? 'الرئيسية' : 'R&O home'} data-preview-logo>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 shrink-0" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
       <path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" />
       <path d="m18 2 4 4-4 4" />
       <path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2l4.4 8.2c.7 1.3 2.1 2.2 3.6 2.2H22" />
       <path d="m18 22 4-4-4-4" />
     </svg>
-    <span className={styles.previewWordmark}><b>R<span className={styles.brandAmp}>&amp;</span>O</b><small>Request &amp; Offer</small></span>
+    <span className={styles.previewWordmark}><b>{locale === 'ar' ? 'اطلب وقدّم' : <>R<span className={styles.brandAmp}>&amp;</span>O</>}</b>{locale === 'en' && <small>Request &amp; Offer</small>}</span>
   </Link>;
 }
 
@@ -50,12 +50,12 @@ export function PreviewHeader() {
     }, 0);
     return () => window.clearTimeout(timer);
   }, []);
-  const languageButton = <button type="button" className="rounded-xl border border-[color:var(--ss-mint)] px-2 py-2 text-xs font-bold text-[var(--ss-deep-teal)] sm:px-3" onClick={() => { const next = locale === 'ar' ? 'en' : 'ar'; (window as Window & { __homePreviewLocale?: string }).__homePreviewLocale = next; setLanguage(next); window.dispatchEvent(new CustomEvent('home-preview-locale', { detail: next })); }}>{locale === 'ar' ? 'EN' : 'AR'}</button>;
+  const languageButton = <button type="button" className="rounded-xl border border-[color:var(--ss-mint)] px-2 py-2 text-xs font-bold text-[var(--ss-deep-teal)] sm:px-3" onClick={() => { const next = locale === 'ar' ? 'en' : 'ar'; (window as Window & { __homePreviewLocale?: string }).__homePreviewLocale = next; setLanguage(next); window.dispatchEvent(new CustomEvent('home-preview-locale', { detail: next })); }}>{locale === 'ar' ? 'إنجليزي' : 'AR'}</button>;
   const categoryMenu = <div className="relative">
-    <button type="button" className="flex items-center gap-1" onClick={() => setCategoriesOpen(!categoriesOpen)} aria-expanded={categoriesOpen}>Categories <ChevronDown size={14} /></button>
+    <button type="button" className="flex items-center gap-1" onClick={() => setCategoriesOpen(!categoriesOpen)} aria-expanded={categoriesOpen}>{text.footerCategories} <ChevronDown size={14} /></button>
     {categoriesOpen ? <div className="absolute top-full z-50 mt-2 grid w-64 grid-cols-2 gap-1 rounded-xl border border-[#d8e7da] bg-white p-2 shadow-xl">{categories.map((category) => <Link key={category.id} href={`/listings?category=${encodeURIComponent(category.listingCategory)}`} className="rounded-lg px-2 py-2 text-xs hover:bg-[#f2faf3]">{category.label[locale]}</Link>)}</div> : null}
   </div>;
-  const navigation = <><Link href="/design-preview/home">Home</Link>{categoryMenu}<Link href="/listings">Listings</Link><Link href="/matchmaking">AI Matching</Link><Link href="/pricing">Subscriptions</Link><a href="#preview-app-title">Get the App</a></>;
+  const navigation = <><Link href="/design-preview/home">{locale === 'ar' ? 'الرئيسية' : 'Home'}</Link>{categoryMenu}<Link href="/listings">{locale === 'ar' ? 'الإعلانات' : 'Listings'}</Link><Link href="/matchmaking">{locale === 'ar' ? 'المطابقة بالذكاء الاصطناعي' : 'AI Matching'}</Link><Link href="/pricing">{locale === 'ar' ? 'الاشتراكات' : 'Subscriptions'}</Link><a href="#preview-app-title">{text.getApp}</a></>;
 
   const dismissAppBanner = () => { sessionStorage.setItem('home-preview-app-banner-dismissed', 'true'); setAppBannerVisible(false); };
   const setPreviewMode = (next: 'guest' | 'member') => { setMode(next); window.dispatchEvent(new CustomEvent('home-preview-mode', { detail: next })); };
@@ -67,13 +67,13 @@ export function PreviewHeader() {
     <div className={`fixed inset-x-0 top-0 z-[70] bg-white text-[#17382c] ${styles.previewTheme}`} data-preview-header-chrome>
       {appBannerVisible ? <div className="flex h-10 items-center gap-2 border-b border-[color:var(--ss-mint)] bg-[var(--ss-light-surface)] px-3 text-xs text-[var(--ss-deep-teal)] md:hidden" data-preview-app-banner>
         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-[var(--ss-mint)] text-[var(--ss-deep-teal)]" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" xmlns="http://www.w3.org/2000/svg"><path d="M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22" /><path d="m18 2 4 4-4 4" /><path d="M2 6h1.9c1.5 0 2.9.9 3.6 2.2l4.4 8.2c.7 1.3 2.1 2.2 3.6 2.2H22" /><path d="m18 22 4-4-4-4" /></svg></span>
-        <p className="min-w-0 flex-1 truncate font-semibold">R&amp;O in your pocket</p>
-        <a href="#preview-app-title" className="rounded-lg bg-[var(--ss-primary-background)] px-2.5 py-1.5 font-bold text-[var(--ss-primary-text)]">Get App</a>
-        <button type="button" onClick={dismissAppBanner} className="rounded-lg px-1.5 py-1 font-semibold text-[#4f665d] underline underline-offset-2" aria-label="Close app banner">Close</button>
+        <p className="min-w-0 flex-1 truncate font-semibold">{locale === 'ar' ? 'اطلب وقدّم في جيبك' : 'R&O in your pocket'}</p>
+        <a href="#preview-app-title" className="rounded-lg bg-[var(--ss-primary-background)] px-2.5 py-1.5 font-bold text-[var(--ss-primary-text)]">{locale === 'ar' ? 'نزّل التطبيق' : 'Get App'}</a>
+        <button type="button" onClick={dismissAppBanner} className="rounded-lg px-1.5 py-1 font-semibold text-[#4f665d] underline underline-offset-2" aria-label={text.close}>{text.close}</button>
       </div> : null}
       <header className="border-b border-[color:var(--ss-mint)] bg-white/95 text-[var(--ss-deep-teal)] backdrop-blur" data-home-preview-shell="true">
     <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-4 sm:px-6" data-home-preview-header-row>
-      <PreviewLogo />
+      <PreviewLogo locale={locale} />
       <nav className="hidden items-center gap-4 text-sm font-semibold lg:flex">{navigation}</nav>
       <div className="ms-auto flex items-center gap-2">
         <div className="relative">
@@ -83,12 +83,12 @@ export function PreviewHeader() {
         {languageButton}
         <Link href="/profile?tab=notifications" className="grid h-9 w-9 place-items-center rounded-xl text-[var(--ss-deep-teal)] transition-colors hover:bg-[var(--ss-light-surface)]" aria-label={locale === 'ar' ? 'الإشعارات' : 'Notifications'}><Bell size={18} aria-hidden="true" /></Link>
         <Link href="/chat" className="grid h-9 w-9 place-items-center rounded-xl text-[var(--ss-deep-teal)] transition-colors hover:bg-[var(--ss-light-surface)]" aria-label={text.messages}><MessageCircle size={18} aria-hidden="true" /></Link>
-        <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-[#d7e7d9]" onClick={() => setMenuOpen(true)} aria-label="Menu"><Menu size={20} /></button>
+        <button type="button" className="grid h-9 w-9 place-items-center rounded-xl border border-[#d7e7d9]" onClick={() => setMenuOpen(true)} aria-label={locale === 'ar' ? 'القائمة' : 'Menu'}><Menu size={20} /></button>
       </div>
     </div>
       </header>
     </div>
     <div aria-hidden="true" className={`h-16 bg-white ${appBannerVisible ? 'max-md:h-[104px]' : ''}`} />
-    {menuOpen ? <div className="fixed inset-0 z-[90] bg-[#17382c]/25"><div className="ms-auto h-full w-[min(88vw,380px)] overflow-y-auto bg-white p-5 shadow-2xl"><div className="mb-6 flex items-center justify-between"><PreviewLogo /><button type="button" onClick={() => setMenuOpen(false)} aria-label={text.close}><X /></button></div><nav className="grid gap-4 text-base font-semibold" onClick={() => setMenuOpen(false)}>{navigation}</nav>{mobileDrawerActions}<div className="mt-6 border-t border-[#e0ece2] pt-5"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#567064]">{text.language}</span>{languageButton}</div></div></div> : null}
+    {menuOpen ? <div className="fixed inset-0 z-[90] bg-[#17382c]/25"><div className="ms-auto h-full w-[min(88vw,380px)] overflow-y-auto bg-white p-5 shadow-2xl"><div className="mb-6 flex items-center justify-between"><PreviewLogo locale={locale} /><button type="button" onClick={() => setMenuOpen(false)} aria-label={text.close}><X /></button></div><nav className="grid gap-4 text-base font-semibold" onClick={() => setMenuOpen(false)}>{navigation}</nav>{mobileDrawerActions}<div className="mt-6 border-t border-[#e0ece2] pt-5"><span className="mb-2 block text-xs font-bold uppercase tracking-wide text-[#567064]">{text.language}</span>{languageButton}</div></div></div> : null}
   </>;
 }

@@ -20,7 +20,7 @@ export function NotificationBell() {
 }
 
 function NotificationInboxBell({ userId }: { userId: string }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(Boolean(db));
@@ -112,7 +112,7 @@ function NotificationInboxBell({ userId }: { userId: string }) {
                 const content = (
                   <>
                     <p className="text-sm text-foreground">{item.content}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{formatNotificationTime(item.date, t('profile.notifications.recent'))}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{formatNotificationTime(item.date, t('profile.notifications.recent'), i18n.language)}</p>
                   </>
                 );
                 return (

@@ -141,7 +141,7 @@ function PlanCard({
       <CardContent className="flex-grow space-y-6">
         <div className="text-center">
           <span className="text-4xl font-bold">{currentPrice ?? '-'}</span>
-          <span className="text-xl font-medium text-muted-foreground uppercase"> {currency}</span>
+          <span className="text-xl font-medium text-muted-foreground uppercase"> {t(`common.currency.${currency}`, { defaultValue: currency })}</span>
           <span className="text-muted-foreground">{durationText}</span>
         </div>
         <ul className="space-y-3 text-sm">
@@ -303,8 +303,8 @@ function PricingPageInner() {
             <Label htmlFor="currency" className="shrink-0">{t('pricing.currency')}</Label>
             <Tabs value={currency} onValueChange={(v) => setCurrency(v as Currency)}>
               <TabsList>
-                <TabsTrigger value="egp">EGP</TabsTrigger>
-                <TabsTrigger value="sar">SAR</TabsTrigger>
+                <TabsTrigger value="egp">{t('common.currency.egp', 'EGP')}</TabsTrigger>
+                <TabsTrigger value="sar">{t('common.currency.sar', 'SAR')}</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>

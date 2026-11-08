@@ -128,7 +128,7 @@ export default function WalletPage() {
           <CardHeader><CardTitle>{t('wallet.buyTitle')}</CardTitle><CardDescription>{t('wallet.buyBody')}</CardDescription></CardHeader>
           <CardContent className="space-y-3">
             <div><Label htmlFor="token-amount">{t('wallet.tokenAmount')}</Label><Input id="token-amount" type="number" min={1} max={100000} step={1} value={purchaseAmount} onChange={(event) => setPurchaseAmount(Number(event.target.value))} /></div>
-            <div><Label>{t('pricing.currency')}</Label><Select value={currency} onValueChange={(value) => setCurrency(value as 'EGP' | 'SAR')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="EGP">EGP</SelectItem><SelectItem value="SAR">SAR</SelectItem></SelectContent></Select></div>
+            <div><Label>{t('pricing.currency')}</Label><Select value={currency} onValueChange={(value) => setCurrency(value as 'EGP' | 'SAR')}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="EGP">{t('common.currency.egp', 'EGP')}</SelectItem><SelectItem value="SAR">{t('common.currency.sar', 'SAR')}</SelectItem></SelectContent></Select></div>
           </CardContent>
           <CardFooter><Button className="w-full" onClick={purchaseTokens} disabled={purchaseBusy}>{purchaseBusy ? t('wallet.processing') : t('wallet.buyAction')}</Button></CardFooter>
         </Card>

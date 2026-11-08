@@ -100,7 +100,7 @@ export default function WishesListPage() {
               </Link>
               {isOwner ? (
                 <Button className="w-full" disabled>
-                  Your wish
+                  {t('wishes.ownWish', { defaultValue: "Your wish" })}
                 </Button>
               ) : (
                 <div className="grid w-full gap-2">

@@ -110,7 +110,7 @@ export default function MobileBurgerMenu({ open, onClose }: MobileBurgerMenuProp
                   }
                 }}
               >
-                <Text style={styles.langLink}>English</Text>
+                <Text style={styles.langLink}>{t('nav.languageEnglish', 'English')}</Text>
               </TouchableOpacity>
             )}
           </View>

@@ -40,7 +40,7 @@ export function AppFooter() {
     <footer className="border-t border-[var(--ro-mint)] bg-[var(--ro-light-surface)] pb-[var(--mobile-page-bottom-inset)] text-sm text-muted-foreground md:pb-0">
       <div className="mx-auto grid w-full max-w-[1280px] gap-10 px-5 py-10 sm:px-6 lg:grid-cols-[1.2fr_2fr] lg:px-8 lg:py-12">
         <div>
-          <Link href="/" className="inline-flex" aria-label="R&O home">
+          <Link href="/" className="inline-flex" aria-label={t('header.home', 'Home')}>
             <BrandMark />
           </Link>
           <p className="mt-4 max-w-xs leading-relaxed">
@@ -66,7 +66,7 @@ export function AppFooter() {
       </div>
       <div className="border-t border-[var(--ro-mint)]/70">
         <p className="mx-auto max-w-[1280px] px-6 py-5 text-xs lg:px-8">
-          {t('footer.rights', { year, appName: 'R&O' })}
+          {t('footer.rights', { year, appName: t('common.appName') })}
         </p>
       </div>
     </footer>

@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
 import { View, Text, FlatList, ActivityIndicator, TextInput, TouchableOpacity, NativeSyntheticEvent, NativeScrollEvent, ScrollView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -105,7 +106,7 @@ export default function ListingsScreen() {
               </View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={cn('mt-3')} contentContainerStyle={{ gap: 8, paddingRight: 12 }}>
                 <TouchableOpacity onPress={() => setCategoryFilter('')} style={cn(`rounded-full border px-3 py-1 ${!categoryFilter ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${!categoryFilter ? 'text-primary font-medium' : 'text-foreground'}`)}>{t('listings.all_categories') || 'All categories'}</Text></TouchableOpacity>
-                {serviceCategories.map(({ id, label }) => <TouchableOpacity key={id} onPress={() => setCategoryFilter(label)} style={cn(`rounded-full border px-3 py-1 ${categoryFilter === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${categoryFilter === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+                {serviceCategories.map(({ id, label }) => <TouchableOpacity key={id} onPress={() => setCategoryFilter(label)} style={cn(`rounded-full border px-3 py-1 ${categoryFilter === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${categoryFilter === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{getCategoryLabel(id, t, label)}</Text></TouchableOpacity>)}
               </ScrollView>
             </View>
           </View>

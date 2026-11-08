@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
   import { View, Text, TouchableOpacity, Alert, KeyboardAvoidingView, Platform, Image, ScrollView } from 'react-native';
   import React, { useEffect, useRef, useState } from 'react';
   import { useRouter } from 'expo-router';
@@ -239,7 +240,7 @@
               onPress={() => setOfferedCategory(cat)}
               style={cn(`rounded-full border px-3 py-1 ${offeredCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
             >
-              <Text style={cn(`text-xs ${offeredCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{cat}</Text>
+              <Text style={cn(`text-xs ${offeredCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{getCategoryLabel(id, t, cat)}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -269,7 +270,7 @@
                   onPress={() => setRequestedCategory(cat)}
                   style={cn(`rounded-full border px-3 py-1 ${requestedCategory === cat ? 'border-primary bg-primary/10' : 'border-border'}`)}
                 >
-                  <Text style={cn(`text-xs ${requestedCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{cat}</Text>
+                  <Text style={cn(`text-xs ${requestedCategory === cat ? 'text-primary font-medium' : 'text-foreground'}`)}>{getCategoryLabel(id, t, cat)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>

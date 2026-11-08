@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
+import { arEG } from 'date-fns/locale';
 
-export function formatNotificationTime(value: unknown, fallback: string): string {
+export function formatNotificationTime(value: unknown, fallback: string, language?: string): string {
   let candidate = value;
   if (candidate && typeof candidate === 'object' && 'toDate' in candidate) {
     const toDate = (candidate as { toDate?: unknown }).toDate;
@@ -17,7 +18,7 @@ export function formatNotificationTime(value: unknown, fallback: string): string
   if (!Number.isFinite(date.getTime())) return fallback;
 
   try {
-    return formatDistanceToNow(date, { addSuffix: true });
+    return formatDistanceToNow(date, { addSuffix: true, locale: language?.startsWith('ar') ? arEG : undefined });
   } catch {
     return fallback;
   }

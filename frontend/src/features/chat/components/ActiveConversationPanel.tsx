@@ -253,7 +253,7 @@ export function ActiveConversationPanel({
             <Button asChild variant="outline" size="sm">
               <Link href="/chat" onClick={onClose}>
                 <SearchIcon className="mr-2 h-4 w-4" />
-                Find a valid user
+                {t('chat.validUser', { defaultValue: "Find a valid user" })}
               </Link>
             </Button>
           </div>

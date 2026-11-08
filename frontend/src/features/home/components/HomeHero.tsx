@@ -31,7 +31,7 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
           className="order-2 min-w-0 md:order-1"
         >
           <h1 id="home-hero-title" className="text-5xl font-black leading-none tracking-[-0.065em] sm:text-6xl lg:text-7xl">
-            R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O
+            {arabic ? <>اطلب <span className="text-[var(--ro-orange)]">و</span>قدّم</> : <>R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O</>}
           </h1>
           <p className="mt-5 max-w-[19ch] text-2xl font-extrabold leading-[1.28] tracking-[-0.025em] sm:text-3xl">
             {t('home.hero.approvedTitle')}
@@ -49,14 +49,14 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
               className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[var(--ro-deep-teal)] shadow-[0_12px_24px_rgb(14_43_40/0.2)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-teal)]"
               style={{ background: 'var(--ro-lime-gradient)' }}
             >
-              {user ? t('home.hero.ctaPost') : (arabic ? 'انضم إلى R&O' : 'Join R&O')}
+              {user ? t('home.hero.ctaPost') : (arabic ? 'اعمل حساب' : 'Join R&O')}
             </Link>
             <Link
               href="/listings"
               className="inline-flex min-h-12 items-center justify-center whitespace-nowrap rounded-xl px-5 text-sm font-black text-[#321b00] shadow-[0_12px_24px_rgb(255_122_24/0.24)] transition hover:-translate-y-0.5 hover:brightness-105 active:translate-y-px active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ro-teal)]"
               style={{ background: 'var(--ro-orange-gradient)' }}
             >
-              {arabic ? 'تصفّح الإعلانات' : 'Browse Listings'}
+              {arabic ? 'شوف الإعلانات' : 'Browse Listings'}
             </Link>
           </div>
         </motion.div>
@@ -68,8 +68,8 @@ export function HomeHero({ featuredListings = [] }: HomeHeroProps) {
           className="relative order-1 h-[245px] overflow-hidden rounded-[22px] border border-white/25 bg-white/10 md:order-2 md:h-auto md:min-h-[440px]"
         >
           <Image
-            src="/ro/home/hero-approved.jpg"
-            alt={arabic ? 'طبيبة أسنان وصانعة محتوى تتبادلان الخدمات عبر R&O' : 'A dentist and a reel creator exchanging services through R&O'}
+            src={arabic ? "/ro/home/hero-approved-ar.webp" : "/ro/home/hero-approved.jpg"}
+            alt={arabic ? 'دكتور أسنان وصانعة محتوى بيتبادلوا خدمات' : 'A dentist and a reel creator exchanging services through R&O'}
             fill
             priority
             sizes="(max-width: 767px) calc(100vw - 3rem), 58vw"

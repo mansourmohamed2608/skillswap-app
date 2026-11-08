@@ -1,5 +1,6 @@
 "use client"
 
+import { LocalizedText } from '@/components/i18n/LocalizedText';
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X as XIcon } from "lucide-react"
@@ -52,15 +53,15 @@ const DialogContent = React.forwardRef<
         const hasDescription = childrenArray.some((c) => c && (c.type === DialogPrimitive.Description || (c.type as any)?.displayName === DialogPrimitive.Description.displayName));
         return (
           <>
-            {!hasTitle && <DialogPrimitive.Title className="sr-only">Dialog</DialogPrimitive.Title>}
-            {!hasDescription && <DialogPrimitive.Description className="sr-only">Dialog content</DialogPrimitive.Description>}
+            {!hasTitle && <DialogPrimitive.Title className="sr-only"><LocalizedText translationKey="common.dialogTitle" fallback="Dialog" /></DialogPrimitive.Title>}
+            {!hasDescription && <DialogPrimitive.Description className="sr-only"><LocalizedText translationKey="common.dialogContent" fallback={"Dialog content"} /></DialogPrimitive.Description>}
             {children}
           </>
         );
       })()}
       <DialogPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground">
         <XIcon className="h-4 w-4" />
-        <span className="sr-only">Close</span>
+        <span className="sr-only"><LocalizedText translationKey="common.close" fallback="Close" /></span>
       </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </DialogPortal>

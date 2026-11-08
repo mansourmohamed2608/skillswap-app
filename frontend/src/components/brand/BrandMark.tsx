@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 type BrandMarkProps = {
@@ -6,6 +9,8 @@ type BrandMarkProps = {
 };
 
 export function BrandMark({ className, compact = false }: BrandMarkProps) {
+  const { i18n } = useTranslation();
+  const arabic = i18n.language?.startsWith('ar');
   return (
     <span className={cn('inline-flex items-center gap-2 text-[var(--ro-deep-teal)]', className)}>
       <svg
@@ -27,9 +32,9 @@ export function BrandMark({ className, compact = false }: BrandMarkProps) {
       {!compact ? (
         <span className="leading-none">
           <span className="block text-lg font-black tracking-[-0.055em]">
-            R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O
+            {arabic ? <>اطلب <span className="text-[var(--ro-orange)]">و</span>قدّم</> : <>R<span className="relative -top-[0.08em] mx-[0.015em] text-[0.64em] text-[var(--ro-orange)]">&amp;</span>O</>}
           </span>
-          <span className="mt-0.5 block text-[7px] font-bold tracking-[-0.01em]">Request &amp; Offer</span>
+          {!arabic && <span className="mt-0.5 block text-[7px] font-bold tracking-[-0.01em]">Request &amp; Offer</span>}
         </span>
       ) : null}
     </span>

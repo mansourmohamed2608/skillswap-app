@@ -16,15 +16,15 @@ export function HowItWorksScroll() {
   const arabic = i18n.language?.startsWith('ar');
   const steps = [
     {
-      title: arabic ? 'اطلب وقدّم' : 'Request & Offer',
+      title: t('home.howItWorksV2.step1.title', 'Request & Offer'),
       body: t('home.howItWorksV2.step1.body'),
     },
     {
-      title: arabic ? 'اعثر على تطابق' : 'Find a Match',
+      title: t('home.howItWorksV2.step2.title', 'Find a Match'),
       body: t('home.howItWorksV2.step2.body'),
     },
     {
-      title: arabic ? 'تواصل وتبادل' : 'Connect & Swap',
+      title: t('home.howItWorksV2.step3.title', 'Connect & Swap'),
       body: t('home.howItWorksV2.step3.body'),
     },
   ];
@@ -33,7 +33,7 @@ export function HowItWorksScroll() {
     <section aria-labelledby="how-it-works-title" className="scroll-mt-24">
       <SectionHeader
         id="how-it-works-title"
-        title={arabic ? 'كيف يعمل R&O' : 'How R&O Works'}
+        title={arabic ? 'إزاي اطلب وقدّم بيشتغل؟' : 'How R&O Works'}
         centered
       />
 

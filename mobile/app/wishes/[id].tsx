@@ -164,7 +164,10 @@ export default function WishDetailScreen() {
             {t('wishes.deadline') || 'Deadline (optional)'}: {new Date(wish.deadline?.toDate ? wish.deadline.toDate() : wish.deadline).toLocaleDateString()}
           </Text>
         ) : null}
-        <Text style={cn('mt-2 text-sm text-muted-foreground')}>{raised} / {goal} {wish.currency || 'EGP'} raised ({pct}%)</Text>
+        <Text style={cn('mt-2 text-sm text-muted-foreground')}>{t('wishes.raisedProgress', {
+          raised, goal, pct, currency: t(`currency.${(wish.currency || 'EGP').toLowerCase()}`, { defaultValue: wish.currency || 'EGP' }),
+          defaultValue: '{{raised}} / {{goal}} {{currency}} raised ({{pct}}%)',
+        })}</Text>
       </View>
 
       <View style={cn('rounded-lg border border-border bg-card p-3')}>

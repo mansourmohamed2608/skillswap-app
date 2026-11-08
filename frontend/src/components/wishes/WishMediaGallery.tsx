@@ -1,5 +1,6 @@
 "use client";
 
+import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import { AlertCircle } from "lucide-react";
@@ -85,8 +86,8 @@ export function WishMediaGallery({ title, imageUrl, videoUrl, compact = false }:
         <div className="flex items-start gap-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 space-y-2">
           <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0" />
           <div className="flex-1">
-            <p className="font-medium mb-1">This video format could not be played in your browser.</p>
-            <p className="text-amber-700 text-xs">Try uploading in <strong>MP4 (H.264)</strong> or <strong>WebM</strong> format. Avoid .MOV files with ProRes/DNxHD codecs.</p>
+            <p className="font-medium mb-1"><LocalizedText translationKey="wishes.videoPlaybackError" fallback={"This video format could not be played in your browser."} /></p>
+            <p className="text-amber-700 text-xs"><LocalizedText translationKey="wishes.videoPlaybackHint" fallback="Try uploading in MP4 (H.264) or WebM format. Avoid .MOV files with ProRes/DNxHD codecs." /></p>
           </div>
         </div>
       ) : null}

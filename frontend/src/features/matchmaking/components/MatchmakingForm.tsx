@@ -180,7 +180,7 @@ export function MatchmakingForm() {
               onChange={(e) => setProfileValue(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Example: &quot;I design logos, brand kits, and simple social media visuals for small businesses.&quot;
+              {t('matchmaking.offeredExample', { defaultValue: "Example: \"I design logos, brand kits, and simple social media visuals for small businesses.\"" })}
             </p>
             {state?.errors?.userProfile && (
               <p className="text-sm text-destructive">{state.errors.userProfile.join(', ')}</p>
@@ -200,14 +200,14 @@ export function MatchmakingForm() {
               onChange={(e) => setRequestsValue(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Example: &quot;I need a frontend developer, Arabic copywriter, or product photographer.&quot;
+              {t('matchmaking.requestedExample', { defaultValue: "Example: \"I need a frontend developer, Arabic copywriter, or product photographer.\"" })}
             </p>
             {state?.errors?.serviceRequests && (
               <p className="text-sm text-destructive">{state.errors.serviceRequests.join(', ')}</p>
             )}
           </div>
           <div className="rounded-md bg-muted/40 p-3 text-xs text-muted-foreground">
-            Use clear service names, not single words. Better input gives better matches.
+            {t('matchmaking.clearHint', { defaultValue: "Use clear service names, not single words. Better input gives better matches." })}
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-stretch gap-2">
@@ -222,7 +222,7 @@ export function MatchmakingForm() {
                 setRequestsValue('');
               }}
             >
-              Clear form
+              {t('matchmaking.clearForm', { defaultValue: "Clear form" })}
             </Button>
           )}
           {resultAlert && <div className="mt-2 w-full">{resultAlert}</div>}
@@ -234,7 +234,7 @@ export function MatchmakingForm() {
           <div className="flex items-center justify-between mb-1 pt-6">
             <h3 className="text-xl font-semibold text-primary">{t('matchmaking.form.potentialTitle')}</h3>
             <Badge variant="secondary" className="text-xs px-2.5 py-1">
-              {state.matches.length} found
+              {t('matchmaking.matchesFound', { count: state.matches.length, defaultValue: '{{count}} found' })}
             </Badge>
           </div>
           <p className="mb-5 text-sm text-muted-foreground">{t('matchmaking.form.suggestionsNote')}</p>
@@ -270,7 +270,7 @@ export function MatchmakingForm() {
                       <div>
                         <p className="text-xs text-muted-foreground mb-0.5">{t('listings.card.exchangeFor')}</p>
                         <p className="text-sm font-medium text-primary line-clamp-2 min-h-[2.5rem]">
-                          {wants ?? <span className="italic text-muted-foreground text-xs">Not specified</span>}
+                          {wants ?? <span className="italic text-muted-foreground text-xs">{t('matchmaking.notSpecified', { defaultValue: "Not specified" })}</span>}
                         </p>
                       </div>
 
@@ -313,10 +313,9 @@ export function MatchmakingForm() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
             <SearchXIcon className="h-6 w-6 text-muted-foreground" />
           </div>
-          <p className="font-medium text-foreground">No matches found yet</p>
+          <p className="font-medium text-foreground">{t('matchmaking.noMatches', { defaultValue: "No matches found yet" })}</p>
           <p className="text-sm text-muted-foreground max-w-sm">
-            Try being more specific about your skills or what you&apos;re looking for. Using category keywords
-            like &quot;Web Development&quot; or &quot;Graphic Design&quot; improves results.
+            {t('matchmaking.moreSpecific', { defaultValue: 'Try being more specific about your skills or what you are looking for. Using category keywords like Web Development or Graphic Design improves results.' })}
           </p>
         </div>
       )}

@@ -99,7 +99,7 @@ export default function NearbyFilter({ onFiltered }: NearbyFilterProps) {
       <div className="flex items-center gap-2 mb-4">
         <MapPin className="w-5 h-5" />
         <h3 className="text-lg font-semibold">
-          Find nearby listings
+          {t('listings.nearbyAction', { defaultValue: "Find nearby listings" })}
         </h3>
       </div>
 
@@ -130,7 +130,7 @@ export default function NearbyFilter({ onFiltered }: NearbyFilterProps) {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium">
-              {t('listings.nearby.search_radius')}: {radius} km
+              {t('listings.nearby.search_radius')}: {radius} {t('common.kilometers', 'km')}
             </label>
             <Slider
               value={[radius]}
@@ -156,7 +156,7 @@ export default function NearbyFilter({ onFiltered }: NearbyFilterProps) {
                 >
                   <p className="font-medium text-sm">{listing.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {listing.distance?.toFixed(1)} km away
+                    {listing.distance?.toFixed(1)} {t('listings.distanceAway', 'km away')}
                   </p>
                 </a>
               ))}

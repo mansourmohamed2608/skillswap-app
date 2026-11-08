@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
 import { Link } from 'expo-router';
 import { View, Text, ScrollView, ActivityIndicator, Image, Pressable, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
 import React from 'react';
@@ -23,7 +24,8 @@ const HeroLogo = () => (
 
 export default function HomeScreen() {
   // const { user } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const arabic = i18n.language?.startsWith('ar');
   const [loading, setLoading] = React.useState(true);
   const [featured, setFeatured] = React.useState<Array<{ listing: any; user: any }>>([]);
   const [featuredWishes, setFeaturedWishes] = React.useState<any[]>([]);
@@ -73,8 +75,8 @@ export default function HomeScreen() {
         <View style={cn('mx-4 my-4 rounded-xl overflow-hidden shadow-xl')}>
           <View style={cn('w-full py-16 px-6 items-center bg-primary')}>
             <Image
-              source={require('../../assets/r-o-hero-approved.jpg')}
-              accessibilityLabel="A dentist and a reel creator exchanging services through R&O"
+              source={arabic ? require('../../assets/r-o-hero-approved-ar.webp') : require('../../assets/r-o-hero-approved.jpg')}
+              accessibilityLabel={t('home.hero_image_description', 'A dentist and a reel creator exchanging services through R&O')}
               style={{ width: '100%', height: 190, borderRadius: 18, marginBottom: 24 }}
               resizeMode="contain"
             />
@@ -112,7 +114,7 @@ export default function HomeScreen() {
                 <Link href={`/listings?category=${encodeURIComponent(label)}`} key={id} style={{ width: '31%', marginBottom: 14 }}>
                   <View style={cn('min-h-[104px] rounded-xl border border-border bg-card items-center justify-center px-2 py-2')}>
                     {artwork ? <Image source={artwork} style={{ width: 72, height: 72 }} resizeMode="contain" /> : <Sparkles size={24} color="#d4642f" />}
-                    <Text numberOfLines={2} style={cn('mt-1 text-xs text-center font-semibold text-foreground')}>{label}</Text>
+                    <Text numberOfLines={2} style={cn('mt-1 text-xs text-center font-semibold text-foreground')}>{getCategoryLabel(id, t, label)}</Text>
                   </View>
                 </Link>
               );

@@ -31,7 +31,7 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
         title={nextLabel}
         className="h-9 min-w-0 shrink-0 px-2 text-sm font-medium uppercase"
       >
-        {lang.startsWith("ar") ? "EN" : "AR"}
+        {lang.startsWith("ar") ? nextLabel : "AR"}
       </Button>
     );
   }

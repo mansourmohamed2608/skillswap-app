@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -304,7 +305,7 @@ export default function EditListingScreen() {
         <Input value={title} onChangeText={setTitle} />
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.offer_category') || 'Offer category'}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-          {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setOfferedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${offeredCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${offeredCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+          {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setOfferedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${offeredCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${offeredCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{getCategoryLabel(categoryId, t, label)}</Text></TouchableOpacity>)}
         </ScrollView>
         <Text style={cn('text-sm text-muted-foreground')}>{t('forms.description')}</Text>
         <Textarea value={description} onChangeText={setDescription} />
@@ -328,7 +329,7 @@ export default function EditListingScreen() {
             <Input value={requestedTitle} onChangeText={setRequestedTitle} />
             <Text style={cn('text-sm text-muted-foreground')}>{t('forms.request_category') || 'Request category'}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
-              {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setRequestedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${requestedCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${requestedCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{label}</Text></TouchableOpacity>)}
+              {serviceCategories.map(({ id: categoryId, label }) => <TouchableOpacity key={categoryId} onPress={() => setRequestedCategory(label)} style={cn(`rounded-full border px-3 py-1 ${requestedCategory === label ? 'border-primary bg-primary/10' : 'border-border'}`)}><Text style={cn(`text-xs ${requestedCategory === label ? 'text-primary font-medium' : 'text-foreground'}`)}>{getCategoryLabel(categoryId, t, label)}</Text></TouchableOpacity>)}
             </ScrollView>
             <Text style={cn('text-sm text-muted-foreground')}>{t('listings.request_description') || 'Request description'}</Text>
             <Textarea value={requestedDescription} onChangeText={setRequestedDescription} />

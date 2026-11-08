@@ -59,7 +59,7 @@ export function TopContributors({ contributors = [], initialContributors = [], i
                 <span className="font-bold">{contributor.contributionCount}</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {contributor.totalTokensContributed.toLocaleString()} tokens
+                {t('home.contributors.tokens', { count: contributor.totalTokensContributed, defaultValue: '{{count}} tokens' })}
               </p>
             </CardContent>
           </Card>

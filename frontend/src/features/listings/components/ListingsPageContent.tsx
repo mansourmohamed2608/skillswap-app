@@ -411,7 +411,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
       {filters.category ? (
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary" className="gap-2 rounded-full px-3 py-1.5 text-sm">
-            {activeCategoryLabel} <button type="button" aria-label="Clear category filter" onClick={() => updateFilters({ category: '' })}><XIcon className="h-3.5 w-3.5" /></button>
+            {activeCategoryLabel} <button type="button" aria-label={t('listings.clearCategoryFilter', 'Clear category filter')} onClick={() => updateFilters({ category: '' })}><XIcon className="h-3.5 w-3.5" /></button>
           </Badge>
           <p className="text-sm text-muted-foreground">{t('listings.page.showingCategory', { category: activeCategoryLabel, defaultValue: `Showing ${activeCategoryLabel} listings` })}</p>
         </div>
@@ -466,7 +466,7 @@ export function ListingsPageContent({ initialItems }: { initialItems: ListingWit
       )}
 
       {origin ? (
-        <p className="text-xs text-muted-foreground">Radius filtering uses your current location when available.</p>
+        <p className="text-xs text-muted-foreground">{t('listings.radiusHint', { defaultValue: "Radius filtering uses your current location when available." })}</p>
       ) : null}
     </div>
   );

@@ -125,7 +125,7 @@ export function AppHeader() {
         <div className="border-b border-[var(--ro-mint)] bg-[var(--ro-deep-teal)] px-3 py-2 text-white lg:hidden">
           <div className="mx-auto flex max-w-lg items-center gap-3">
             <Smartphone className="size-5 shrink-0 text-[var(--ro-lime)]" aria-hidden="true" />
-            <p className="min-w-0 flex-1 text-xs font-semibold">{arabic ? 'R&O في جيبك' : 'R&O in your pocket'}</p>
+            <p className="min-w-0 flex-1 text-xs font-semibold">{arabic ? 'اطلب وقدّم في جيبك' : 'R&O in your pocket'}</p>
             <Link href="/support" className="rounded-lg bg-[var(--ro-lime)] px-3 py-1.5 text-xs font-black text-[var(--ro-deep-teal)]">
               {arabic ? 'التطبيق' : 'Get App'}
             </Link>
@@ -140,7 +140,7 @@ export function AppHeader() {
           {/* Desktop Header Layout */}
           <div className="hidden h-16 items-center gap-3 lg:flex">
             {/* Logo */}
-            <Link href="/" className="shrink-0 transition-opacity hover:opacity-80" aria-label="R&O home">
+            <Link href="/" className="shrink-0 transition-opacity hover:opacity-80" aria-label={t('header.home', 'Home')}>
               <BrandMark />
             </Link>
 
@@ -279,7 +279,7 @@ export function AppHeader() {
           {/* Mobile Header */}
           <div className="lg:hidden">
             <div className="flex h-14 items-center justify-between gap-2">
-              <Link href="/" className="flex min-w-0 items-center" aria-label="R&O home">
+              <Link href="/" className="flex min-w-0 items-center" aria-label={t('header.home', 'Home')}>
                 <BrandMark />
               </Link>
 

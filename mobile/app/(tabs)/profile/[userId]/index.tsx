@@ -1,3 +1,4 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocalSearchParams } from 'expo-router';
 import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity, Alert, Image, TextInput } from 'react-native';
@@ -144,7 +145,7 @@ export default function UserProfilePage() {
 
   if (!user) return (
     <View style={cn('flex-1 items-center justify-center bg-background')}>
-      <Text style={cn('text-base text-muted-foreground')}>User not found</Text>
+      <Text style={cn('text-base text-muted-foreground')}>{t('profile.userNotFound', 'User not found')}</Text>
     </View>
   );
 
@@ -258,7 +259,7 @@ export default function UserProfilePage() {
           {user.servicesOffered.map((s: any) => (
             <View key={s.id} style={cn('mb-2 rounded-md border border-border bg-card p-3')}>
               <Text style={cn('font-medium text-foreground')}>{s.title}</Text>
-              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{s.category}</Text>}
+              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{getCategoryLabel(s.category, t)}</Text>}
             </View>
           ))}
         </View>
@@ -271,7 +272,7 @@ export default function UserProfilePage() {
           {user.servicesRequested.map((s: any) => (
             <View key={s.id} style={cn('mb-2 rounded-md border border-border bg-card p-3')}>
               <Text style={cn('font-medium text-foreground')}>{s.title}</Text>
-              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{s.category}</Text>}
+              {s.category && <Text style={cn('text-xs text-muted-foreground mt-0.5')}>{getCategoryLabel(s.category, t)}</Text>}
             </View>
           ))}
         </View>

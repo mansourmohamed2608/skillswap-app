@@ -140,7 +140,7 @@ export function NewChatButton({ onStartChat, compact = false }: { onStartChat?: 
           </DialogHeader>
           <div className="space-y-2">
             <label className="text-sm font-medium" htmlFor="chat-user-id">
-              Username
+              {t('chat.usernameLabel', 'Username')}
             </label>
             <Input
               id="chat-user-id"
@@ -149,13 +149,13 @@ export function NewChatButton({ onStartChat, compact = false }: { onStartChat?: 
                 setTargetIdentifier(e.target.value);
                 setSelectedMatch(null);
               }}
-              placeholder="Type @username or a profile name"
+              placeholder={t('chat.usernamePlaceholder', 'Type @username or a profile name')}
             />
             {searching ? (
               <p className="text-xs text-muted-foreground">{t('chat.newChat.searching')}</p>
             ) : null}
             {!searching && normalizedQuery.length >= 2 && matches.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No matching users found.</p>
+              <p className="text-xs text-muted-foreground">{t('chat.noMatchingUsers', { defaultValue: "No matching users found." })}</p>
             ) : null}
             {!searching && matches.length > 0 ? (
               <div className="max-h-56 overflow-auto rounded-md border">
@@ -178,7 +178,7 @@ export function NewChatButton({ onStartChat, compact = false }: { onStartChat?: 
               </div>
             ) : null}
             <p className="text-xs text-muted-foreground">
-              Choose a real user from the list, or type an exact `@username`.
+              {t('chat.chooseUserHint', { defaultValue: "Choose a real user from the list, or type an exact `@username`." })}
             </p>
           </div>
           <DialogFooter>

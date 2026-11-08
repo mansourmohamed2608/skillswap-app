@@ -22,11 +22,11 @@ const iconMap = {
 };
 
 export function NotificationList({ notifications }: NotificationListProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const notificationTimes = useMemo<Record<string, string>>(() => {
     const times: Record<string, string> = {};
     notifications.forEach(n => {
-      times[n.id] = formatNotificationTime(n.date, t('profile.notifications.recent'));
+      times[n.id] = formatNotificationTime(n.date, t('profile.notifications.recent'), i18n.language);
     });
     return times;
   }, [notifications, t]);

@@ -247,7 +247,7 @@ export default function WishDetailPage() {
           {isOwner ? (
             <Alert className="border-amber-300 bg-amber-50">
               <AlertDescription className="text-amber-800">
-                You cannot donate to your own wish.
+                {t('wishes.ownWishCannotDonate', { defaultValue: "You cannot donate to your own wish." })}
               </AlertDescription>
             </Alert>
           ) : null}

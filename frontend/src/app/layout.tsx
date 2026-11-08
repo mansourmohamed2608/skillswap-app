@@ -1,4 +1,5 @@
 // src/app/layout.tsx
+import { LocalizedText } from '@/components/i18n/LocalizedText';
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono, Cairo } from 'next/font/google';
 import './globals.css';
@@ -63,7 +64,7 @@ export default function RootLayout({
               href="#main-content"
               className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:shadow-md"
             >
-              Skip to content
+              <LocalizedText translationKey="common.skipToContent" fallback={"Skip to content"} />
             </a>
             <AppHeader />
             <main id="main-content" className="relative mx-auto w-full max-w-[1440px] flex-grow px-4 pb-nav-mobile pt-4 sm:px-6 sm:pt-6 lg:px-8">

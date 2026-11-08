@@ -47,11 +47,11 @@ export default function SettingsScreen() {
     <ScrollView style={cn('flex-1 bg-background')} contentContainerStyle={cn('gap-5 px-4 py-6')}>
       <View>
         <Text style={cn('text-3xl font-bold text-foreground')}>{t('nav.mobile.settings') || 'Settings'}</Text>
-        <Text style={cn('mt-1 text-sm text-muted-foreground')}>Manage your account and application preferences.</Text>
+        <Text style={cn('mt-1 text-sm text-muted-foreground')}>{t('settings.description', 'Manage your account and application preferences.')}</Text>
       </View>
 
       <View style={cn('rounded-xl border border-border bg-card p-4')}>
-        <Text style={cn('mb-3 text-base font-semibold text-foreground')}>Language</Text>
+        <Text style={cn('mb-3 text-base font-semibold text-foreground')}>{t('settings.language', 'Language')}</Text>
         <View style={cn('flex-row gap-2')}>
           {(['en', 'ar'] as const).map((language) => (
             <TouchableOpacity

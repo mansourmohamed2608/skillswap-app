@@ -161,7 +161,7 @@ export default function SignupScreen() {
             <Link href="/" asChild>
               <TouchableOpacity style={cn('flex-row items-center gap-2')}>
                 <AppLogo size={40} />
-                <Text style={cn('font-bold text-2xl text-primary')}>SkillSwap</Text>
+                <Text style={cn('font-bold text-2xl text-primary')}>{t('app_name', 'SkillSwap')}</Text>
               </TouchableOpacity>
             </Link>
           </View>

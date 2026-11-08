@@ -491,13 +491,13 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
 
         <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
-            <label htmlFor="region" className="block text-sm font-medium mb-1">Countries</label>
+            <label htmlFor="region" className="block text-sm font-medium mb-1">{t('services.countries', 'Countries')}</label>
             <Select value={region} onValueChange={(value) => handleRegionChange(value as 'all' | 'middle-east')}>
               <SelectTrigger id="region">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Your country</SelectItem>
+                <SelectItem value="all">{t('listings.yourCountry', { defaultValue: "Your country" })}</SelectItem>
                   <SelectItem value="middle-east" disabled={!canUseMiddleEastLobby}>
                     {t('services.allCountriesPro', { defaultValue: 'All countries (Pro)' })}
                   </SelectItem>
@@ -513,7 +513,7 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
           </Button>
           <Button type="button" variant="outline" onClick={() => setShowNearbyFilter(true)} className="gap-2">
             <MapPinIcon className="h-4 w-4" />
-            Find nearby listings
+            {t('listings.nearbyAction', { defaultValue: "Find nearby listings" })}
           </Button>
         </div>
 
@@ -524,7 +524,7 @@ export function ServicesHeaderAndFilters({ initialItems, initialCategory }: { in
         ) : null}
         {!hasSubmittedFilters && nearCoords ? (
           <p className="mt-2 text-xs text-muted-foreground">
-            Listings are currently sorted by nearest location first.
+            {t('listings.nearestFirst', { defaultValue: "Listings are currently sorted by nearest location first." })}
           </p>
         ) : null}
       </div>

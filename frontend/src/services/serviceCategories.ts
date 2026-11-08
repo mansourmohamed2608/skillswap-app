@@ -1,5 +1,5 @@
 import type { TFunction } from 'i18next';
-import { sortCategoriesByPresentationOrder } from '@/features/home/constants/categoryLinks';
+import { marketplaceCategories, sortCategoriesByPresentationOrder } from '@/features/home/constants/categoryLinks';
 
 export type ServiceCategoryDefinition = { id: string; label: string };
 
@@ -55,6 +55,11 @@ const CATEGORY_TRANSLATION_KEYS: Record<string, string> = {
 export function getServiceCategoryLabel(category: string | null | undefined, t: TFunction): string {
   const raw = String(category || '').trim();
   if (!raw) return '';
-  const key = CATEGORY_TRANSLATION_KEYS[normalizeCategory(raw)];
-  return key ? t(`listings.categories.${key}`, { defaultValue: raw }) : raw;
+  const normalized = normalizeCategory(raw);
+  const key = CATEGORY_TRANSLATION_KEYS[normalized];
+  const fallback = key ? t(`listings.categories.${key}`, { defaultValue: raw }) : raw;
+  const canonical = marketplaceCategories.find(({ id, listingCategory }) =>
+    id === normalized || normalizeCategory(listingCategory) === normalized,
+  );
+  return canonical ? t(`home.categories.items.${canonical.id}`, { defaultValue: fallback }) : fallback;
 }

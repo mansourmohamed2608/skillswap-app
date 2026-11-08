@@ -40,7 +40,7 @@ export function HomePageContent({
           <SectionHeader
             id="featured-listings-title"
             title={arabic ? 'إعلانات مميزة' : 'Featured listings'}
-            subtitle={arabic ? 'عروض عملية مع تبادل واضح في الاعتبار.' : 'Practical offers with a clear exchange in mind.'}
+            subtitle={arabic ? 'عروض واضحة بتقول كل واحد محتاج إيه وبيقدّم إيه.' : 'Practical offers with a clear exchange in mind.'}
           />
 
           {displayListings.length > 0 ? (
@@ -52,7 +52,7 @@ export function HomePageContent({
               </div>
               <div className="mt-7 flex justify-center">
                 <Button variant="outline" asChild className="rounded-xl border-[#3f7752] px-6 text-[#285f51] hover:bg-[#edf8f1]">
-                  <Link href="/listings">{arabic ? 'عرض المزيد' : 'View More'} <ArrowRightIcon className={`ms-2 size-4 ${arabic ? 'rotate-180' : ''}`} /></Link>
+                  <Link href="/listings">{arabic ? 'شوف أكتر' : 'View More'} <ArrowRightIcon className={`ms-2 size-4 ${arabic ? 'rotate-180' : ''}`} /></Link>
                 </Button>
               </div>
             </>

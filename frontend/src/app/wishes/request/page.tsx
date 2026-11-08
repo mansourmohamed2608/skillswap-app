@@ -201,7 +201,7 @@ export default function RequestWishPage() {
               ) : (
                 <div className="rounded-md bg-muted/60 p-4 text-sm text-muted-foreground flex items-center gap-2">
                   <UploadCloudIcon className="h-4 w-4" />
-                  JPG, PNG, WEBP (max 5MB)
+                  {t('listings.form.imageFormatsHint', 'JPG, PNG, WEBP (max 5MB)')}
                 </div>
               )}
               <Input id="wish-image" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder={t("wishes.request.imagePlaceholder")} />
@@ -219,10 +219,10 @@ export default function RequestWishPage() {
               <div className="rounded-md bg-muted/60 p-4 text-sm text-muted-foreground space-y-2">
                 <div className="flex items-center gap-2">
                   <VideoIcon className="h-4 w-4" />
-                  <span><strong>Recommended:</strong> MP4 (H.264) or WebM</span>
+                  <span><strong>{t('wishes.recommendedVideo', 'Recommended:')}</strong>{' '}{t('wishes.recommendedVideoFormats', 'MP4 (H.264) or WebM')}</span>
                 </div>
-                <p className="text-xs text-muted-foreground ml-6">⚠️ Avoid .MOV files from video editors (ProRes/DNxHD). Use MP4 instead.</p>
-                <p className="text-xs text-muted-foreground ml-6">Max 25MB • Players may not support all codecs</p>
+                <p className="text-xs text-muted-foreground ml-6">{t('wishes.videoFormatWarning', { defaultValue: "⚠️ Avoid .MOV files from video editors (ProRes/DNxHD). Use MP4 instead." })}</p>
+                <p className="text-xs text-muted-foreground ml-6">{t('wishes.videoSizeHint', { defaultValue: "Max 25MB • Players may not support all codecs" })}</p>
               </div>
               <Input id="wish-video" type="url" value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} placeholder={t("wishes.request.videoPlaceholder")} />
             </div>
@@ -236,9 +236,9 @@ export default function RequestWishPage() {
             </Alert>
             <Alert variant="default" className="bg-amber-50 border-amber-300">
               <ShieldAlertIcon className="h-5 w-5 text-amber-700" />
-              <AlertTitle className="text-amber-800">Important before submitting</AlertTitle>
+              <AlertTitle className="text-amber-800">{t('wishes.beforeSubmitting', { defaultValue: "Important before submitting" })}</AlertTitle>
               <AlertDescription className="text-amber-700">
-                After you submit, this wish cannot be edited or deleted from the app. Please review details carefully.
+                {t('wishes.submitIrreversible', { defaultValue: "After you submit, this wish cannot be edited or deleted from the app. Please review details carefully." })}
               </AlertDescription>
             </Alert>
           </CardContent>

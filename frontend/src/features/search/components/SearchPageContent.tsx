@@ -1,5 +1,6 @@
 'use client';
 
+import { LocalizedText } from '@/components/i18n/LocalizedText';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -220,13 +221,13 @@ function ListingCard({ listing, user, t }: { listing: ServiceListing; user: AppU
               <span>{location}</span>
             </p>
           )}
-          {user?.name && <p className="truncate">By {user.name}</p>}
+          {user?.name && <p className="truncate">{t('search.listingBy', { name: user.name, defaultValue: 'By {{name}}' })}</p>}
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <RequestExchangeButton listingId={listing.id} ownerId={listing.offeredByUserId} compact className="h-9" />
           <Button asChild size="sm" className="h-9 w-full bg-primary text-primary-foreground hover:bg-primary/90">
-            <Link href={getListingPath(listing)}>View Details</Link>
+            <Link href={getListingPath(listing)}><LocalizedText translationKey="listings.card.viewDetails" fallback={"View Details"} /></Link>
           </Button>
         </div>
       </CardContent>
@@ -522,7 +523,7 @@ export function SearchPageContent() {
                     className="rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                     onClick={() => router.push(`/search?q=${encodeURIComponent(category.name)}`)}
                   >
-                    {category.name}
+                    {getServiceCategoryLabel(category.name, t)}
                   </Button>
                 ))}
               </div>
@@ -577,7 +578,7 @@ export function SearchPageContent() {
                       className="rounded-full border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
                     >
                       <Link href={`/listings?category=${encodeURIComponent(category.name)}`}>
-                        {category.name}
+                        {getServiceCategoryLabel(category.name, t)}
                       </Link>
                     </Button>
                   ))}

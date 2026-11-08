@@ -1,6 +1,9 @@
+import { getCategoryLabel } from '@/lib/categoryLabel';
 import React from 'react';
 import { View, Text, ViewProps } from 'react-native';
 import { cn } from '@/lib/cn';
+
+import { useTranslation } from 'react-i18next';
 
 export interface CategoryPillProps extends Omit<ViewProps, 'style'> {
   category: string;
@@ -9,6 +12,7 @@ export interface CategoryPillProps extends Omit<ViewProps, 'style'> {
 }
 
 export function CategoryPill({ category, className, style, ...props }: CategoryPillProps) {
+  const { t } = useTranslation();
   const categoryColors: Record<string, string> = {
     General: 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100',
     Technology: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200',
@@ -26,7 +30,7 @@ export function CategoryPill({ category, className, style, ...props }: CategoryP
 
   return (
     <View {...props} style={cn(`inline-flex rounded-full px-2.5 py-1 ${colorClass} ${className || ''}`)}>
-      <Text style={cn('text-xs font-medium')}>{category}</Text>
+      <Text style={cn('text-xs font-medium')}>{getCategoryLabel(category, t)}</Text>
     </View>
   );
 }

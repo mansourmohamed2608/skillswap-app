@@ -66,7 +66,7 @@ export default function SignInScreen() {
         <Link href="/">
           <View style={cn('flex-row items-center gap-2 mb-8')}>
             <AuthLogo />
-            <Text style={cn('text-2xl font-bold text-primary')}>SkillSwap</Text>
+            <Text style={cn('text-2xl font-bold text-primary')}>{t('app_name', 'SkillSwap')}</Text>
           </View>
         </Link>
 

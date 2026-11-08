@@ -147,7 +147,7 @@ export default function PricingScreen() {
             <View style={cn('flex-row gap-2')}>
               {(['EGP','SAR'] as Currency[]).map((c) => (
                 <TouchableOpacity key={c} onPress={() => setCurrency(c)} style={cn('px-3 py-2 rounded-md', currency === c ? 'bg-primary' : 'bg-card border border-border')}>
-                  <Text style={cn(currency === c ? 'text-white' : 'text-foreground')}>{c}</Text>
+                  <Text style={cn(currency === c ? 'text-white' : 'text-foreground')}>{t(`currency.${c.toLowerCase()}`, { defaultValue: c })}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -155,7 +155,7 @@ export default function PricingScreen() {
             <View style={cn('flex-row gap-2')}>
               {(['3mo','6mo','12mo'] as Duration[]).map((d) => (
                 <TouchableOpacity key={d} onPress={() => setDuration(d)} style={cn('px-3 py-2 rounded-md', duration === d ? 'bg-primary' : 'bg-card border border-border')}>
-                  <Text style={cn(duration === d ? 'text-white' : 'text-foreground')}>{d === '12mo' ? '12 mo' : d}</Text>
+                  <Text style={cn(duration === d ? 'text-white' : 'text-foreground')}>{t(`pricing.duration.${d}`, { defaultValue: d === '12mo' ? '12 mo' : d })}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -166,7 +166,10 @@ export default function PricingScreen() {
             const plan = pricingData[key];
             const isBusiness = key === 'business';
             const currentPrice = plan.prices[currency][isBusiness ? '3mo' : duration];
-            const durationText = isBusiness ? '/3 months' : (duration === '12mo' ? '/year' : `/${duration}`);
+            const period = isBusiness ? '3mo' : duration;
+            const durationText = t(`pricing.period.${period}`, {
+              defaultValue: isBusiness ? '/3 months' : (duration === '12mo' ? '/year' : `/${duration}`),
+            });
             const Icon = plan.icon;
             return (
               <Card key={key}>
@@ -185,7 +188,7 @@ export default function PricingScreen() {
                 <CardContent>
                   <View style={cn('items-center mb-4')}>
                     <Text style={cn('text-3xl font-bold')}>{currentPrice ?? '-'}</Text>
-                    <Text style={cn('text-lg font-medium text-muted-foreground uppercase')}> {currency}</Text>
+                    <Text style={cn('text-lg font-medium text-muted-foreground uppercase')}> {t(`currency.${currency.toLowerCase()}`, { defaultValue: currency })}</Text>
                     <Text style={cn('text-muted-foreground')}> {durationText}</Text>
                   </View>
                   {plan.features.map((f) => (

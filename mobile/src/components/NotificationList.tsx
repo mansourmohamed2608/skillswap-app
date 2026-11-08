@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, Text } from 'react-native';
 import { cn } from '@/lib/cn';
 import { Avatar } from '@/components/ui/Avatar';
@@ -10,22 +11,23 @@ export interface NotificationListProps {
 }
 
 export default function NotificationList({ notifications }: NotificationListProps) {
+  const { t, i18n } = useTranslation();
   const safeNotifications = useMemo(
     () => Array.isArray(notifications) ? notifications : [],
     [notifications],
   );
   const times = useMemo(() => {
-    const t: Record<string, string> = {};
+    const timestamps: Record<string, string> = {};
     safeNotifications.forEach((n) => {
-      t[n.id] = formatNotificationTime(n.date, 'Recently');
+      timestamps[n.id] = formatNotificationTime(n.date, t('notifications.recent', 'Recently'), i18n.language);
     });
-    return t;
-  }, [safeNotifications]);
+    return timestamps;
+  }, [safeNotifications, t, i18n.language]);
 
   if (safeNotifications.length === 0) {
     return (
       <View style={cn('items-center py-8')}>
-        <Text style={cn('text-muted-foreground')}>No notifications yet</Text>
+        <Text style={cn('text-muted-foreground')}>{t('notifications.empty', 'No notifications yet')}</Text>
       </View>
     );
   }

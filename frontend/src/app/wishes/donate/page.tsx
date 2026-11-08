@@ -163,7 +163,7 @@ function DonatePageContent() {
           {isOwner ? (
             <Alert className="border-amber-300 bg-amber-50">
               <AlertDescription className="text-amber-800">
-                You cannot donate to your own wish.
+                {t('wishes.ownWishCannotDonate', { defaultValue: "You cannot donate to your own wish." })}
               </AlertDescription>
             </Alert>
           ) : null}
@@ -179,7 +179,7 @@ function DonatePageContent() {
           )}
           <div className="space-y-2">
             <Label htmlFor="email">{t('wishes.donate.emailLabel')}</Label>
-            <Input id="email" type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} placeholder="you@example.com" />
+            <Input id="email" type="email" value={donorEmail} onChange={(e) => setDonorEmail(e.target.value)} placeholder={t('auth.signIn.emailPlaceholder', 'you@example.com')} />
           </div>
           <div className="flex items-center gap-2">
             <input id="anon" type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} />
